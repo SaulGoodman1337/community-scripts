@@ -23,6 +23,12 @@ msg_info "Installing Docker"
 setup_docker
 msg_ok "Installed Docker"
 
+# Apply the standard community-scripts container customization before starting
+# the application. This keeps console autologin and /usr/bin/update available
+# even when the application itself fails to start.
+motd_ssh
+customize
+
 msg_info "Preparing Mindwtr"
 install -d -o 1000 -g 1000 -m 0750 /opt/mindwtr/data
 
@@ -116,6 +122,4 @@ for i in {1..60}; do
   fi
 done
 
-motd_ssh
-customize
 cleanup_lxc
