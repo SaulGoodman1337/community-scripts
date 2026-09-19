@@ -24,7 +24,7 @@ setup_docker
 msg_ok "Installed Docker"
 
 msg_info "Preparing Mindwtr"
-install -d -m 0755 /opt/mindwtr/data
+install -d -o 1000 -g 1000 -m 0750 /opt/mindwtr/data
 
 MINDWTR_IP="$(hostname -I | awk '{print $1}')"
 if [[ -z "$MINDWTR_IP" ]]; then
