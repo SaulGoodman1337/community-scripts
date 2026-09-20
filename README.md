@@ -10,6 +10,7 @@ The repository follows the general layout of [community-scripts/ProxmoxVE](https
 | --- | --- | --- | --- |
 | **Mindwtr** | Creates a dedicated Debian LXC and runs the Mindwtr web app plus its self-hosted sync backend with Docker Compose. | Run on the **Proxmox host** | Web: `5173`, Sync API: `8787` |
 | **Heirloom** | Creates a dedicated Debian LXC and runs the Heirloom family-tree app with PostgreSQL using the upstream Docker Compose stack. | Run on the **Proxmox host** | Web: `8081` |
+| **Optolink-Splitter** | Creates a privileged Debian LXC for local Viessmann Optolink access via serial, MQTT and TCP/IP. | Run on the **Proxmox host** | TCP: `65234` |
 | **ONLYOFFICE DocSpace add-on** | Adds DocSpace Community to an **existing native ONLYOFFICE Docs LXC** and reuses the installed Document Server. | Run **inside the existing ONLYOFFICE LXC** | Docs: `80`, DocSpace: `8088` |
 
 ---
@@ -77,6 +78,24 @@ Defaults: 2 CPU cores, 4096 MiB RAM, 12 GiB disk, Debian 13, unprivileged LXC wi
 The installer generates random PostgreSQL and JWT secrets, stores configuration in `/opt/heirloom/.env`, and supports updates through the standard `update` command inside the container. Upstream production images are currently published for amd64, so the helper advertises amd64 only.
 
 More details: [docs/heirloom.md](docs/heirloom.md)
+
+---
+
+## Optolink-Splitter
+
+[Optolink-Splitter](https://github.com/philippoo66/optolink-splitter) provides local access to Viessmann Optolink heating controls over MQTT and TCP/IP, with optional Vitoconnect / ViCare passthrough.
+
+Run on the **Proxmox VE host**:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/optolink-splitter.sh)"
+```
+
+Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13. The container is deliberately **privileged** so the shared community-scripts core can bind common USB serial devices such as `/dev/ttyUSB0`, `/dev/ttyUSB1` and `/dev/serial/by-id` into the LXC.
+
+There is no web interface. The upstream TCP listener defaults to port `65234`. MQTT is disabled initially; configure `/opt/optolink/settings_ini.py` and `/opt/optolink/poll_list.py`, then restart `optolink-splitter.service`.
+
+More details: [docs/optolink-splitter.md](docs/optolink-splitter.md)
 
 ---
 
@@ -213,15 +232,18 @@ Full installation, tuning and account-activation notes: [docs/onlyoffice-docspac
 ct/
   mindwtr.sh                       Proxmox LXC definition and update routine
   heirloom.sh                      Heirloom LXC definition and update routine
+  optolink-splitter.sh             Optolink-Splitter LXC definition and update routine
 
 install/
   mindwtr-install.sh               Mindwtr installation inside the new LXC
   heirloom-install.sh              Heirloom installation inside the new LXC
+  optolink-splitter-install.sh     Optolink-Splitter installation inside the new LXC
   onlyoffice-docspace-addon.sh     DocSpace add-on for an existing Docs LXC
 
 docs/
   mindwtr.md
   heirloom.md
+  optolink-splitter.md
   onlyoffice-docspace-addon.md
 
 tools/
@@ -232,6 +254,7 @@ tools/
 json/
   mindwtr.json                     Mindwtr script metadata
   heirloom.json                    Heirloom script metadata
+  optolink-splitter.json           Optolink-Splitter script metadata
 ```
 
 ## Notes

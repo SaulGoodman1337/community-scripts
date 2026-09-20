@@ -1,0 +1,52 @@
+{
+  "name": "Optolink-Splitter",
+  "slug": "optolink-splitter",
+  "categories": [
+    12
+  ],
+  "date_created": "2026-09-20",
+  "type": "ct",
+  "updateable": true,
+  "privileged": true,
+  "config_path": "/opt/optolink/settings_ini.py",
+  "interface_port": 65234,
+  "documentation": "https://github.com/philippoo66/optolink-splitter/wiki",
+  "website": "https://github.com/philippoo66/optolink-splitter",
+  "repository": "https://github.com/philippoo66/optolink-splitter",
+  "architectures": [
+    "amd64",
+    "arm64"
+  ],
+  "platforms": [
+    "pve"
+  ],
+  "logo": "https://avatars.githubusercontent.com/u/122479122?v=4",
+  "description": "Local Viessmann Optolink switch/splitter with MQTT and TCP/IP access while retaining optional Vitoconnect/ViCare connectivity.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/optolink-splitter.sh",
+      "resources": {
+        "cpu": 1,
+        "ram": 512,
+        "hdd": 4,
+        "os": "debian",
+        "version": "13"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": null,
+    "password": null
+  },
+  "notes": [
+    {
+      "text": "This helper uses a privileged LXC so the community-scripts core can automatically bind common USB serial devices such as /dev/ttyUSB0 and /dev/serial/by-id.",
+      "type": "warning"
+    },
+    {
+      "text": "MQTT is disabled by default. Configure /opt/optolink/settings_ini.py and /opt/optolink/poll_list.py before enabling your desired datapoints and broker.",
+      "type": "info"
+    }
+  ]
+}
