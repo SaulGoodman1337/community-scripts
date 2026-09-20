@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Optolink Web</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div>
+    <h1>Optolink Web</h1>
+    <p>Viessmann diagnostics and control via Optolink-Splitter</p>
+  </div>
+  <div id="health" class="health">loading…</div>
+</header>
+<nav>
+  <button class="nav active" data-view="overview">Übersicht</button>
+  <button class="nav" data-view="datapoints">Datenpunkte</button>
+  <button class="nav" data-view="diagnostics">Diagnose</button>
+  <button class="nav" data-view="config">Konfiguration</button>
+</nav>
+<main>
+  <section id="overview" class="view active">
+    <div class="hero">
+      <div><span>Gerät</span><strong id="deviceIdent">–</strong></div>
+      <div><span>TCP</span><strong id="tcpState">–</strong></div>
+      <div><span>MQTT</span><strong id="mqttState">–</strong></div>
+      <div><span>Writes</span><strong id="writeState">–</strong></div>
+    </div>
+    <h2>Live-Werte</h2>
+    <div id="cards" class="cards"></div>
+  </section>
+
+  <section id="datapoints" class="view">
+    <div class="toolbar">
+      <input id="filter" type="search" placeholder="Name, Gruppe oder Adresse filtern…">
+      <button id="refreshDp" class="secondary">Aktualisieren</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Name</th><th>Gruppe</th><th>Adresse</th><th>Wert</th><th>Aktion</th></tr></thead>
+        <tbody id="dpBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="diagnostics" class="view">
+    <h2>Direkter Datenpunkt-Read</h2>
+    <p class="muted">Read-only TCP-Diagnose. Es werden keine Raw-Writes angeboten.</p>
+    <form id="rawForm" class="raw-form">
+      <label>Adresse<input id="rawAddress" value="00F8" required></label>
+      <label>Länge<input id="rawLength" type="number" min="1" max="64" value="8" required></label>
+      <label>Scale<input id="rawScale" placeholder="leer = raw"></label>
+      <label class="check"><input id="rawSigned" type="checkbox"> signed</label>
+      <button type="submit">Read</button>
+    </form>
+    <pre id="rawResult">Noch keine Abfrage.</pre>
+  </section>
+
+  <section id="config" class="view">
+    <h2>Laufzeit-Konfiguration</h2>
+    <p class="muted">Änderungen erfolgen in <code>/etc/optolink-web.env</code> und anschließend per Service-Restart.</p>
+    <pre id="configResult">loading…</pre>
+  </section>
+</main>
+<footer>Optolink Web {{ version }} · independent community tool</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>
