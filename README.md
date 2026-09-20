@@ -130,7 +130,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/communit
 
 Lean mode uses a 512 MiB OpenSearch heap, enables DocSpace single-instance hosting mode and disables only `docspace-ai-worker`, `docspace-mcp` and `docspace-telegram`. Single-instance mode removes the per-second MySQL worker-registration heartbeat that is unnecessary in a single-LXC deployment. The browser-facing `docspace-ai` service and backup services remain enabled to avoid 502 responses from normal UI/API routes.
 
-Use lean mode only for a single DocSpace instance. If multiple DocSpace application instances share the same database, set `DOCSPACE_LEAN_SINGLETON_MODE=false` so upstream active/passive worker coordination remains enabled.
+Use lean mode only for a single DocSpace instance by default. If multiple DocSpace application instances share the same database, set `DOCSPACE_LEAN_SINGLETON_MODE=false`; the helper then writes `singletonMode=false` and preserves upstream active/passive worker coordination.
 
 The installer:
 
