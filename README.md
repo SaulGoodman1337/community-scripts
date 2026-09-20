@@ -11,6 +11,7 @@ The repository follows the general layout of [community-scripts/ProxmoxVE](https
 | **Mindwtr** | Creates a dedicated Debian LXC and runs the Mindwtr web app plus its self-hosted sync backend with Docker Compose. | Run on the **Proxmox host** | Web: `5173`, Sync API: `8787` |
 | **Heirloom** | Creates a dedicated Debian LXC and runs the Heirloom family-tree app with PostgreSQL using the upstream Docker Compose stack. | Run on the **Proxmox host** | Web: `8081` |
 | **Optolink-Splitter** | Creates a privileged Debian LXC for local Viessmann Optolink access via serial, MQTT and TCP/IP. | Run on the **Proxmox host** | TCP: `65234` |
+| **Optolink-Web** | Creates an unprivileged Debian LXC with a lightweight browser UI for an existing Optolink-Splitter. | Run on the **Proxmox host** | Web: `8080` |
 | **ONLYOFFICE DocSpace add-on** | Adds DocSpace Community to an **existing native ONLYOFFICE Docs LXC** and reuses the installed Document Server. | Run **inside the existing ONLYOFFICE LXC** | Docs: `80`, DocSpace: `8088` |
 
 ---
@@ -96,6 +97,24 @@ Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, with nesting enabled. 
 There is no web interface. The upstream TCP listener defaults to port `65234`. The installer now includes the VScotHO1 / device 20CB poll profile migrated from the existing vcontrold setup. MQTT uses the `openv` namespace but remains disconnected until `mqtt_broker` is configured. Existing installations can apply the profile with `optolink-apply-vscotho1-profile`.
 
 More details: [docs/optolink-splitter.md](docs/optolink-splitter.md)
+
+---
+
+## Optolink-Web
+
+Optolink-Web is a lightweight web UI for an existing Optolink-Splitter. It keeps the physical USB/Optolink adapter owned by the splitter and uses TCP for direct datapoint reads plus optional MQTT for live values and guarded `/set` writes.
+
+Run on the **Proxmox VE host**:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/optolink-web.sh)"
+```
+
+Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, unprivileged LXC. The web UI listens on `http://LXC-IP:8080`. Configure the existing splitter and MQTT broker in `/etc/optolink-web.env`.
+
+Writes are disabled by default. The MVP also understands splitter TCP responses both with and without a trailing LF, so it can coexist with the ViessData 2.4.1.x compatibility patch used by this deployment.
+
+More details: [docs/optolink-web.md](docs/optolink-web.md)
 
 ---
 
@@ -233,17 +252,20 @@ ct/
   mindwtr.sh                       Proxmox LXC definition and update routine
   heirloom.sh                      Heirloom LXC definition and update routine
   optolink-splitter.sh             Optolink-Splitter LXC definition and update routine
+  optolink-web.sh                  Optolink-Web LXC definition and update routine
 
 install/
   mindwtr-install.sh               Mindwtr installation inside the new LXC
   heirloom-install.sh              Heirloom installation inside the new LXC
   optolink-splitter-install.sh     Optolink-Splitter installation inside the new LXC
+  optolink-web-install.sh          Optolink-Web installation inside the new LXC
   onlyoffice-docspace-addon.sh     DocSpace add-on for an existing Docs LXC
 
 docs/
   mindwtr.md
   heirloom.md
   optolink-splitter.md
+  optolink-web.md
   onlyoffice-docspace-addon.md
 
 tools/
@@ -255,6 +277,9 @@ json/
   mindwtr.json                     Mindwtr script metadata
   heirloom.json                    Heirloom script metadata
   optolink-splitter.json           Optolink-Splitter script metadata
+  optolink-web.json                Optolink-Web script metadata
+
+apps/optolink-web/                 FastAPI backend, datapoints and static web UI
 
 config/optolink-splitter/
   vscotho1-20cb-poll-list.py       VScotHO1/20CB poll profile
