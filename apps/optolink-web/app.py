@@ -137,7 +137,7 @@ class MqttState:
                 pass
 
     def _on_connect(self, client: mqtt.Client, userdata: Any, flags: Any, reason_code: Any, properties: Any) -> None:
-        if int(reason_code) == 0:
+        if reason_code == 0:
             self.connected = True
             self.last_error = None
             client.subscribe(f"{settings.mqtt_topic}/#")
