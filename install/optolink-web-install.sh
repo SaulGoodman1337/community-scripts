@@ -98,7 +98,7 @@ fi
 cat <<'EOF_HELPER' >/usr/local/bin/optolink-web-config
 #!/usr/bin/env bash
 set -e
-\${EDITOR:-editor} /etc/optolink-web.env
+${EDITOR:-editor} /etc/optolink-web.env
 systemctl restart optolink-web.service
 systemctl --no-pager --full status optolink-web.service
 EOF_HELPER
