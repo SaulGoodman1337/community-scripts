@@ -46,7 +46,7 @@ chown optolink:optolink "$APP_DIR/poll_list.py" "$APP_DIR/settings_ini.py"
 chmod 640 "$APP_DIR/poll_list.py" "$APP_DIR/settings_ini.py"
 
 systemctl daemon-reload
-if [[ -e /dev/ttyUSB0 ]]; then
+if [[ -c /dev/ttyUSB0 ]]; then
   systemctl restart optolink-splitter.service || true
 fi
 
