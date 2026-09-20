@@ -46,6 +46,16 @@ function update_script() {
   $STD runuser -u optolink -- /opt/optolink/venv/bin/pip install --upgrade pip setuptools wheel pyserial paho-mqtt
   msg_ok "Updated Python dependencies"
 
+  msg_info "Refreshing VScotHO1 profile helper"
+  $STD curl -fsSL \
+    https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/optolink-apply-vscotho1-profile.sh \
+    -o /usr/local/bin/optolink-apply-vscotho1-profile
+  chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
+  $STD curl -fsSL \
+    https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/config/optolink-splitter/vcontrol-mapping.md \
+    -o /root/optolink-vcontrol-mapping.md
+  msg_ok "Refreshed VScotHO1 profile helper"
+
   chown -R optolink:optolink /opt/optolink
   systemctl daemon-reload
 
@@ -77,4 +87,5 @@ echo -e "${INFO}${YW}Poll list:${CL} ${GN}/opt/optolink/poll_list.py${CL}"
 echo -e "${INFO}${YW}TCP endpoint (when enabled):${CL} ${BGN}${IP}:65234${CL}"
 echo -e "${INFO}${YW}Service status:${CL} ${GN}systemctl status optolink-splitter${CL}"
 echo -e "${INFO}${YW}Serial devices:${CL} ${GN}optolink-ports${CL}"
+echo -e "${INFO}${YW}VScotHO1 profile:${CL} ${GN}optolink-apply-vscotho1-profile${CL}"
 echo -e "${INFO}${YW}Inside the container, run '${GN}update${YW}' to update Optolink-Splitter.${CL}"
