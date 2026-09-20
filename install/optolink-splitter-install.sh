@@ -37,16 +37,30 @@ msg_ok "Installed Optolink-Splitter"
 
 msg_info "Preparing configuration"
 cp /opt/optolink/settings_ini.py.example /opt/optolink/settings_ini.py
-cp /opt/optolink/poll_list.py.example /opt/optolink/poll_list.py
+
+PROFILE_BASE="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/config/optolink-splitter"
+curl -fsSL "$PROFILE_BASE/vscotho1-20cb-poll-list.py" -o /opt/optolink/poll_list.py
+python3 -m py_compile /opt/optolink/poll_list.py
 
 sed -i \
   -e "s|^port_vitoconnect = .*|port_vitoconnect = None             # Optional second serial adapter, e.g. '/dev/ttyUSB1'|" \
   -e 's|^mqtt_broker = .*|mqtt_broker = None                     # Set to "host:1883" to enable MQTT|' \
+  -e 's|^mqtt_topic = .*|mqtt_topic = "openv"|' \
+  -e 's|^mqtt_listen = .*|mqtt_listen = "openv/cmnd"|' \
+  -e 's|^mqtt_respond = .*|mqtt_respond = "openv/resp"|' \
+  -e 's|^mqtt_fstr = .*|mqtt_fstr = "{dpname}"|' \
   /opt/optolink/settings_ini.py
+
+curl -fsSL \
+  https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/optolink-apply-vscotho1-profile.sh \
+  -o /usr/local/bin/optolink-apply-vscotho1-profile
+chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
+
+curl -fsSL "$PROFILE_BASE/vcontrol-mapping.md" -o /root/optolink-vcontrol-mapping.md
 
 chown optolink:optolink /opt/optolink/settings_ini.py /opt/optolink/poll_list.py
 chmod 640 /opt/optolink/settings_ini.py /opt/optolink/poll_list.py
-msg_ok "Prepared configuration"
+msg_ok "Prepared VScotHO1/20CB configuration"
 
 msg_info "Creating systemd service"
 cat <<'EOF_SERVICE' >/etc/systemd/system/optolink-splitter.service
