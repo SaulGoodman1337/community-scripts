@@ -1,0 +1,29 @@
+{
+  "name": "Optolink-Web",
+  "slug": "optolink-web",
+  "categories": [12],
+  "date_created": "2026-09-20",
+  "type": "ct",
+  "updateable": true,
+  "privileged": false,
+  "config_path": "/etc/optolink-web.env",
+  "interface_port": 8080,
+  "documentation": "https://github.com/SaulGoodman1337/community-scripts/blob/main/docs/optolink-web.md",
+  "website": "https://github.com/SaulGoodman1337/community-scripts",
+  "repository": "https://github.com/SaulGoodman1337/community-scripts",
+  "architectures": ["amd64", "arm64"],
+  "platforms": ["pve"],
+  "description": "Lightweight web UI and diagnostics for an existing Viessmann Optolink-Splitter over TCP and MQTT.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/optolink-web.sh",
+      "resources": {"cpu": 1, "ram": 512, "hdd": 4, "os": "debian", "version": "13"}
+    }
+  ],
+  "default_credentials": {"username": null, "password": null},
+  "notes": [
+    {"text": "This container does not need USB passthrough. Point it at an existing Optolink-Splitter TCP endpoint in /etc/optolink-web.env.", "type": "info"},
+    {"text": "Web writes are disabled by default and require ALLOW_WRITES=true plus an explicitly whitelisted datapoint.", "type": "warning"}
+  ]
+}
