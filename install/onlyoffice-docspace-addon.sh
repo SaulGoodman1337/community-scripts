@@ -163,7 +163,7 @@ PRIMARY_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 [[ -n "$PRIMARY_IP" ]] || die "Could not determine the LXC IP address. Set DOCS_PUBLIC_URL explicitly and ensure networking is configured."
 
 if [[ -z "$DOCS_PUBLIC_URL" ]]; then
-  DOCS_PUBLIC_URL="http://${PRIMARY_IP}/"
+  DOCS_PUBLIC_URL="http://${PRIMARY_IP}"
   warn "DOCS_PUBLIC_URL was not set; using $DOCS_PUBLIC_URL for the initial installation."
   warn "When you enable HTTPS through VyOS HAProxy, change the Document Service URL in DocSpace to the HTTPS Docs hostname."
 fi
@@ -173,8 +173,12 @@ case "$DOCS_PUBLIC_URL" in
   *) die "DOCS_PUBLIC_URL must start with http:// or https://" ;;
 esac
 
-# Keep the URL canonical for ONLYOFFICE configuration.
-[[ "$DOCS_PUBLIC_URL" == */ ]] || DOCS_PUBLIC_URL="${DOCS_PUBLIC_URL}/"
+# IMPORTANT: no trailing slash here. DocSpace injects this value into proxy_pass
+# inside a regex location. nginx forbids a URI part (including a lone "/") in
+# proxy_pass for regex locations.
+while [[ "$DOCS_PUBLIC_URL" == */ ]]; do
+  DOCS_PUBLIC_URL="${DOCS_PUBLIC_URL%/}"
+done
 
 mkdir -p "$BACKUP_DIR"
 cp -a "$ONLYOFFICE_LOCAL_JSON" "$BACKUP_DIR/local.json"
