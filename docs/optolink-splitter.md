@@ -36,7 +36,7 @@ Default resources:
 | RAM | 512 MiB |
 | Disk | 4 GiB |
 | OS | Debian 13 |
-| Container | Privileged |
+| Container | Privileged, nesting enabled |
 | Architectures | amd64, arm64 |
 
 There is no web interface. The default TCP listener is:
