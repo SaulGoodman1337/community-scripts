@@ -9,6 +9,7 @@ DOCSPACE_PORT="${DOCSPACE_PORT:-8088}"
 DOCS_PUBLIC_URL="${DOCS_PUBLIC_URL:-}"
 DOCSPACE_SKIP_HARDWARE_CHECK="${DOCSPACE_SKIP_HARDWARE_CHECK:-false}"
 DOCSPACE_INSTALL_FLUENTBIT="${DOCSPACE_INSTALL_FLUENTBIT:-false}"
+DOCSPACE_AUTO_ACTIVATE_USERS="${DOCSPACE_AUTO_ACTIVATE_USERS:-false}"
 ONLYOFFICE_LOCAL_JSON="/etc/onlyoffice/documentserver/local.json"
 INSTALLER_URL="https://download.onlyoffice.com/docspace/docspace-install.sh"
 LOG_FILE="/var/log/onlyoffice-docspace-addon.log"
@@ -277,6 +278,18 @@ if ss -H -ltn | awk '{print $4}' | grep -qE ":${DOCSPACE_PORT}$"; then
   ok "DocSpace is listening on TCP port $DOCSPACE_PORT."
 else
   warn "DocSpace is not listening on TCP port $DOCSPACE_PORT yet. Inspect systemctl --failed and $LOG_FILE."
+fi
+
+AUTO_ACTIVATE_ARG="false"
+case "${DOCSPACE_AUTO_ACTIVATE_USERS,,}" in
+  1|true|yes|y) AUTO_ACTIVATE_ARG="true" ;;
+esac
+
+if [[ "$AUTO_ACTIVATE_ARG" == "true" ]]; then
+  info "Installing automatic activation for active local DocSpace users."
+  curl -fsSL \
+    "https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh" \
+    | bash -s -- install
 fi
 
 cat <<MSG
