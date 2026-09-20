@@ -102,12 +102,19 @@ msg_ok "Created systemd service"
 
 msg_info "Checking serial adapter"
 if [[ -e /dev/ttyUSB0 ]]; then
+  if ! runuser -u optolink -- test -r /dev/ttyUSB0 || ! runuser -u optolink -- test -w /dev/ttyUSB0; then
+    msg_warn "/dev/ttyUSB0 is present but the optolink service user cannot read/write it"
+    stat -c 'Device permissions: %A owner=%U group=%G uid=%u gid=%g' /dev/ttyUSB0 || true
+    id optolink || true
+    msg_warn "Fix the USB serial device permissions on the Proxmox host, then restart the container/service"
+  fi
+
   systemctl start optolink-splitter.service
   sleep 2
   if systemctl is-active --quiet optolink-splitter.service; then
     msg_ok "Optolink-Splitter is running"
   else
-    msg_warn "Service was started but did not stay active; configure settings_ini.py and poll_list.py"
+    msg_warn "Service was started but did not stay active; check serial-device permissions and configuration"
     journalctl -u optolink-splitter.service -n 20 --no-pager || true
   fi
 else
