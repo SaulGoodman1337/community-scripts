@@ -94,14 +94,34 @@ Polling list:
 /opt/optolink/poll_list.py
 ```
 
-Both files are copied from the upstream examples during the first installation and are not tracked by the upstream Git repository. They therefore remain intact during updates.
+The installation now uses the repository's **VScotHO1 / device 20CB profile**, derived from the existing vcontrold/vito configuration used for this deployment. The active Home Assistant datapoints are mapped to clearer Optolink-Splitter MQTT names while the source addresses and scaling remain traceable in:
 
-The installer changes two upstream example defaults for a safer first start:
+```text
+/root/optolink-vcontrol-mapping.md
+```
+
+The installer keeps these safe first-start defaults:
 
 - `port_vitoconnect = None`
 - `mqtt_broker = None`
+- `mqtt_topic = "openv"`
+- `mqtt_listen = "openv/cmnd"`
+- `mqtt_respond = "openv/resp"`
 
-This means the splitter can be configured first without repeatedly trying to reach a non-existent second serial port or example MQTT broker.
+The MQTT broker address and credentials are intentionally not guessed.
+
+For an LXC that was installed before this profile existed, run:
+
+```bash
+optolink-apply-vscotho1-profile
+```
+
+The helper creates timestamped backups of `settings_ini.py` and `poll_list.py`, downloads the current 20CB profile, switches the MQTT namespace to `openv`, and restarts the service when `/dev/ttyUSB0` is present.
+
+Two conflicts in the supplied legacy source are intentionally exposed as `legacy_*` MQTT topics instead of silently reinterpreted:
+
+- `getTempRL17A` resolves to `0x0808` for device 20CB, which is also the supplied address for exhaust temperature.
+- `getTempMaxVorlauf` resolves to `0x2306`, also used by the normal M1 room setpoint with a different scale.
 
 ## MQTT
 
@@ -110,9 +130,9 @@ Edit `/opt/optolink/settings_ini.py`, for example:
 ```python
 mqtt_broker = "192.168.1.10:1883"
 mqtt_user = "username:password"
-mqtt_topic = "Vito"
-mqtt_listen = "Vito/cmnd"
-mqtt_respond = "Vito/resp"
+mqtt_topic = "openv"
+mqtt_listen = "openv/cmnd"
+mqtt_respond = "openv/resp"
 ```
 
 Then restart:
@@ -125,7 +145,7 @@ Home Assistant users should also review the upstream Home Assistant integration 
 
 ## Poll list
 
-The installer creates `/opt/optolink/poll_list.py` from the upstream sample. Adapt this file to the datapoints supported by your Viessmann controller.
+The installer creates `/opt/optolink/poll_list.py` from the custom VScotHO1 / 20CB profile. The profile currently covers the datapoints used by the migrated Home Assistant MQTT configuration.
 
 Useful upstream references:
 
@@ -200,3 +220,20 @@ The community-scripts core should have added USB serial device permissions and b
 ## Upstream warning
 
 Optolink-Splitter is an independent project and is not affiliated with Viessmann. Communication with heating controls can include write commands; verify datapoint addresses and values before enabling writes or automations.
+
+
+## Home Assistant migration
+
+The matching Home Assistant MQTT migration keeps the existing `unique_id` values from the previous vcontrold entities. This is deliberate: Home Assistant can keep the existing entity-registry identities while only the MQTT topics and friendly names change.
+
+The old template sensors can therefore keep references such as `number.core_mosquitto_neigung` and `number.core_mosquitto_raumsolltemperatur_normal_m1` as long as those entity IDs already exist in the registry.
+
+The migrated MQTT block also corrects several legacy semantics:
+
+- the 20CB `getBrennerStatus` value is treated as burner modulation and a binary running sensor is derived from values greater than zero;
+- the 20CB M1 pump value is treated as pump speed and can also drive the existing binary pump-running entity;
+- the valve state is decoded as Undefined / Heating / Middle / Hot Water;
+- error-history entries decode their first error byte using the supplied vcontrold error table;
+- the warm-water setpoint uses the explicit two-byte write defined by the supplied `setTempWWsoll` command.
+
+The Home Assistant MQTT migration file generated from the current installation is instance-specific and is therefore supplied separately rather than being treated as a generic upstream profile.
