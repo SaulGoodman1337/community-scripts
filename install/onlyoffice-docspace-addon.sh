@@ -5,7 +5,7 @@ set -Eeuo pipefail
 # ONLYOFFICE Docs Community installation in the same Debian LXC.
 # Intended for the Proxmox VE community-scripts ONLYOFFICE LXC.
 
-DOCSPACE_PORT="${DOCSPACE_PORT:-8080}"
+DOCSPACE_PORT="${DOCSPACE_PORT:-8088}"
 DOCS_PUBLIC_URL="${DOCS_PUBLIC_URL:-}"
 DOCSPACE_SKIP_HARDWARE_CHECK="${DOCSPACE_SKIP_HARDWARE_CHECK:-false}"
 DOCSPACE_INSTALL_FLUENTBIT="${DOCSPACE_INSTALL_FLUENTBIT:-false}"
@@ -101,12 +101,21 @@ case "$DOCSPACE_PORT" in
 esac
 (( DOCSPACE_PORT >= 1024 && DOCSPACE_PORT <= 65535 )) || die "DOCSPACE_PORT must be between 1024 and 65535."
 
+# Ports used internally by DocSpace services. The external OpenResty listener
+# must not reuse any of them.
+DOCSPACE_RESERVED_PORTS=(5000 5001 5003 5004 5005 5006 5007 5009 5010 5011 5012 5013 5014 5015 5027 5032 5033 5034 5075 5099 5100 5124 5157 5158 8080 8081 8092 9090 9834 9899)
+for p in "${DOCSPACE_RESERVED_PORTS[@]}"; do
+  if (( DOCSPACE_PORT == p )); then
+    die "DOCSPACE_PORT=$DOCSPACE_PORT is reserved by an internal DocSpace service. Use e.g. DOCSPACE_PORT=8088."
+  fi
+done
+
 if ! command -v ss >/dev/null 2>&1; then
   apt-get update -qq
   apt-get install -y -qq iproute2
 fi
 if ss -H -ltn | awk '{print $4}' | grep -qE ":${DOCSPACE_PORT}$"; then
-  die "TCP port $DOCSPACE_PORT is already in use. Set another port, e.g. DOCSPACE_PORT=8180."
+  die "TCP port $DOCSPACE_PORT is already in use. Set another non-reserved port, e.g. DOCSPACE_PORT=8188."
 fi
 
 # DocSpace/OpenSearch requires this kernel-wide setting. In an unprivileged LXC
