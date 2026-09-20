@@ -9,6 +9,7 @@ PATH_UNIT="/etc/systemd/system/docspace-lean-enforce.path"
 
 LEAN_OPENSEARCH_HEAP="${DOCSPACE_LEAN_OPENSEARCH_HEAP:-512m}"
 LEAN_IDENTITY_HEAP="${DOCSPACE_LEAN_IDENTITY_HEAP:-}"
+LEAN_SINGLETON_MODE="${DOCSPACE_LEAN_SINGLETON_MODE:-true}"
 LEAN_PERSIST="${DOCSPACE_LEAN_PERSIST:-true}"
 
 info() { printf '[INFO] %s\n' "$*"; }
@@ -61,6 +62,18 @@ if [[ "$ACTION" == "status" ]]; then
   echo "OpenSearch heap:"
   grep -E '^[[:space:]]*-Xm[sx]' /etc/opensearch/jvm.options 2>/dev/null || true
   echo
+  echo "Single-instance mode:"
+  python3 - <<'PY' 2>/dev/null || true
+import json
+p = "/etc/onlyoffice/docspace/appsettings.community.json"
+try:
+    with open(p, encoding="utf-8") as f:
+        d = json.load(f)
+    print(d.get("core", {}).get("hosting", {}).get("singletonMode", "not set"))
+except Exception:
+    print("unavailable")
+PY
+  echo
   echo "Persistence watcher:"
   systemctl is-enabled docspace-lean-enforce.path 2>/dev/null || true
   systemctl is-active docspace-lean-enforce.path 2>/dev/null || true
@@ -80,6 +93,7 @@ fi
 cat >"$CONF" <<EOF
 LEAN_OPENSEARCH_HEAP=$LEAN_OPENSEARCH_HEAP
 LEAN_IDENTITY_HEAP=$LEAN_IDENTITY_HEAP
+LEAN_SINGLETON_MODE=$LEAN_SINGLETON_MODE
 EOF
 chmod 600 "$CONF"
 
@@ -92,6 +106,13 @@ CONF="/etc/default/docspace-lean"
 # shellcheck disable=SC1090
 source "$CONF"
 
+is_true() {
+  case "${1,,}" in
+    1|true|yes|y) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # A systemd.path event can fire while dpkg is still updating package state.
 # Wait until package-management processes are gone before touching services.
 for _ in $(seq 1 150); do
@@ -100,6 +121,32 @@ for _ in $(seq 1 150); do
   fi
   sleep 2
 done
+
+singleton_changed="no"
+DOCSPACE_APPSETTINGS="/etc/onlyoffice/docspace/appsettings.community.json"
+if is_true "${LEAN_SINGLETON_MODE:-true}" && [[ -f "$DOCSPACE_APPSETTINGS" ]]; then
+  singleton_changed="$(python3 - "$DOCSPACE_APPSETTINGS" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+
+hosting = data.setdefault("core", {}).setdefault("hosting", {})
+before = hosting.get("singletonMode")
+hosting["singletonMode"] = True
+
+if before is True:
+    print("no")
+else:
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    print("yes")
+PY
+)"
+fi
 
 if [[ -f /etc/opensearch/jvm.options && -n "${LEAN_OPENSEARCH_HEAP:-}" ]]; then
   heap_changed="$(python3 - /etc/opensearch/jvm.options "$LEAN_OPENSEARCH_HEAP" <<'PY'
@@ -139,6 +186,20 @@ for svc in docspace-ai-worker docspace-mcp docspace-telegram; do
     systemctl disable --now "$svc.service" >/dev/null 2>&1 || true
   fi
 done
+
+# InstanceWorkerOptions are read when the hosted services start. If dpkg or a
+# package reconfigure removed the community override, restart only services that
+# are currently running so the single-instance setting takes effect without
+# re-enabling lean-mode services.
+if [[ "$singleton_changed" == "yes" ]]; then
+  mapfile -t running_docspace_services < <(
+    systemctl list-units 'docspace-*.service' --type=service --state=running --no-legend |
+      awk '{print $1}'
+  )
+  if (( ${#running_docspace_services[@]} > 0 )); then
+    systemctl restart "${running_docspace_services[@]}"
+  fi
+fi
 
 if [[ -n "${LEAN_IDENTITY_HEAP:-}" ]]; then
   changed=false
@@ -201,6 +262,7 @@ fi
 ok "DocSpace lean mode installed."
 echo "OpenSearch heap: $LEAN_OPENSEARCH_HEAP"
 echo "Disabled services: docspace-ai-worker docspace-mcp docspace-telegram"
+echo "Single-instance mode: $LEAN_SINGLETON_MODE"
 if [[ -n "$LEAN_IDENTITY_HEAP" ]]; then
   echo "Identity JVM max heap: $LEAN_IDENTITY_HEAP"
 else
