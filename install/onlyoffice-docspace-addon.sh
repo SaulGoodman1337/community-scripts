@@ -10,7 +10,10 @@ DOCS_PUBLIC_URL="${DOCS_PUBLIC_URL:-}"
 DOCSPACE_SKIP_HARDWARE_CHECK="${DOCSPACE_SKIP_HARDWARE_CHECK:-false}"
 DOCSPACE_INSTALL_FLUENTBIT="${DOCSPACE_INSTALL_FLUENTBIT:-false}"
 DOCSPACE_AUTO_ACTIVATE_USERS="${DOCSPACE_AUTO_ACTIVATE_USERS:-false}"
-DOCSPACE_OPENSEARCH_HEAP="${DOCSPACE_OPENSEARCH_HEAP:-1g}"
+DOCSPACE_LEAN_MODE="${DOCSPACE_LEAN_MODE:-false}"
+DOCSPACE_LEAN_PERSIST="${DOCSPACE_LEAN_PERSIST:-true}"
+DOCSPACE_LEAN_IDENTITY_HEAP="${DOCSPACE_LEAN_IDENTITY_HEAP:-}"
+DOCSPACE_OPENSEARCH_HEAP="${DOCSPACE_OPENSEARCH_HEAP:-}"
 ONLYOFFICE_LOCAL_JSON="/etc/onlyoffice/documentserver/local.json"
 INSTALLER_URL="https://download.onlyoffice.com/docspace/docspace-install.sh"
 LOG_FILE="/var/log/onlyoffice-docspace-addon.log"
@@ -26,6 +29,21 @@ info() { printf '%b[INFO]%b %s\n' "$BLUE" "$NC" "$*"; }
 ok() { printf '%b[ OK ]%b %s\n' "$GREEN" "$NC" "$*"; }
 warn() { printf '%b[WARN]%b %s\n' "$YELLOW" "$NC" "$*"; }
 die() { printf '%b[FAIL]%b %s\n' "$RED" "$NC" "$*" >&2; exit 1; }
+
+is_true() {
+  case "${1,,}" in
+    1|true|yes|y) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+if [[ -z "$DOCSPACE_OPENSEARCH_HEAP" ]]; then
+  if is_true "$DOCSPACE_LEAN_MODE"; then
+    DOCSPACE_OPENSEARCH_HEAP="512m"
+  else
+    DOCSPACE_OPENSEARCH_HEAP="1g"
+  fi
+fi
 
 POLICY_FILE="/usr/sbin/policy-rc.d"
 POLICY_ORIG="/usr/sbin/policy-rc.d.onlyoffice-docspace-orig"
@@ -402,6 +420,14 @@ for svc in docspace-api docspace-files docspace-files-worker docspace-doceditor;
   fi
 done
 
+if is_true "$DOCSPACE_LEAN_MODE"; then
+  info "Installing conservative DocSpace lean mode."
+  DOCSPACE_LEAN_OPENSEARCH_HEAP="$DOCSPACE_OPENSEARCH_HEAP" \
+  DOCSPACE_LEAN_IDENTITY_HEAP="$DOCSPACE_LEAN_IDENTITY_HEAP" \
+  DOCSPACE_LEAN_PERSIST="$DOCSPACE_LEAN_PERSIST" \
+    bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- install
+fi
+
 sleep 2
 
 if curl -fsS --max-time 10 "http://127.0.0.1:8000/healthcheck" 2>/dev/null | grep -qi 'true'; then
@@ -421,64 +447,8 @@ if ss -H -ltn | awk '{print $4}' | grep -qx '127.0.0.1:80'; then
 else
   warn "Expected ONLYOFFICE Docs to listen on 127.0.0.1:80."
 fi
-if ss -H -ltn | awk '{print $4}' | grep -Eq '^(0\.0\.0\.0:80|\[::\]:80)  ok "DocSpace /ds-vpath/ Document Server proxy is OK."
-else
-  warn "DocSpace /ds-vpath/ healthcheck failed. Check OpenResty and the Document Server routing."
-fi
 
-if ss -H -ltn | awk '{print $4}' | grep -qE ":${DOCSPACE_PORT}$"; then
-  ok "DocSpace is listening on TCP port $DOCSPACE_PORT."
-else
-  warn "DocSpace is not listening on TCP port $DOCSPACE_PORT yet. Inspect systemctl --failed and $LOG_FILE."
-fi
-
-DOCS_VERSION="$(dpkg-query -W -f='${Version}' onlyoffice-documentserver 2>/dev/null || true)"
-if [[ "$DOCS_VERSION" == 9.4.0-* ]]; then
-  warn "ONLYOFFICE Docs $DOCS_VERSION is affected by the Analytics.js/ad-blocker editor issue."
-  warn "If the editor stays as an empty skeleton, disable browser/ad-block filtering for this origin or upgrade Docs."
-fi
-
-AUTO_ACTIVATE_ARG="false"
-case "${DOCSPACE_AUTO_ACTIVATE_USERS,,}" in
-  1|true|yes|y) AUTO_ACTIVATE_ARG="true" ;;
-esac
-
-if [[ "$AUTO_ACTIVATE_ARG" == "true" ]]; then
-  info "Installing automatic activation for active local DocSpace users."
-  curl -fsSL \
-    "https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh" \
-    | bash -s -- install
-fi
-
-cat <<MSG
-
-${GREEN}Installation finished.${NC}
-
-DocSpace setup wizard:
-  http://${PRIMARY_IP}:${DOCSPACE_PORT}/
-
-ONLYOFFICE Docs:
-  loopback only: http://127.0.0.1:80/
-
-For HAProxy/reverse proxy, expose only DocSpace:
-  office.<your-domain>  -> ${PRIMARY_IP}:${DOCSPACE_PORT}
-
-Document Server routing:
-  Browser -> /ds-vpath/ -> 127.0.0.1:80
-  DocSpace -> Docs      -> http://127.0.0.1
-  Docs -> DocSpace      -> http://127.0.0.1:${DOCSPACE_PORT}
-
-The Document Server is intentionally not exposed on the LXC network interface.
-When DocSpace is placed behind HTTPS, the editor remains same-origin through
-/ds-vpath/, avoiding mixed-content problems.
-
-Backup made before installation:
-  ${BACKUP_DIR}
-
-Log:
-  ${LOG_FILE}
-MSG
-; then
+if ss -H -ltn | awk '{print $4}' | grep -Eq '^(0\.0\.0\.0:80|\[::\]:80)$'; then
   warn "TCP port 80 still has a wildcard listener. Inspect nginx configuration before exposing the LXC."
 fi
 
@@ -512,6 +482,12 @@ if [[ "$AUTO_ACTIVATE_ARG" == "true" ]]; then
     | bash -s -- install
 fi
 
+if is_true "$DOCSPACE_LEAN_MODE"; then
+  LEAN_SUMMARY="enabled (OpenSearch=$DOCSPACE_OPENSEARCH_HEAP; disabled: ai-worker, mcp, telegram)"
+else
+  LEAN_SUMMARY="disabled"
+fi
+
 cat <<MSG
 
 ${GREEN}Installation finished.${NC}
@@ -519,20 +495,23 @@ ${GREEN}Installation finished.${NC}
 DocSpace setup wizard:
   http://${PRIMARY_IP}:${DOCSPACE_PORT}/
 
-Existing ONLYOFFICE Docs:
-  http://${PRIMARY_IP}/
+ONLYOFFICE Docs:
+  loopback only: http://127.0.0.1:80/
 
-For VyOS HAProxy, the intended split is:
+For HAProxy/reverse proxy, expose only DocSpace:
   office.<your-domain>  -> ${PRIMARY_IP}:${DOCSPACE_PORT}
-  docs.<your-domain>    -> ${PRIMARY_IP}:80
 
 Document Server routing:
   Browser -> /ds-vpath/ -> 127.0.0.1:80
   DocSpace -> Docs      -> http://127.0.0.1
   Docs -> DocSpace      -> http://127.0.0.1:${DOCSPACE_PORT}
 
-When you place DocSpace behind HTTPS on VyOS HAProxy, the editor remains
-same-origin through /ds-vpath/, avoiding mixed-content problems.
+Lean mode:
+  ${LEAN_SUMMARY}
+
+The Document Server is intentionally not exposed on the LXC network interface.
+When DocSpace is placed behind HTTPS, the editor remains same-origin through
+/ds-vpath/, avoiding mixed-content problems.
 
 Backup made before installation:
   ${BACKUP_DIR}
