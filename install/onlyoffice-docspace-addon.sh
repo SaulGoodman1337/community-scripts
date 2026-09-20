@@ -368,6 +368,32 @@ with open(path, "w", encoding="utf-8") as fh:
     fh.write("\n")
 PY
 
+# The Document Server is consumed only through DocSpace's same-origin
+# /ds-vpath/ proxy in this topology. Restrict its nginx listener to loopback so
+# TCP/80 is not exposed on the LXC network interface. Patch both the generated
+# config and ONLYOFFICE templates so a later package reconfigure is less likely
+# to restore a wildcard listener.
+if [[ -e /etc/nginx/sites-enabled/default || -L /etc/nginx/sites-enabled/default ]]; then
+  rm -f /etc/nginx/sites-enabled/default
+  info "Disabled the Debian default nginx site."
+fi
+
+for conf in \
+  /etc/nginx/conf.d/ds.conf \
+  /etc/onlyoffice/documentserver/nginx/ds.conf \
+  /etc/onlyoffice/documentserver/nginx/ds.conf.tmpl \
+  /etc/onlyoffice/documentserver/nginx/ds-ssl.conf.tmpl
+do
+  [[ -f "$conf" ]] || continue
+  sed -i -E \
+    -e 's/listen[[:space:]]+0\.0\.0\.0:80;/listen 127.0.0.1:80;/g' \
+    -e 's/listen[[:space:]]+\[::\]:80([[:space:]]+default_server)?;/listen [::1]:80\1;/g' \
+    "$conf"
+done
+
+nginx -t >>"$LOG_FILE" 2>&1
+systemctl restart nginx
+
 /usr/local/openresty/nginx/sbin/nginx -t >>"$LOG_FILE" 2>&1
 systemctl restart openresty
 for svc in docspace-api docspace-files docspace-files-worker docspace-doceditor; do
@@ -387,7 +413,73 @@ fi
 if curl -fsS --max-time 10 "http://127.0.0.1/healthcheck" 2>/dev/null | grep -qi 'true'; then
   ok "ONLYOFFICE Docs nginx healthcheck is OK."
 else
-  warn "ONLYOFFICE Docs on port 80 did not return 'true'. Check nginx and ds-docservice."
+  warn "ONLYOFFICE Docs on loopback port 80 did not return 'true'. Check nginx and ds-docservice."
+fi
+
+if ss -H -ltn | awk '{print $4}' | grep -qx '127.0.0.1:80'; then
+  ok "ONLYOFFICE Docs is bound to loopback on TCP port 80."
+else
+  warn "Expected ONLYOFFICE Docs to listen on 127.0.0.1:80."
+fi
+if ss -H -ltn | awk '{print $4}' | grep -Eq '^(0\.0\.0\.0:80|\[::\]:80)  ok "DocSpace /ds-vpath/ Document Server proxy is OK."
+else
+  warn "DocSpace /ds-vpath/ healthcheck failed. Check OpenResty and the Document Server routing."
+fi
+
+if ss -H -ltn | awk '{print $4}' | grep -qE ":${DOCSPACE_PORT}$"; then
+  ok "DocSpace is listening on TCP port $DOCSPACE_PORT."
+else
+  warn "DocSpace is not listening on TCP port $DOCSPACE_PORT yet. Inspect systemctl --failed and $LOG_FILE."
+fi
+
+DOCS_VERSION="$(dpkg-query -W -f='${Version}' onlyoffice-documentserver 2>/dev/null || true)"
+if [[ "$DOCS_VERSION" == 9.4.0-* ]]; then
+  warn "ONLYOFFICE Docs $DOCS_VERSION is affected by the Analytics.js/ad-blocker editor issue."
+  warn "If the editor stays as an empty skeleton, disable browser/ad-block filtering for this origin or upgrade Docs."
+fi
+
+AUTO_ACTIVATE_ARG="false"
+case "${DOCSPACE_AUTO_ACTIVATE_USERS,,}" in
+  1|true|yes|y) AUTO_ACTIVATE_ARG="true" ;;
+esac
+
+if [[ "$AUTO_ACTIVATE_ARG" == "true" ]]; then
+  info "Installing automatic activation for active local DocSpace users."
+  curl -fsSL \
+    "https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh" \
+    | bash -s -- install
+fi
+
+cat <<MSG
+
+${GREEN}Installation finished.${NC}
+
+DocSpace setup wizard:
+  http://${PRIMARY_IP}:${DOCSPACE_PORT}/
+
+ONLYOFFICE Docs:
+  loopback only: http://127.0.0.1:80/
+
+For HAProxy/reverse proxy, expose only DocSpace:
+  office.<your-domain>  -> ${PRIMARY_IP}:${DOCSPACE_PORT}
+
+Document Server routing:
+  Browser -> /ds-vpath/ -> 127.0.0.1:80
+  DocSpace -> Docs      -> http://127.0.0.1
+  Docs -> DocSpace      -> http://127.0.0.1:${DOCSPACE_PORT}
+
+The Document Server is intentionally not exposed on the LXC network interface.
+When DocSpace is placed behind HTTPS, the editor remains same-origin through
+/ds-vpath/, avoiding mixed-content problems.
+
+Backup made before installation:
+  ${BACKUP_DIR}
+
+Log:
+  ${LOG_FILE}
+MSG
+; then
+  warn "TCP port 80 still has a wildcard listener. Inspect nginx configuration before exposing the LXC."
 fi
 
 if curl -fsS --max-time 10 "http://127.0.0.1:$DOCSPACE_PORT/ds-vpath/healthcheck" 2>/dev/null | grep -qi 'true'; then
