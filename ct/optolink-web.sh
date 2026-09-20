@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 _CS_DEFAULT_URL="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main"
-_cs_boot="\${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "\${BASH_SOURCE[0]}")/../../core}/core/build.func"
-source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "\${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
+_cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
+source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
 # Copyright (c) 2026
 # License: MIT
 
 APP="Optolink-Web"
-var_tags="\${var_tags:-home-automation;heating;web;mqtt}"
-var_cpu="\${var_cpu:-1}"
-var_ram="\${var_ram:-512}"
-var_disk="\${var_disk:-4}"
-var_os="\${var_os:-debian}"
-var_version="\${var_version:-13}"
-var_arm64="\${var_arm64:-yes}"
-var_unprivileged="\${var_unprivileged:-1}"
-var_nesting="\${var_nesting:-0}"
+var_tags="${var_tags:-home-automation;heating;web;mqtt}"
+var_cpu="${var_cpu:-1}"
+var_ram="${var_ram:-512}"
+var_disk="${var_disk:-4}"
+var_os="${var_os:-debian}"
+var_version="${var_version:-13}"
+var_arm64="${var_arm64:-yes}"
+var_unprivileged="${var_unprivileged:-1}"
+var_nesting="${var_nesting:-0}"
 
 header_info "$APP"
 variables
@@ -27,7 +27,7 @@ function update_script() {
   check_container_resources
 
   if [[ ! -f /opt/optolink-web/app.py || ! -f /etc/optolink-web.env ]]; then
-    msg_error "No \${APP} installation found!"
+    msg_error "No ${APP} installation found!"
     exit 1
   fi
 
@@ -72,9 +72,9 @@ build_container
 description
 
 msg_ok "Completed successfully!\n"
-echo -e "\${CREATING}\${GN}\${APP} has been successfully initialized!\${CL}"
-echo -e "\${INFO}\${YW}Web UI:\${CL} \${BGN}http://\${IP}:8080\${CL}"
-echo -e "\${INFO}\${YW}Configuration:\${CL} \${GN}/etc/optolink-web.env\${CL}"
-echo -e "\${INFO}\${YW}Service:\${CL} \${GN}systemctl status optolink-web\${CL}"
-echo -e "\${INFO}\${YW}After configuring the splitter/MQTT endpoints:\${CL} \${GN}systemctl restart optolink-web\${CL}"
-echo -e "\${INFO}\${YW}Inside the container, run '\${GN}update\${YW}' to update Optolink-Web.\${CL}"
+echo -e "${CREATING}${GN}${APP} has been successfully initialized!${CL}"
+echo -e "${INFO}${YW}Web UI:${CL} ${BGN}http://${IP}:8080${CL}"
+echo -e "${INFO}${YW}Configuration:${CL} ${GN}/etc/optolink-web.env${CL}"
+echo -e "${INFO}${YW}Service:${CL} ${GN}systemctl status optolink-web${CL}"
+echo -e "${INFO}${YW}After configuring the splitter/MQTT endpoints:${CL} ${GN}systemctl restart optolink-web${CL}"
+echo -e "${INFO}${YW}Inside the container, run '${GN}update${YW}' to update Optolink-Web.${CL}"
