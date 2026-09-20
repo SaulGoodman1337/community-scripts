@@ -1,37 +1,208 @@
-# Proxmox VE Helper Scripts
+# Community Scripts
 
-A collection of my own Proxmox VE helper scripts, structured after the general approach used by [community-scripts/ProxmoxVE](https://github.com/community-scripts/ProxmoxVE).
+Personal Proxmox VE helper scripts and add-ons for services that are not covered by my standard setup.
 
-This repository is independent from the official community-scripts project.
+The repository follows the general layout of [community-scripts/ProxmoxVE](https://github.com/community-scripts/ProxmoxVE) and uses the shared [community-scripts/core](https://github.com/community-scripts/core) framework where appropriate. It is an independent repository and is not part of the official community-scripts project.
 
-## Scripts
+## Included projects
 
-| Application | Type | Install |
-| --- | --- | --- |
-| Mindwtr | LXC | `bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/mindwtr.sh)"` |
+| Project | Purpose | Install location | Default ports |
+| --- | --- | --- | --- |
+| **Mindwtr** | Creates a dedicated Debian LXC and runs the Mindwtr web app plus its self-hosted sync backend with Docker Compose. | Run on the **Proxmox host** | Web: `5173`, Sync API: `8787` |
+| **ONLYOFFICE DocSpace add-on** | Adds DocSpace Community to an **existing native ONLYOFFICE Docs LXC** and reuses the installed Document Server. | Run **inside the existing ONLYOFFICE LXC** | Docs: `80`, DocSpace: `8088` |
 
-More scripts may be added over time.
+---
 
-## Structure
+## Mindwtr
 
-Each LXC application consists of two files:
+[Mindwtr](https://github.com/dongdongbh/Mindwtr) is a local-first GTD/task-management application. This script creates a dedicated Debian LXC and deploys the official Mindwtr app and cloud/sync containers.
 
-```text
-ct/<app>.sh
-install/<app>-install.sh
+### Install
+
+Run on the **Proxmox VE host**:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/mindwtr.sh)"
 ```
 
-- `ct/<app>.sh` defines the Proxmox container, resource defaults and update logic.
-- `install/<app>-install.sh` contains the installation steps executed inside the container.
+Default container resources:
 
-The scripts use the shared [community-scripts/core](https://github.com/community-scripts/core) framework for the Proxmox setup flow.
+| Resource | Default |
+| --- | ---: |
+| CPU | 2 cores |
+| RAM | 2048 MiB |
+| Disk | 8 GiB |
+| OS | Debian 13 |
+| Container | Unprivileged, nesting enabled |
+| Architectures | amd64, arm64 |
 
-## Updates
+After installation:
 
-Applications that provide an update routine can be updated from inside their LXC with:
+```text
+Web/PWA:        http://LXC-IP:5173
+Cloud/Sync API: http://LXC-IP:8787
+```
+
+The installer generates a random sync token and stores the connection details inside the LXC at:
+
+```text
+/root/mindwtr.creds
+```
+
+Update Mindwtr from inside the container with:
 
 ```bash
 update
 ```
 
-The command uses the matching `update_script()` from the application's `ct/` script.
+The update routine upgrades the base system, refreshes Docker, pulls the current Mindwtr images, recreates the Compose stack and verifies the sync service health.
+
+More details: [docs/mindwtr.md](docs/mindwtr.md)
+
+---
+
+## ONLYOFFICE Docs + DocSpace
+
+The ONLYOFFICE script is **not a standalone Document Server installer**. It is an add-on for an existing native ONLYOFFICE Docs installation, such as a Proxmox Community Scripts ONLYOFFICE LXC.
+
+It installs **ONLYOFFICE DocSpace Community** into the same Debian LXC and keeps the existing Document Server on port 80.
+
+### Target layout
+
+```text
+Browser
+  |
+  +--> DocSpace / OpenResty :8088
+  |      |
+  |      +--> /ds-vpath/ --> ONLYOFFICE Docs :80
+  |
+  +--> optional direct Docs hostname --> :80
+
+DocSpace -> Docs      http://127.0.0.1
+Docs -> DocSpace      http://127.0.0.1:8088
+```
+
+The same-origin `/ds-vpath/` route avoids mixed-content problems when DocSpace is later exposed through HTTPS.
+
+### Requirements
+
+- existing native `onlyoffice-documentserver` installation
+- Debian-based amd64 LXC
+- root shell inside the LXC
+- port `8088` available
+- `vm.max_map_count >= 262144` on the Proxmox host
+- enough memory for Docs, DocSpace, MySQL, RabbitMQ, OpenSearch and the Java identity services
+
+For the combined same-LXC deployment, **8 GiB RAM plus 4 GiB swap should be treated as a practical minimum**. If the Proxmox host has enough memory, 10–12 GiB RAM is considerably more comfortable. The installer limits OpenSearch to a 1 GiB heap by default.
+
+Configure the kernel setting on the **Proxmox host**:
+
+```bash
+echo 'vm.max_map_count=262144' >/etc/sysctl.d/99-opensearch.conf
+sysctl --system
+```
+
+Configure LXC swap on the **Proxmox host**, for example:
+
+```bash
+pct set <CTID> -memory 8192 -swap 4096
+```
+
+### Install DocSpace
+
+Run **inside the existing ONLYOFFICE Docs LXC**:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+Optional automatic activation of active local DocSpace users for a trusted internal deployment:
+
+```bash
+DOCSPACE_AUTO_ACTIVATE_USERS=true \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+The installer:
+
+- reuses the existing Document Server and its JWT secret/header;
+- installs DocSpace with native DEB packages;
+- keeps Docs on port `80` and uses `8088` for DocSpace;
+- fixes the same-LXC DocSpace/Docs routing to loopback;
+- permits the Document Server to fetch the private loopback callback/stream URLs generated by DocSpace;
+- restores the Docs services that the upstream DocSpace package configuration stops;
+- defaults OpenSearch to a `1g` JVM heap;
+- creates a pre-install backup under `/root/onlyoffice-docspace-preinstall-*`;
+- writes its installation log to `/var/log/onlyoffice-docspace-addon.log`.
+
+### Health checks
+
+Inside the LXC:
+
+```bash
+curl -fsS http://127.0.0.1:8000/healthcheck ; echo
+curl -fsS http://127.0.0.1/healthcheck ; echo
+curl -fsS http://127.0.0.1:8088/ds-vpath/healthcheck ; echo
+```
+
+All three should return:
+
+```text
+true
+```
+
+### Reverse proxy
+
+A typical split is:
+
+```text
+office.example.net -> LXC-IP:8088
+docs.example.net   -> LXC-IP:80
+```
+
+TLS can terminate at HAProxy/reverse proxy. The DocSpace editor itself uses the same-origin `/ds-vpath/` route.
+
+### ONLYOFFICE Docs 9.4.0 and ad blockers
+
+ONLYOFFICE Docs **9.4.0 Build 129** contains a browser-side dependency named `Analytics.js`. Privacy filters such as Adblock Plus/EasyPrivacy, uBlock Origin and some browser tracking protection can block that filename. The symptom is an editor that shows only its empty/skeleton UI although all server health checks are green.
+
+If that exact version is installed and the browser console reports a failed request similar to:
+
+```text
+.../web-apps/apps/common/Analytics.js
+```
+
+disable the blocker for the ONLYOFFICE/DocSpace origin or upgrade to a release containing the upstream fix. Do not diagnose this symptom as a backend failure before checking the browser network/console.
+
+Full installation, tuning and account-activation notes: [docs/onlyoffice-docspace-addon.md](docs/onlyoffice-docspace-addon.md)
+
+---
+
+## Repository layout
+
+```text
+ct/
+  mindwtr.sh                       Proxmox LXC definition and update routine
+
+install/
+  mindwtr-install.sh               Mindwtr installation inside the new LXC
+  onlyoffice-docspace-addon.sh     DocSpace add-on for an existing Docs LXC
+
+docs/
+  mindwtr.md
+  onlyoffice-docspace-addon.md
+
+tools/
+  docspace-activate-user.sh
+  docspace-auto-activate-users.sh
+
+json/
+  mindwtr.json                     Mindwtr script metadata
+```
+
+## Notes
+
+- Scripts are intended for systems you administer yourself. Review them before running them on production hosts.
+- Secrets generated during installation are kept locally and are not committed to this repository.
+- The ONLYOFFICE account-activation helpers deliberately bypass email verification for selected local-account workflows. Use them only in trusted internal deployments.
+- Upstream projects, package layouts and minimum requirements can change; verify release notes before major upgrades.
