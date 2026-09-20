@@ -28,6 +28,13 @@ validate_heap() {
   [[ "$1" =~ ^[0-9]+[mMgG]$ ]] || die "Heap value must look like 512m, 1g, 2g, ..."
 }
 
+validate_bool() {
+  case "${1,,}" in
+    1|true|yes|y|0|false|no|n) ;;
+    *) die "Boolean value must be true/false, yes/no, 1/0." ;;
+  esac
+}
+
 [[ $EUID -eq 0 ]] || die "Run as root inside the DocSpace LXC."
 
 case "$ACTION" in
@@ -43,6 +50,7 @@ if [[ "$ACTION" == "remove" ]]; then
   ok "Removed persistent DocSpace lean-mode enforcement."
   warn "Services disabled by lean mode are not automatically re-enabled."
   warn "OpenSearch/JVM heap values are not automatically restored."
+  warn "The core.hosting.singletonMode override is not automatically removed."
   exit 0
 fi
 
@@ -86,6 +94,7 @@ if [[ "$ACTION" == "apply" ]]; then
 fi
 
 validate_heap "$LEAN_OPENSEARCH_HEAP"
+validate_bool "$LEAN_SINGLETON_MODE"
 if [[ -n "$LEAN_IDENTITY_HEAP" ]]; then
   validate_heap "$LEAN_IDENTITY_HEAP"
 fi
@@ -124,20 +133,23 @@ done
 
 singleton_changed="no"
 DOCSPACE_APPSETTINGS="/etc/onlyoffice/docspace/appsettings.community.json"
-if is_true "${LEAN_SINGLETON_MODE:-true}" && [[ -f "$DOCSPACE_APPSETTINGS" ]]; then
-  singleton_changed="$(python3 - "$DOCSPACE_APPSETTINGS" <<'PY'
+if [[ -f "$DOCSPACE_APPSETTINGS" ]]; then
+  singleton_changed="$(python3 - "$DOCSPACE_APPSETTINGS" "${LEAN_SINGLETON_MODE:-true}" <<'PY'
 import json
 import sys
 
 path = sys.argv[1]
+raw = sys.argv[2].strip().lower()
+desired = raw in {"1", "true", "yes", "y"}
+
 with open(path, "r", encoding="utf-8") as fh:
     data = json.load(fh)
 
 hosting = data.setdefault("core", {}).setdefault("hosting", {})
 before = hosting.get("singletonMode")
-hosting["singletonMode"] = True
+hosting["singletonMode"] = desired
 
-if before is True:
+if before is desired:
     print("no")
 else:
     with open(path, "w", encoding="utf-8") as fh:
