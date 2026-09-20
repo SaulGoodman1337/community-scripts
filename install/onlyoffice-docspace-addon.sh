@@ -10,6 +10,7 @@ DOCS_PUBLIC_URL="${DOCS_PUBLIC_URL:-}"
 DOCSPACE_SKIP_HARDWARE_CHECK="${DOCSPACE_SKIP_HARDWARE_CHECK:-false}"
 DOCSPACE_INSTALL_FLUENTBIT="${DOCSPACE_INSTALL_FLUENTBIT:-false}"
 DOCSPACE_AUTO_ACTIVATE_USERS="${DOCSPACE_AUTO_ACTIVATE_USERS:-false}"
+DOCSPACE_OPENSEARCH_HEAP="${DOCSPACE_OPENSEARCH_HEAP:-1g}"
 ONLYOFFICE_LOCAL_JSON="/etc/onlyoffice/documentserver/local.json"
 INSTALLER_URL="https://download.onlyoffice.com/docspace/docspace-install.sh"
 LOG_FILE="/var/log/onlyoffice-docspace-addon.log"
@@ -267,6 +268,36 @@ printf '%s\n' \
   "docspace docspace/jwt-secret string $JWT_SECRET" \
   | debconf-set-selections
 DEBIAN_FRONTEND=noninteractive dpkg-reconfigure docspace >>"$LOG_FILE" 2>&1
+
+# DocSpace sizes OpenSearch for a much larger/dedicated host. In this add-on
+# OpenSearch shares the LXC with Docs and all DocSpace microservices, so use a
+# conservative fixed heap by default. Override with DOCSPACE_OPENSEARCH_HEAP.
+if [[ -f /etc/opensearch/jvm.options ]]; then
+  case "$DOCSPACE_OPENSEARCH_HEAP" in
+    *[!0-9mMgG]*|"") die "DOCSPACE_OPENSEARCH_HEAP must look like 512m, 1g, 2g, ..." ;;
+  esac
+  cp -a /etc/opensearch/jvm.options "$BACKUP_DIR/opensearch-jvm.options.postinstall"
+  python3 - /etc/opensearch/jvm.options "$DOCSPACE_OPENSEARCH_HEAP" <<'PY'
+import re
+import sys
+
+path, heap = sys.argv[1], sys.argv[2]
+with open(path, "r", encoding="utf-8") as fh:
+    data = fh.read()
+
+data, n1 = re.subn(r"(?m)^-Xms\S+\s*$", f"-Xms{heap}", data, count=1)
+data, n2 = re.subn(r"(?m)^-Xmx\S+\s*$", f"-Xmx{heap}", data, count=1)
+
+if not n1:
+    data += f"\n-Xms{heap}\n"
+if not n2:
+    data += f"-Xmx{heap}\n"
+
+with open(path, "w", encoding="utf-8") as fh:
+    fh.write(data)
+PY
+  systemctl restart opensearch || warn "OpenSearch did not start after applying heap=$DOCSPACE_OPENSEARCH_HEAP."
+fi
 
 # The upstream package configurator stops all ds-*.service units before
 # configuring DocSpace, but in the EXTERNAL_DOCS_SERVER path it does not start
