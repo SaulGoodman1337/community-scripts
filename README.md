@@ -93,7 +93,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/communit
 
 Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, with nesting enabled. The container is deliberately **privileged** so the shared community-scripts core can bind common USB serial devices such as `/dev/ttyUSB0`, `/dev/ttyUSB1` and `/dev/serial/by-id` into the LXC.
 
-There is no web interface. The upstream TCP listener defaults to port `65234`. MQTT is disabled initially; configure `/opt/optolink/settings_ini.py` and `/opt/optolink/poll_list.py`, then restart `optolink-splitter.service`.
+There is no web interface. The upstream TCP listener defaults to port `65234`. The installer now includes the VScotHO1 / device 20CB poll profile migrated from the existing vcontrold setup. MQTT uses the `openv` namespace but remains disconnected until `mqtt_broker` is configured. Existing installations can apply the profile with `optolink-apply-vscotho1-profile`.
 
 More details: [docs/optolink-splitter.md](docs/optolink-splitter.md)
 
@@ -255,6 +255,10 @@ json/
   mindwtr.json                     Mindwtr script metadata
   heirloom.json                    Heirloom script metadata
   optolink-splitter.json           Optolink-Splitter script metadata
+
+config/optolink-splitter/
+  vscotho1-20cb-poll-list.py       VScotHO1/20CB poll profile
+  vcontrol-mapping.md              Legacy vcontrold to MQTT mapping
 ```
 
 ## Notes
