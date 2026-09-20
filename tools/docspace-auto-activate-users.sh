@@ -72,13 +72,13 @@ def run(cmd, *, env=None, sql=None, check=False):
 # dedicated DB host or socket root is unavailable, fall back to app credentials.
 candidates = []
 if host in ("localhost", "127.0.0.1", "::1"):
-    candidates.append((["mysql", "--protocol=socket", "-uroot", database], os.environ.copy(), "local root/socket"))
+    candidates.append((["mysql", "--protocol=socket", "-uroot", "-D", database], os.environ.copy(), "local root/socket"))
 
 if app_user:
     env = os.environ.copy()
     env["MYSQL_PWD"] = app_password
     candidates.append((
-        ["mysql", "--batch", "--raw", "-h", host, "-P", str(port), "-u", app_user, database],
+        ["mysql", "--batch", "--raw", "-h", host, "-P", str(port), "-u", app_user, "-D", database],
         env,
         f"DocSpace DB user {app_user}",
     ))
