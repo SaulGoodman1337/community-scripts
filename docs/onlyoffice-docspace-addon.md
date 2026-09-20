@@ -8,13 +8,13 @@ The existing Document Server is reused. DocSpace is installed with native DEB pa
 
 ```text
 ONLYOFFICE Docs:     http://LXC-IP:80
-ONLYOFFICE DocSpace: http://LXC-IP:8080
+ONLYOFFICE DocSpace: http://LXC-IP:8088
 ```
 
 For VyOS HAProxy, use two hostnames:
 
 ```text
-office.example.internal -> LXC-IP:8080
+office.example.internal -> LXC-IP:8088
 docs.example.internal   -> LXC-IP:80
 ```
 
@@ -27,7 +27,7 @@ TLS can terminate on VyOS.
 - existing `onlyoffice-documentserver` package
 - `/etc/onlyoffice/documentserver/local.json`
 - root privileges
-- TCP port 8080 free by default
+- TCP port 8088 free by default (DocSpace uses 8080 internally for identity authorization)
 
 DocSpace is much heavier than ONLYOFFICE Docs alone. Current upstream guidance is roughly 4 CPU cores, 8 GB RAM, and 40 GB free disk space for a basic installation.
 
@@ -50,7 +50,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/communit
 
 Defaults:
 
-- DocSpace port: `8080`
+- DocSpace port: `8088`
 - existing ONLYOFFICE Docs is reused
 - JWT secret/header are read locally from `local.json`
 - no JWT secret is stored in GitHub
@@ -68,7 +68,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/communit
 Recommended final routing:
 
 ```text
-https://office.example.internal -> LXC-IP:8080
+https://office.example.internal -> LXC-IP:8088
 https://docs.example.internal   -> LXC-IP:80
 ```
 
@@ -105,7 +105,25 @@ The installer intentionally refuses to run when DocSpace is already installed.
 Open:
 
 ```text
-http://LXC-IP:8080/
+http://LXC-IP:8088/
 ```
 
 and finish the DocSpace setup wizard. Once HAProxy is active, ensure DocSpace uses the HTTPS Document Service address, for example `https://docs.example.internal/`.
+
+## Local accounts and email activation
+
+DocSpace expects normal local accounts, including the initial owner, to confirm their
+email address. Current upstream documentation exposes **Disable email verification**
+for SSO and LDAP users, but not as a documented global switch for ordinary local
+accounts.
+
+For a trusted internal/home-lab installation without SMTP, use the helper below to
+mark a specific local account as activated after creating it in the wizard:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-activate-user.sh)" -- user@example.com
+```
+
+The helper only changes the matching user's `activation_status` from its current
+value to `1` (Activated) in DocSpace's MySQL database. It prints the row before and
+after the update and refuses to continue if the email is ambiguous or missing.
