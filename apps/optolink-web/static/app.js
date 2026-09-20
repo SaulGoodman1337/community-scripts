@@ -60,12 +60,13 @@ function renderTable() {
     const writeUi = dp.write_available
       ? '<div class="writebox"><input type="number" step="' + esc(dp.step ?? "any") + '" min="' + esc(dp.min ?? "") + '" max="' + esc(dp.max ?? "") + '" value="' + esc(dp.value ?? "") + '" data-write="' + esc(dp.name) + '"><button data-write-btn="' + esc(dp.name) + '">Set</button></div>'
       : "";
+    const readUi = dp.tcp_read === false ? '' : '<button class="secondary" data-read="' + esc(dp.name) + '">Read</button>';
     return '<tr>' +
       '<td><strong>' + esc(dp.label) + '</strong><small>' + esc(dp.name) + '</small></td>' +
       '<td>' + esc(dp.group) + '</td>' +
       '<td><code>0x' + esc(dp.address) + '</code> / ' + esc(dp.length) + ' B</td>' +
       '<td>' + esc(valueText(dp)) + '</td>' +
-      '<td><div class="actions"><button class="secondary" data-read="' + esc(dp.name) + '">Read</button>' + writeUi + '</div></td>' +
+      '<td><div class="actions">' + readUi + writeUi + '</div></td>' +
       '</tr>';
   }).join("");
 }
