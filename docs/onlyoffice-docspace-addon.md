@@ -179,3 +179,35 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/communit
 
 This automation deliberately bypasses an identity-verification control. Use it only on
 a trusted internal deployment where accounts are created by an administrator.
+
+
+## Same-LXC editor routing
+
+The add-on keeps DocSpace and the already-installed ONLYOFFICE Docs in the same LXC.
+After package configuration it normalizes the integration to:
+
+```text
+Browser -> DocSpace :8088
+          /ds-vpath/ -> 127.0.0.1:80 (ONLYOFFICE Docs)
+
+DocSpace -> Docs     http://127.0.0.1
+Docs -> DocSpace     http://127.0.0.1:8088
+```
+
+This avoids using the LXC's public/WAN address for internal callbacks and keeps editor
+traffic same-origin when DocSpace is later published through HTTPS.
+
+The upstream DocSpace package configurator stops `ds-*.service` while configuring
+DocSpace. In the existing/external Document Server path it does not restart those
+already-installed Docs services. The add-on therefore explicitly restarts
+`ds-docservice`, `ds-converter`, and `ds-metrics` when present.
+
+Health checks after installation:
+
+```bash
+curl -fsS http://127.0.0.1:8000/healthcheck ; echo
+curl -fsS http://127.0.0.1/healthcheck ; echo
+curl -fsS http://127.0.0.1:8088/ds-vpath/healthcheck ; echo
+```
+
+All three should return `true`.
