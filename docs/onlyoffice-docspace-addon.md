@@ -211,3 +211,27 @@ curl -fsS http://127.0.0.1:8088/ds-vpath/healthcheck ; echo
 ```
 
 All three should return `true`.
+
+
+## OpenSearch memory on shared LXC installations
+
+The add-on defaults OpenSearch to a fixed `1g` JVM heap because OpenSearch shares
+the same LXC with ONLYOFFICE Docs and all DocSpace microservices. The upstream
+DocSpace package sizing is intended for a larger host and can consume too much RAM
+on a small homelab LXC.
+
+Override the heap when needed:
+
+```bash
+DOCSPACE_OPENSEARCH_HEAP=512m bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+or:
+
+```bash
+DOCSPACE_OPENSEARCH_HEAP=2g bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+For the current shared-LXC layout, start with `1g`. A Proxmox-level swap allocation
+is also recommended for a small-memory LXC so short JVM startup spikes do not cause
+the kernel OOM killer to terminate DocSpace services.
