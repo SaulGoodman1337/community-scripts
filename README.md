@@ -91,7 +91,7 @@ Run on the **Proxmox VE host**:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/optolink-splitter.sh)"
 ```
 
-Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13. The container is deliberately **privileged** so the shared community-scripts core can bind common USB serial devices such as `/dev/ttyUSB0`, `/dev/ttyUSB1` and `/dev/serial/by-id` into the LXC.
+Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, with nesting enabled. The container is deliberately **privileged** so the shared community-scripts core can bind common USB serial devices such as `/dev/ttyUSB0`, `/dev/ttyUSB1` and `/dev/serial/by-id` into the LXC.
 
 There is no web interface. The upstream TCP listener defaults to port `65234`. MQTT is disabled initially; configure `/opt/optolink/settings_ini.py` and `/opt/optolink/poll_list.py`, then restart `optolink-splitter.service`.
 
