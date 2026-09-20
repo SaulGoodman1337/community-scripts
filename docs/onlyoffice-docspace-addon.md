@@ -1,208 +1,147 @@
-# ONLYOFFICE DocSpace add-on for an existing ONLYOFFICE Docs LXC
+# ONLYOFFICE Docs + DocSpace in one LXC
 
-This installer adds **ONLYOFFICE DocSpace Community** to an existing native ONLYOFFICE Docs installation created with the Proxmox VE Community Scripts ONLYOFFICE LXC.
+This add-on installs **ONLYOFFICE DocSpace Community** next to an existing native **ONLYOFFICE Docs / Document Server** installation in the same Debian LXC.
 
-The existing Document Server is reused. DocSpace is installed with native DEB packages and listens on a separate port.
+It is designed for an existing Proxmox Community Scripts ONLYOFFICE LXC. It does **not** install a new Document Server from scratch.
 
-## Default layout
+## Resulting layout
+
+Default listeners:
 
 ```text
 ONLYOFFICE Docs:     http://LXC-IP:80
 ONLYOFFICE DocSpace: http://LXC-IP:8088
 ```
 
-For VyOS HAProxy, use two hostnames:
+Internal routing after installation:
 
 ```text
-office.example.internal -> LXC-IP:8088
-docs.example.internal   -> LXC-IP:80
+Browser
+  |
+  +--> DocSpace / OpenResty :8088
+          |
+          +--> /ds-vpath/ --> 127.0.0.1:80 --> ONLYOFFICE Docs
+
+DocSpace -> Docs      http://127.0.0.1
+Docs -> DocSpace      http://127.0.0.1:8088
 ```
 
-TLS can terminate on VyOS.
+DocSpace therefore exposes the editor through a same-origin `/ds-vpath/` path while backend callbacks stay on loopback.
 
 ## Requirements
 
 - Debian-based LXC
 - amd64
 - existing `onlyoffice-documentserver` package
-- `/etc/onlyoffice/documentserver/local.json`
-- root privileges
-- TCP port 8088 free by default (DocSpace uses 8080 internally for identity authorization)
+- existing `/etc/onlyoffice/documentserver/local.json`
+- root access inside the LXC
+- port `8088` free by default
+- `vm.max_map_count >= 262144`
 
-DocSpace is much heavier than ONLYOFFICE Docs alone. Current upstream guidance is roughly 4 CPU cores, 8 GB RAM, and 40 GB free disk space for a basic installation.
+DocSpace is much heavier than a Docs-only container. The combined LXC runs, among other services:
 
-DocSpace uses OpenSearch. In an unprivileged Proxmox LXC, set this on the **Proxmox host**:
+- ONLYOFFICE DocService and converter
+- DocSpace .NET services
+- two Java identity services
+- MySQL
+- RabbitMQ
+- Redis
+- OpenSearch
+
+For this shared-LXC layout, use **at least 8 GiB RAM plus 4 GiB Proxmox LXC swap**. If the host has enough memory, 10–12 GiB RAM is a better target.
+
+### Proxmox host preparation
+
+OpenSearch needs a sufficiently high map count:
 
 ```bash
-echo 'vm.max_map_count=262144' > /etc/sysctl.d/99-opensearch.conf
+echo 'vm.max_map_count=262144' >/etc/sysctl.d/99-opensearch.conf
 sysctl --system
 ```
 
-The installer checks this before modifying the container.
+A practical container memory configuration is:
 
-## One-command install
+```bash
+pct set <CTID> -memory 8192 -swap 4096
+```
 
-Run this **inside the existing ONLYOFFICE LXC**:
+The add-on deliberately does not create a swap file inside the LXC.
+
+## Install
+
+Run **inside the existing ONLYOFFICE Docs LXC**:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
 ```
 
-Defaults:
+The installer is install-only. If DocSpace is already fully installed, it refuses to perform an in-place upgrade.
 
-- DocSpace port: `8088`
-- existing ONLYOFFICE Docs is reused
-- JWT secret/header are read locally from `local.json`
-- no JWT secret is stored in GitHub
-- upstream hardware checks stay enabled
-- swap-file creation is disabled; configure swap in Proxmox instead
-- Fluent Bit / OpenSearch Dashboards are disabled by default
+## Installer options
 
-## Install with the final Docs URL
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DOCSPACE_PORT` | `8088` | External DocSpace/OpenResty listener |
+| `DOCSPACE_SKIP_HARDWARE_CHECK` | `false` | Skip the upstream hardware check |
+| `DOCSPACE_INSTALL_FLUENTBIT` | `false` | Enable the optional upstream Fluent Bit/OpenSearch Dashboards path |
+| `DOCSPACE_AUTO_ACTIVATE_USERS` | `false` | Install automatic activation for active local accounts |
+| `DOCSPACE_OPENSEARCH_HEAP` | `1g` | Fixed OpenSearch JVM heap for the shared LXC |
+| `DOCS_PUBLIC_URL` | `http://127.0.0.1` | Advanced/bootstrap value passed to the upstream installer; final same-LXC routing is normalized to loopback and `/ds-vpath/` |
+
+Example:
 
 ```bash
-DOCS_PUBLIC_URL="https://docs.example.internal" \
+DOCSPACE_PORT=8188 \
+DOCSPACE_OPENSEARCH_HEAP=1g \
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
 ```
 
-Recommended final routing:
-
-```text
-https://office.example.internal -> LXC-IP:8088
-https://docs.example.internal   -> LXC-IP:80
-```
-
-Use HTTPS for both hostnames to avoid mixed-content problems.
-
-## Options
-
-Different DocSpace port:
+Skipping the upstream hardware check is possible but should not be used as a substitute for sufficient RAM/disk:
 
 ```bash
-DOCSPACE_PORT=8180 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
-```
-
-Skip upstream hardware checks (not recommended):
-
-```bash
-DOCSPACE_SKIP_HARDWARE_CHECK=true bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
-```
-
-Enable Fluent Bit / OpenSearch Dashboards:
-
-```bash
-DOCSPACE_INSTALL_FLUENTBIT=true bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
-```
-
-## Safety behavior
-
-Before installation, the script verifies the existing Docs package, checks the port and `vm.max_map_count`, reads JWT configuration, creates a backup under `/root/onlyoffice-docspace-preinstall-*`, and logs to `/var/log/onlyoffice-docspace-addon.log`.
-
-The installer intentionally refuses to run when DocSpace is already installed.
-
-## After installation
-
-Open:
-
-```text
-http://LXC-IP:8088/
-```
-
-and finish the DocSpace setup wizard. Once HAProxy is active, ensure DocSpace uses the HTTPS Document Service address, for example `https://docs.example.internal/`.
-
-## Local accounts and email activation
-
-DocSpace expects normal local accounts, including the initial owner, to confirm their
-email address. Current upstream documentation exposes **Disable email verification**
-for SSO and LDAP users, but not as a documented global switch for ordinary local
-accounts.
-
-For a trusted internal/home-lab installation without SMTP, use the helper below to
-mark a specific local account as activated after creating it in the wizard:
-
-```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-activate-user.sh)" -- user@example.com
-```
-
-The helper only changes the matching user's `activation_status` from its current
-value to `1` (Activated) in DocSpace's MySQL database. It prints the row before and
-after the update and refuses to continue if the email is ambiguous or missing.
-
-
-## Automatic activation for local users
-
-For a trusted internal/home-lab installation, email verification for normal local
-accounts can be bypassed automatically.
-
-Install the automation once on an existing DocSpace installation:
-
-```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- install
-```
-
-Behavior:
-
-- active local users with a non-empty email address are automatically changed from
-  activation status `NotActivated (0)` or `Pending (2)` to `Activated (1)`
-- LDAP users (`sid` set) are excluded
-- SSO users (`sso_name_id` set) are excluded
-- removed users are excluded
-- `AutoGenerated (4)` accounts are excluded
-- invitation accounts with `EmployeeStatus.Pending` remain in their registration/password
-  flow and are not force-activated prematurely
-- when such an invitation later becomes an active local account, the UPDATE trigger
-  automatically removes the email-verification requirement
-- already active local accounts waiting for email verification are activated once when
-  the automation is installed
-
-Check status:
-
-```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- status
-```
-
-Remove the automation:
-
-```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- remove
-```
-
-Removing the triggers does not revert users that were already activated.
-
-For a fresh one-command DocSpace installation, enable this behavior directly:
-
-```bash
-DOCSPACE_AUTO_ACTIVATE_USERS=true \
 DOCSPACE_SKIP_HARDWARE_CHECK=true \
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
 ```
 
-This automation deliberately bypasses an identity-verification control. Use it only on
-a trusted internal deployment where accounts are created by an administrator.
+## What the installer changes
 
-
-## Same-LXC editor routing
-
-The add-on keeps DocSpace and the already-installed ONLYOFFICE Docs in the same LXC.
-After package configuration it normalizes the integration to:
+Before modifying the system, the script validates the existing Docs installation and creates a backup under:
 
 ```text
-Browser -> DocSpace :8088
-          /ds-vpath/ -> 127.0.0.1:80 (ONLYOFFICE Docs)
-
-DocSpace -> Docs     http://127.0.0.1
-Docs -> DocSpace     http://127.0.0.1:8088
+/root/onlyoffice-docspace-preinstall-YYYYMMDD-HHMMSS
 ```
 
-This avoids using the LXC's public/WAN address for internal callbacks and keeps editor
-traffic same-origin when DocSpace is later published through HTTPS.
+The installation log is:
 
-The upstream DocSpace package configurator stops `ds-*.service` while configuring
-DocSpace. In the existing/external Document Server path it does not restart those
-already-installed Docs services. The add-on therefore explicitly restarts
-`ds-docservice`, `ds-converter`, and `ds-metrics` when present.
+```text
+/var/log/onlyoffice-docspace-addon.log
+```
 
-Health checks after installation:
+The add-on then:
+
+1. reads the existing Docs JWT secret and JWT header from `local.json`;
+2. installs DocSpace Community through the official native package installer;
+3. prevents the OpenResty package from stealing port 80 during package configuration;
+4. keeps the external DocSpace listener on `8088` by default;
+5. normalizes DocSpace URLs to:
+   - public: `/ds-vpath/`
+   - internal: `http://127.0.0.1`
+   - portal/callback: `http://127.0.0.1:8088`;
+6. rewrites the OpenResty `/ds-vpath/` proxy to the local Document Server;
+7. enables `services.CoAuthoring.request-filtering-agent.allowPrivateIPAddress` in the existing Document Server because DocSpace generates local stream/callback URLs;
+8. restarts the existing `ds-docservice`, `ds-converter` and `ds-metrics` services when present;
+9. limits OpenSearch to a `1g` heap by default;
+10. restarts the relevant DocSpace services and performs health checks.
+
+### Why the Docs services are explicitly restarted
+
+The upstream DocSpace package configurator stops `ds-*.service` while it configures an external/existing Document Server. In this same-LXC layout those services belong to the existing ONLYOFFICE Docs installation, so the add-on explicitly starts them again.
+
+Without that step, port 80 can return `502` because the nginx frontend is alive while DocService on port 8000 is stopped.
+
+## Health checks
+
+After installation:
 
 ```bash
 curl -fsS http://127.0.0.1:8000/healthcheck ; echo
@@ -210,28 +149,167 @@ curl -fsS http://127.0.0.1/healthcheck ; echo
 curl -fsS http://127.0.0.1:8088/ds-vpath/healthcheck ; echo
 ```
 
-All three should return `true`.
+Expected:
 
-
-## OpenSearch memory on shared LXC installations
-
-The add-on defaults OpenSearch to a fixed `1g` JVM heap because OpenSearch shares
-the same LXC with ONLYOFFICE Docs and all DocSpace microservices. The upstream
-DocSpace package sizing is intended for a larger host and can consume too much RAM
-on a small homelab LXC.
-
-Override the heap when needed:
-
-```bash
-DOCSPACE_OPENSEARCH_HEAP=512m bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```text
+true
+true
+true
 ```
 
-or:
+Useful service checks:
 
 ```bash
-DOCSPACE_OPENSEARCH_HEAP=2g bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+systemctl --failed --no-pager
+
+systemctl status \
+  ds-docservice \
+  ds-converter \
+  openresty \
+  opensearch \
+  docspace-files \
+  docspace-doceditor \
+  docspace-identity-authorization \
+  docspace-identity-api \
+  --no-pager -l
 ```
 
-For the current shared-LXC layout, start with `1g`. A Proxmox-level swap allocation
-is also recommended for a small-memory LXC so short JVM startup spikes do not cause
-the kernel OOM killer to terminate DocSpace services.
+OpenSearch on a single node can report cluster state `yellow` because replica shards have no second node. Primary shards should still be active and the cluster should not be timed out.
+
+## Memory / OOM troubleshooting
+
+If services repeatedly enter `activating`, restart every minute or disappear unexpectedly:
+
+```bash
+journalctl -k -b --no-pager | grep -Ei 'oom|out of memory|killed process'
+```
+
+Check available memory:
+
+```bash
+free -h
+swapon --show
+```
+
+Typical high-memory processes in this layout are OpenSearch and the two Java identity services. Increasing CPU cores does not fix an OOM condition.
+
+The add-on defaults OpenSearch to:
+
+```text
+-Xms1g
+-Xmx1g
+```
+
+Override when needed:
+
+```bash
+DOCSPACE_OPENSEARCH_HEAP=2g \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+For small homelab systems, reducing below 1 GiB may work but should be tested carefully.
+
+## Reverse proxy
+
+A typical split behind HAProxy is:
+
+```text
+office.example.net -> LXC-IP:8088
+docs.example.net   -> LXC-IP:80
+```
+
+TLS can terminate on the reverse proxy.
+
+The DocSpace web client uses `/ds-vpath/` to load the editor from the same origin, so the DocSpace hostname remains the important browser-facing editor origin.
+
+## Browser issue: ONLYOFFICE Docs 9.4.0 Build 129
+
+ONLYOFFICE Docs 9.4.0 Build 129 has a confirmed browser-side issue involving:
+
+```text
+web-apps/apps/common/Analytics.js
+```
+
+Adblock Plus/EasyPrivacy, uBlock Origin and privacy-focused browser filtering can block this filename. The result looks like a server failure:
+
+- the document is created successfully;
+- DocSpace returns a valid editor configuration;
+- Docs health checks return `true`;
+- the editor page shows only an empty/skeleton UI.
+
+The browser console/network panel then shows a failed request ending in:
+
+```text
+/web-apps/apps/common/Analytics.js
+```
+
+Workarounds:
+
+1. disable ad/tracking filtering for the DocSpace/ONLYOFFICE origin; or
+2. upgrade to a Document Server release containing the upstream fix.
+
+Upstream issue:
+
+```text
+https://github.com/ONLYOFFICE/DocumentServer/issues/3686
+```
+
+The upstream fix removes the Analytics module entirely.
+
+## Local accounts without SMTP
+
+DocSpace normally expects local users to complete email activation. For a trusted internal deployment without SMTP, this repository contains two optional helpers.
+
+### Activate one account
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-activate-user.sh)" -- user@example.com
+```
+
+The helper locates exactly one matching DocSpace user and changes its `activation_status` to `1`.
+
+### Automatically activate active local accounts
+
+Install:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- install
+```
+
+Status:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- status
+```
+
+Remove:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- remove
+```
+
+The automatic helper affects only active local users with an email address. It excludes removed users, LDAP users, SSO users and auto-generated accounts. Pending invitation accounts keep their normal registration/password flow until they become active.
+
+This deliberately bypasses an identity-verification control. Use it only on trusted internal systems where account creation is controlled by an administrator.
+
+To install DocSpace and enable this behavior in one run:
+
+```bash
+DOCSPACE_AUTO_ACTIVATE_USERS=true \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+## Important files
+
+```text
+/etc/onlyoffice/documentserver/local.json
+/etc/onlyoffice/docspace/appsettings.community.json
+/etc/onlyoffice/docspace/systemd.env
+/etc/openresty/conf.d/onlyoffice.conf
+/etc/opensearch/jvm.options
+/var/log/onlyoffice-docspace-addon.log
+/var/log/onlyoffice/documentserver/
+/var/log/onlyoffice/docspace/
+```
+
+Do not print or commit the JWT secret or database password when collecting diagnostics.
