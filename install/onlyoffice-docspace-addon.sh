@@ -12,6 +12,7 @@ DOCSPACE_INSTALL_FLUENTBIT="${DOCSPACE_INSTALL_FLUENTBIT:-false}"
 DOCSPACE_AUTO_ACTIVATE_USERS="${DOCSPACE_AUTO_ACTIVATE_USERS:-false}"
 DOCSPACE_LEAN_MODE="${DOCSPACE_LEAN_MODE:-false}"
 DOCSPACE_LEAN_PERSIST="${DOCSPACE_LEAN_PERSIST:-true}"
+DOCSPACE_LEAN_SINGLETON_MODE="${DOCSPACE_LEAN_SINGLETON_MODE:-true}"
 DOCSPACE_LEAN_IDENTITY_HEAP="${DOCSPACE_LEAN_IDENTITY_HEAP:-}"
 DOCSPACE_OPENSEARCH_HEAP="${DOCSPACE_OPENSEARCH_HEAP:-}"
 ONLYOFFICE_LOCAL_JSON="/etc/onlyoffice/documentserver/local.json"
@@ -424,6 +425,7 @@ if is_true "$DOCSPACE_LEAN_MODE"; then
   info "Installing conservative DocSpace lean mode."
   DOCSPACE_LEAN_OPENSEARCH_HEAP="$DOCSPACE_OPENSEARCH_HEAP" \
   DOCSPACE_LEAN_IDENTITY_HEAP="$DOCSPACE_LEAN_IDENTITY_HEAP" \
+  DOCSPACE_LEAN_SINGLETON_MODE="$DOCSPACE_LEAN_SINGLETON_MODE" \
   DOCSPACE_LEAN_PERSIST="$DOCSPACE_LEAN_PERSIST" \
     bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- install
 fi
@@ -483,7 +485,7 @@ if [[ "$AUTO_ACTIVATE_ARG" == "true" ]]; then
 fi
 
 if is_true "$DOCSPACE_LEAN_MODE"; then
-  LEAN_SUMMARY="enabled (OpenSearch=$DOCSPACE_OPENSEARCH_HEAP; disabled: ai-worker, mcp, telegram)"
+  LEAN_SUMMARY="enabled (OpenSearch=$DOCSPACE_OPENSEARCH_HEAP; singleton=$DOCSPACE_LEAN_SINGLETON_MODE; disabled: ai-worker, mcp, telegram)"
 else
   LEAN_SUMMARY="disabled"
 fi
