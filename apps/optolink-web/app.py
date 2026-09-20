@@ -267,6 +267,8 @@ async def read_datapoint(name: str) -> dict[str, Any]:
     definition = DP_BY_NAME.get(name)
     if not definition:
         raise HTTPException(status_code=404, detail="Unknown datapoint")
+    if definition.get("tcp_read") is False:
+        raise HTTPException(status_code=400, detail="Direct TCP read is disabled for this derived datapoint")
     try:
         result = await asyncio.to_thread(
             tcp_client.read,
