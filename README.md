@@ -9,6 +9,7 @@ The repository follows the general layout of [community-scripts/ProxmoxVE](https
 | Project | Purpose | Install location | Default ports |
 | --- | --- | --- | --- |
 | **Mindwtr** | Creates a dedicated Debian LXC and runs the Mindwtr web app plus its self-hosted sync backend with Docker Compose. | Run on the **Proxmox host** | Web: `5173`, Sync API: `8787` |
+| **Heirloom** | Creates a dedicated Debian LXC and runs the Heirloom family-tree app with PostgreSQL using the upstream Docker Compose stack. | Run on the **Proxmox host** | Web: `8081` |
 | **ONLYOFFICE DocSpace add-on** | Adds DocSpace Community to an **existing native ONLYOFFICE Docs LXC** and reuses the installed Document Server. | Run **inside the existing ONLYOFFICE LXC** | Docs: `80`, DocSpace: `8088` |
 
 ---
@@ -58,6 +59,24 @@ update
 The update routine upgrades the base system, refreshes Docker, pulls the current Mindwtr images, recreates the Compose stack and verifies the sync service health.
 
 More details: [docs/mindwtr.md](docs/mindwtr.md)
+
+---
+
+## Heirloom
+
+[Heirloom](https://heirloom-app.com/) is an open-source, self-hosted family-tree application. This script creates a dedicated Debian LXC and deploys the upstream production Docker Compose stack with PostgreSQL, the API, and the web frontend.
+
+Run on the **Proxmox VE host**:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/heirloom.sh)"
+```
+
+Defaults: 2 CPU cores, 4096 MiB RAM, 12 GiB disk, Debian 13, unprivileged LXC with nesting enabled. The web interface is exposed at `http://LXC-IP:8081`.
+
+The installer generates random PostgreSQL and JWT secrets, stores configuration in `/opt/heirloom/.env`, and supports updates through the standard `update` command inside the container. Upstream production images are currently published for amd64, so the helper advertises amd64 only.
+
+More details: [docs/heirloom.md](docs/heirloom.md)
 
 ---
 
@@ -193,13 +212,16 @@ Full installation, tuning and account-activation notes: [docs/onlyoffice-docspac
 ```text
 ct/
   mindwtr.sh                       Proxmox LXC definition and update routine
+  heirloom.sh                      Heirloom LXC definition and update routine
 
 install/
   mindwtr-install.sh               Mindwtr installation inside the new LXC
+  heirloom-install.sh              Heirloom installation inside the new LXC
   onlyoffice-docspace-addon.sh     DocSpace add-on for an existing Docs LXC
 
 docs/
   mindwtr.md
+  heirloom.md
   onlyoffice-docspace-addon.md
 
 tools/
@@ -209,6 +231,7 @@ tools/
 
 json/
   mindwtr.json                     Mindwtr script metadata
+  heirloom.json                    Heirloom script metadata
 ```
 
 ## Notes
