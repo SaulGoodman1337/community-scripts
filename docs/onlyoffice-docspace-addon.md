@@ -88,6 +88,7 @@ The installer is install-only. If DocSpace is already fully installed, it refuse
 | `DOCSPACE_OPENSEARCH_HEAP` | `1g` normally, `512m` in lean mode | Fixed OpenSearch JVM heap for the shared LXC |
 | `DOCSPACE_LEAN_MODE` | `false` | Enable the conservative low-memory profile |
 | `DOCSPACE_LEAN_PERSIST` | `true` | Reapply lean settings automatically after dpkg package-state changes |
+| `DOCSPACE_LEAN_SINGLETON_MODE` | `true` | Set `core.hosting.singletonMode=true` in lean mode; disable only for multi-instance DocSpace deployments |
 | `DOCSPACE_LEAN_IDENTITY_HEAP` | empty | Optional max heap for each Java identity service, for example `640m` |
 | `DOCS_PUBLIC_URL` | `http://127.0.0.1` | Advanced/bootstrap value passed to the upstream installer; final same-LXC routing is normalized to loopback and `/ds-vpath/` |
 
@@ -119,6 +120,7 @@ The default lean profile deliberately stays conservative:
 
 ```text
 OpenSearch heap:     512m
+single-instance mode: true
 disabled:
   docspace-ai-worker
   docspace-mcp
@@ -129,6 +131,8 @@ kept enabled:
   docspace-backup
   docspace-backup-worker
 ```
+
+`core.hosting.singletonMode=true` tells DocSpace that only one application instance is participating in background-worker execution. In a single-LXC deployment this removes the active/passive worker registration heartbeat against MySQL while keeping the background workers themselves active. Do not use this setting for horizontally scaled/multi-instance DocSpace deployments; use `DOCSPACE_LEAN_SINGLETON_MODE=false` there.
 
 `docspace-ai` stays enabled because OpenResty has direct routes such as `/api/2.0/ai` and `/asc.ai` pointing at it. Disabling that service can therefore produce benign-looking but noisy `502 Bad Gateway` responses even when document editing itself still works. The backup API also has direct OpenResty routes and is not disabled by the default lean profile.
 
@@ -155,9 +159,11 @@ Lean mode installs:
 
 The path unit watches `/var/lib/dpkg/status`. When package state changes, it waits for `apt`/`dpkg` to finish and then:
 
-1. restores the configured OpenSearch heap if a package update overwrote it;
-2. disables/stops `docspace-ai-worker`, `docspace-mcp` and `docspace-telegram` again;
-3. restores optional identity JVM drop-ins if configured.
+1. restores `core.hosting.singletonMode=true` in `appsettings.community.json` when enabled;
+2. restarts only currently running DocSpace services if that override had to be restored, so disabled lean-mode services stay disabled;
+3. restores the configured OpenSearch heap if a package update overwrote it;
+4. disables/stops `docspace-ai-worker`, `docspace-mcp` and `docspace-telegram` again;
+5. restores optional identity JVM drop-ins if configured.
 
 This is necessary because the upstream DocSpace configurator enables and restarts its full service list during reconfiguration.
 
@@ -218,7 +224,7 @@ The add-on then:
 9. rewrites the active ONLYOFFICE nginx config and its package templates so Docs listens on `127.0.0.1:80` / `[::1]:80` instead of wildcard interfaces;
 10. restarts nginx plus the existing `ds-docservice`, `ds-converter` and `ds-metrics` services when present;
 11. limits OpenSearch to a `1g` heap by default, or `512m` in lean mode;
-12. optionally installs persistent lean-mode enforcement for selected optional services;
+12. optionally installs persistent lean-mode enforcement for single-instance hosting and selected optional services;
 13. restarts the relevant DocSpace services and performs health checks.
 
 ### Why the Docs services are explicitly restarted
