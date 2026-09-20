@@ -85,7 +85,10 @@ The installer is install-only. If DocSpace is already fully installed, it refuse
 | `DOCSPACE_SKIP_HARDWARE_CHECK` | `false` | Skip the upstream hardware check |
 | `DOCSPACE_INSTALL_FLUENTBIT` | `false` | Enable the optional upstream Fluent Bit/OpenSearch Dashboards path |
 | `DOCSPACE_AUTO_ACTIVATE_USERS` | `false` | Install automatic activation for active local accounts |
-| `DOCSPACE_OPENSEARCH_HEAP` | `1g` | Fixed OpenSearch JVM heap for the shared LXC |
+| `DOCSPACE_OPENSEARCH_HEAP` | `1g` normally, `512m` in lean mode | Fixed OpenSearch JVM heap for the shared LXC |
+| `DOCSPACE_LEAN_MODE` | `false` | Enable the conservative low-memory profile |
+| `DOCSPACE_LEAN_PERSIST` | `true` | Reapply lean settings automatically after dpkg package-state changes |
+| `DOCSPACE_LEAN_IDENTITY_HEAP` | empty | Optional max heap for each Java identity service, for example `640m` |
 | `DOCS_PUBLIC_URL` | `http://127.0.0.1` | Advanced/bootstrap value passed to the upstream installer; final same-LXC routing is normalized to loopback and `/ds-vpath/` |
 
 Example:
@@ -102,6 +105,88 @@ Skipping the upstream hardware check is possible but should not be used as a sub
 DOCSPACE_SKIP_HARDWARE_CHECK=true \
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
 ```
+
+## Lean mode for small installations
+
+For a small trusted installation with roughly one or two users:
+
+```bash
+DOCSPACE_LEAN_MODE=true \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+The default lean profile deliberately stays conservative:
+
+```text
+OpenSearch heap:     512m
+disabled:
+  docspace-ai-worker
+  docspace-mcp
+  docspace-telegram
+
+kept enabled:
+  docspace-ai
+  docspace-backup
+  docspace-backup-worker
+```
+
+`docspace-ai` stays enabled because OpenResty has direct routes such as `/api/2.0/ai` and `/asc.ai` pointing at it. Disabling that service can therefore produce benign-looking but noisy `502 Bad Gateway` responses even when document editing itself still works. The backup API also has direct OpenResty routes and is not disabled by the default lean profile.
+
+If you want to cap the two Java identity services as an additional, more aggressive optimization:
+
+```bash
+DOCSPACE_LEAN_MODE=true \
+DOCSPACE_LEAN_IDENTITY_HEAP=640m \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+```
+
+The identity heap limit is optional because it is more workload-sensitive than the safe service removals.
+
+### Persistent re-apply after package updates
+
+Lean mode installs:
+
+```text
+/usr/local/sbin/docspace-lean-enforce
+/etc/default/docspace-lean
+/etc/systemd/system/docspace-lean-enforce.service
+/etc/systemd/system/docspace-lean-enforce.path
+```
+
+The path unit watches `/var/lib/dpkg/status`. When package state changes, it waits for `apt`/`dpkg` to finish and then:
+
+1. restores the configured OpenSearch heap if a package update overwrote it;
+2. disables/stops `docspace-ai-worker`, `docspace-mcp` and `docspace-telegram` again;
+3. restores optional identity JVM drop-ins if configured.
+
+This is necessary because the upstream DocSpace configurator enables and restarts its full service list during reconfiguration.
+
+For an already installed DocSpace instance, install lean mode directly:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- install
+```
+
+Optional identity cap on an existing installation:
+
+```bash
+DOCSPACE_LEAN_IDENTITY_HEAP=640m \
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- install
+```
+
+Status:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- status
+```
+
+Remove the persistent lean-mode machinery:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- remove
+```
+
+Removal does not automatically restore prior OpenSearch heap values or re-enable services.
 
 ## What the installer changes
 
@@ -132,8 +217,9 @@ The add-on then:
 8. removes the active Debian default nginx site if present;
 9. rewrites the active ONLYOFFICE nginx config and its package templates so Docs listens on `127.0.0.1:80` / `[::1]:80` instead of wildcard interfaces;
 10. restarts nginx plus the existing `ds-docservice`, `ds-converter` and `ds-metrics` services when present;
-11. limits OpenSearch to a `1g` heap by default;
-12. restarts the relevant DocSpace services and performs health checks.
+11. limits OpenSearch to a `1g` heap by default, or `512m` in lean mode;
+12. optionally installs persistent lean-mode enforcement for selected optional services;
+13. restarts the relevant DocSpace services and performs health checks.
 
 ### Why the Docs services are explicitly restarted
 
