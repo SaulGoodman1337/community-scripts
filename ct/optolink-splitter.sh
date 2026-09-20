@@ -60,7 +60,7 @@ function update_script() {
   systemctl daemon-reload
 
   msg_info "Restarting Optolink-Splitter"
-  if [[ -e /dev/ttyUSB0 ]]; then
+  if [[ -c /dev/ttyUSB0 ]]; then
     if systemctl restart optolink-splitter.service && sleep 2 && systemctl is-active --quiet optolink-splitter.service; then
       msg_ok "Optolink-Splitter is running"
     else
@@ -69,7 +69,7 @@ function update_script() {
     fi
   else
     systemctl stop optolink-splitter.service 2>/dev/null || true
-    msg_warn "No /dev/ttyUSB0 detected; service remains stopped until the Optolink adapter is available"
+    msg_warn "No real character device found at /dev/ttyUSB0; service remains stopped until the Optolink adapter is available"
   fi
 
   msg_ok "Updated successfully!"
