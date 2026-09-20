@@ -25,8 +25,48 @@ ok() { printf '%b[ OK ]%b %s\n' "$GREEN" "$NC" "$*"; }
 warn() { printf '%b[WARN]%b %s\n' "$YELLOW" "$NC" "$*"; }
 die() { printf '%b[FAIL]%b %s\n' "$RED" "$NC" "$*" >&2; exit 1; }
 
+POLICY_FILE="/usr/sbin/policy-rc.d"
+POLICY_ORIG="/usr/sbin/policy-rc.d.onlyoffice-docspace-orig"
+POLICY_ACTIVE=false
+
+install_openresty_policy() {
+  if [[ -e "$POLICY_ORIG" ]]; then
+    die "Found stale $POLICY_ORIG. Restore/remove it manually before continuing."
+  fi
+  if [[ -e "$POLICY_FILE" ]]; then
+    mv "$POLICY_FILE" "$POLICY_ORIG"
+  fi
+  cat >"$POLICY_FILE" <<'POLICY'
+#!/bin/sh
+svc="$(basename "$1" .service)"
+if [ "$svc" = "openresty" ]; then
+  # The stock OpenResty package initially tries port 80. ONLYOFFICE Docs already
+  # owns that port. DocSpace will write its configured port before restarting
+  # OpenResty itself later in the package configuration.
+  exit 101
+fi
+if [ -x /usr/sbin/policy-rc.d.onlyoffice-docspace-orig ]; then
+  exec /usr/sbin/policy-rc.d.onlyoffice-docspace-orig "$@"
+fi
+exit 0
+POLICY
+  chmod 755 "$POLICY_FILE"
+  POLICY_ACTIVE=true
+}
+
+restore_openresty_policy() {
+  if [[ "$POLICY_ACTIVE" == "true" ]]; then
+    rm -f "$POLICY_FILE"
+    if [[ -e "$POLICY_ORIG" ]]; then
+      mv "$POLICY_ORIG" "$POLICY_FILE"
+    fi
+    POLICY_ACTIVE=false
+  fi
+}
+
 on_error() {
   local rc=$?
+  restore_openresty_policy || true
   printf '\n%b[FAIL]%b Installation stopped with exit code %s.\n' "$RED" "$NC" "$rc" >&2
   printf 'Log: %s\n' "$LOG_FILE" >&2
   printf 'Pre-install backup: %s\n' "$BACKUP_DIR" >&2
@@ -40,8 +80,14 @@ trap on_error ERR
 ARCH="$(dpkg --print-architecture 2>/dev/null || true)"
 [[ "$ARCH" == "amd64" ]] || die "DocSpace DEB packages currently require amd64. Detected: ${ARCH:-unknown}."
 
-if dpkg-query -W -f='${Status}' docspace 2>/dev/null | grep -q 'install ok installed'; then
+DOCSPACE_DPKG_STATUS="$(dpkg-query -W -f='${Status}' docspace 2>/dev/null || true)"
+DOCSPACE_PARTIAL=false
+if [[ "$DOCSPACE_DPKG_STATUS" == "install ok installed" ]]; then
   die "DocSpace is already installed. This script is intentionally install-only and will not perform an in-place update."
+elif [[ -n "$DOCSPACE_DPKG_STATUS" ]]; then
+  DOCSPACE_PARTIAL=true
+  warn "Detected a partially installed DocSpace package state: $DOCSPACE_DPKG_STATUS"
+  warn "The installer will try to repair and finish the interrupted installation."
 fi
 
 if ! dpkg-query -W -f='${Status}' onlyoffice-documentserver 2>/dev/null | grep -q 'install ok installed'; then
@@ -165,18 +211,35 @@ esac
 info "Installing DocSpace Community using native DEB packages. Existing ONLYOFFICE Docs will be reused."
 info "Installation log: $LOG_FILE"
 
-# Do not let the upstream installer create a swapfile inside an LXC. Configure
-# LXC swap from Proxmox instead. Hardware checks stay enabled by default.
+# OpenResty's Debian package starts its stock nginx config during dpkg configure.
+# That stock config listens on :80, which conflicts with the existing ONLYOFFICE
+# Docs nginx. Temporarily deny only that automatic service start; DocSpace later
+# writes the requested port and restarts OpenResty directly.
+install_openresty_policy
+
 set +e
-APP_PORT="$DOCSPACE_PORT" \
-  bash "$INSTALLER" package \
-    --installationtype community \
-    --skiphardwarecheck "$SKIP_HC_ARG" \
-    --makeswap false \
-    --installfluentbit "$FLUENTBIT_ARG" \
-    2>&1 | tee "$LOG_FILE"
-rc=${PIPESTATUS[0]}
+if [[ "$DOCSPACE_PARTIAL" == "true" ]]; then
+  info "Repairing the interrupted package configuration."
+  DEBIAN_FRONTEND=noninteractive apt-get -f install -y 2>&1 | tee "$LOG_FILE"
+  rc=${PIPESTATUS[0]}
+  if (( rc == 0 )); then
+    DEBIAN_FRONTEND=noninteractive dpkg --configure -a 2>&1 | tee -a "$LOG_FILE"
+    rc=${PIPESTATUS[0]}
+  fi
+else
+  # Do not let the upstream installer create a swapfile inside an LXC. Configure
+  # LXC swap from Proxmox instead. Hardware checks stay enabled by default.
+  APP_PORT="$DOCSPACE_PORT" \
+    bash "$INSTALLER" package \
+      --installationtype community \
+      --skiphardwarecheck "$SKIP_HC_ARG" \
+      --makeswap false \
+      --installfluentbit "$FLUENTBIT_ARG" \
+      2>&1 | tee "$LOG_FILE"
+  rc=${PIPESTATUS[0]}
+fi
 set -e
+restore_openresty_policy
 (( rc == 0 )) || exit "$rc"
 
 # Re-apply the external Document Server settings explicitly in case a package
