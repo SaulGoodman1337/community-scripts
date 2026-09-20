@@ -173,9 +173,11 @@ PRIMARY_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 [[ -n "$PRIMARY_IP" ]] || die "Could not determine the LXC IP address. Set DOCS_PUBLIC_URL explicitly and ensure networking is configured."
 
 if [[ -z "$DOCS_PUBLIC_URL" ]]; then
-  DOCS_PUBLIC_URL="http://${PRIMARY_IP}"
-  warn "DOCS_PUBLIC_URL was not set; using $DOCS_PUBLIC_URL for the initial installation."
-  warn "When you enable HTTPS through VyOS HAProxy, change the Document Service URL in DocSpace to the HTTPS Docs hostname."
+  # The existing Document Server runs in the same LXC. Use loopback for the
+  # package configuration; after DocSpace is configured, the browser-facing
+  # URL is normalized to the same-origin /ds-vpath/ proxy.
+  DOCS_PUBLIC_URL="http://127.0.0.1"
+  info "DOCS_PUBLIC_URL was not set; using loopback $DOCS_PUBLIC_URL for the existing local Document Server."
 fi
 
 case "$DOCS_PUBLIC_URL" in
@@ -266,6 +268,53 @@ printf '%s\n' \
   | debconf-set-selections
 DEBIAN_FRONTEND=noninteractive dpkg-reconfigure docspace >>"$LOG_FILE" 2>&1
 
+# The upstream package configurator stops all ds-*.service units before
+# configuring DocSpace, but in the EXTERNAL_DOCS_SERVER path it does not start
+# the already-installed local Document Server again. Restore the services here.
+for svc in ds-docservice ds-converter ds-metrics; do
+  if systemctl cat "$svc.service" >/dev/null 2>&1; then
+    systemctl restart "$svc.service"
+  fi
+done
+
+# Normalize the same-LXC topology. The browser reaches Docs through DocSpace's
+# same-origin /ds-vpath/ proxy, while server-to-server traffic stays on loopback.
+DOCSPACE_APPSETTINGS="/etc/onlyoffice/docspace/appsettings.community.json"
+if [[ -f "$DOCSPACE_APPSETTINGS" ]]; then
+  python3 - "$DOCSPACE_APPSETTINGS" "$DOCSPACE_PORT" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+port = sys.argv[2]
+
+with open(path, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+
+url = data.setdefault("files", {}).setdefault("docservice", {}).setdefault("url", {})
+url["public"] = "/ds-vpath/"
+url["internal"] = "http://127.0.0.1"
+url["portal"] = f"http://127.0.0.1:{port}"
+
+with open(path, "w", encoding="utf-8") as fh:
+    json.dump(data, fh, indent=2, ensure_ascii=False)
+    fh.write("\n")
+PY
+fi
+
+if [[ -f /etc/openresty/conf.d/onlyoffice.conf ]]; then
+  sed -i '/~\* \^\/ds-vpath\/ {/,/}/s#\(proxy_pass \).*;#\1http://127.0.0.1;#' \
+    /etc/openresty/conf.d/onlyoffice.conf
+fi
+
+/usr/local/openresty/nginx/sbin/nginx -t >>"$LOG_FILE" 2>&1
+systemctl restart openresty
+for svc in docspace-api docspace-files docspace-files-worker docspace-doceditor; do
+  if systemctl cat "$svc.service" >/dev/null 2>&1; then
+    systemctl restart "$svc.service"
+  fi
+done
+
 sleep 2
 
 if curl -fsS --max-time 10 "http://127.0.0.1/healthcheck" 2>/dev/null | grep -qi 'true'; then
@@ -306,11 +355,13 @@ For VyOS HAProxy, the intended split is:
   office.<your-domain>  -> ${PRIMARY_IP}:${DOCSPACE_PORT}
   docs.<your-domain>    -> ${PRIMARY_IP}:80
 
-The Document Server URL currently configured in DocSpace is:
-  ${DOCS_PUBLIC_URL}
+Document Server routing:
+  Browser -> /ds-vpath/ -> 127.0.0.1:80
+  DocSpace -> Docs      -> http://127.0.0.1
+  Docs -> DocSpace      -> http://127.0.0.1:${DOCSPACE_PORT}
 
-If your final frontend is HTTPS, both DocSpace and Docs should be exposed through
-HTTPS hostnames to avoid mixed-content problems in browsers.
+When you place DocSpace behind HTTPS on VyOS HAProxy, the editor remains
+same-origin through /ds-vpath/, avoiding mixed-content problems.
 
 Backup made before installation:
   ${BACKUP_DIR}
