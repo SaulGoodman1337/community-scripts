@@ -1,0 +1,51 @@
+{
+  "name": "Heirloom",
+  "slug": "heirloom",
+  "categories": [
+    12
+  ],
+  "date_created": "2026-09-20",
+  "type": "ct",
+  "updateable": true,
+  "privileged": false,
+  "config_path": "/opt/heirloom/.env",
+  "interface_port": 8081,
+  "documentation": "https://heirloom-app.com/docs/",
+  "website": "https://heirloom-app.com/",
+  "repository": "https://github.com/Jyok1m/heirloom",
+  "architectures": [
+    "amd64"
+  ],
+  "platforms": [
+    "pve"
+  ],
+  "logo": "https://heirloom-app.com/favicon.svg",
+  "description": "Open-source, self-hosted family tree application with PostgreSQL, media uploads, GEDCOM support and an optional AI assistant.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/heirloom.sh",
+      "resources": {
+        "cpu": 2,
+        "ram": 4096,
+        "hdd": 12,
+        "os": "debian",
+        "version": "13"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": null,
+    "password": null
+  },
+  "notes": [
+    {
+      "text": "The installer generates random PostgreSQL and JWT secrets and stores the deployment configuration in /opt/heirloom/.env.",
+      "type": "info"
+    },
+    {
+      "text": "The web interface is exposed on port 8081. Upstream images are currently published as linux/amd64 by the project's CI.",
+      "type": "info"
+    }
+  ]
+}
