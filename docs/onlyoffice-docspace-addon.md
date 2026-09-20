@@ -6,10 +6,10 @@ It is designed for an existing Proxmox Community Scripts ONLYOFFICE LXC. It does
 
 ## Resulting layout
 
-Default listeners:
+Default listeners after the add-on has normalized the same-LXC layout:
 
 ```text
-ONLYOFFICE Docs:     http://LXC-IP:80
+ONLYOFFICE Docs:     http://127.0.0.1:80   (loopback only)
 ONLYOFFICE DocSpace: http://LXC-IP:8088
 ```
 
@@ -129,9 +129,11 @@ The add-on then:
    - portal/callback: `http://127.0.0.1:8088`;
 6. rewrites the OpenResty `/ds-vpath/` proxy to the local Document Server;
 7. enables `services.CoAuthoring.request-filtering-agent.allowPrivateIPAddress` in the existing Document Server because DocSpace generates local stream/callback URLs;
-8. restarts the existing `ds-docservice`, `ds-converter` and `ds-metrics` services when present;
-9. limits OpenSearch to a `1g` heap by default;
-10. restarts the relevant DocSpace services and performs health checks.
+8. removes the active Debian default nginx site if present;
+9. rewrites the active ONLYOFFICE nginx config and its package templates so Docs listens on `127.0.0.1:80` / `[::1]:80` instead of wildcard interfaces;
+10. restarts nginx plus the existing `ds-docservice`, `ds-converter` and `ds-metrics` services when present;
+11. limits OpenSearch to a `1g` heap by default;
+12. restarts the relevant DocSpace services and performs health checks.
 
 ### Why the Docs services are explicitly restarted
 
@@ -139,9 +141,24 @@ The upstream DocSpace package configurator stops `ds-*.service` while it configu
 
 Without that step, port 80 can return `502` because the nginx frontend is alive while DocService on port 8000 is stopped.
 
-## Health checks
+## Listener and health checks
 
-After installation:
+After installation, port 80 should be loopback-only:
+
+```bash
+ss -lntp | grep ':80 '
+```
+
+Expected listeners:
+
+```text
+127.0.0.1:80
+[::1]:80
+```
+
+There should be no `0.0.0.0:80` or `[::]:80` listener.
+
+Health checks:
 
 ```bash
 curl -fsS http://127.0.0.1:8000/healthcheck ; echo
@@ -211,16 +228,22 @@ For small homelab systems, reducing below 1 GiB may work but should be tested ca
 
 ## Reverse proxy
 
-A typical split behind HAProxy is:
+Expose only DocSpace behind HAProxy/reverse proxy:
 
 ```text
 office.example.net -> LXC-IP:8088
-docs.example.net   -> LXC-IP:80
 ```
 
-TLS can terminate on the reverse proxy.
+Do **not** expose port 80 separately in this layout. The Document Server is bound to loopback and is reached through:
 
-The DocSpace web client uses `/ds-vpath/` to load the editor from the same origin, so the DocSpace hostname remains the important browser-facing editor origin.
+```text
+https://office.example.net/ds-vpath/
+        -> DocSpace/OpenResty
+        -> http://127.0.0.1:80
+        -> ONLYOFFICE Docs
+```
+
+This same-origin path is used by both browser sessions and ONLYOFFICE Desktop Editors connected to DocSpace. TLS can terminate on the reverse proxy.
 
 ## Browser issue: ONLYOFFICE Docs 9.4.0 Build 129
 
