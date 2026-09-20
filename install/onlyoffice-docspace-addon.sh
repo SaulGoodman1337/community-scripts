@@ -140,9 +140,16 @@ fi
 # hardware check unless DOCSPACE_SKIP_HARDWARE_CHECK=true is explicitly set.
 CPU_COUNT="$(nproc 2>/dev/null || echo '?')"
 MEM_MB="$(awk '/MemTotal:/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo '?')"
+SWAP_MB="$(awk '/SwapTotal:/ {printf "%d", $2/1024}' /proc/meminfo 2>/dev/null || echo 0)"
 FREE_GB="$(df -Pk / | awk 'NR==2 {printf "%d", $4/1024/1024}')"
-info "Detected resources: ${CPU_COUNT} vCPU, ~${MEM_MB} MiB RAM, ~${FREE_GB} GiB free on /."
-warn "Current ONLYOFFICE guidance for DocSpace is substantially higher than a normal Docs-only LXC. Resize the LXC before installation if necessary."
+info "Detected resources: ${CPU_COUNT} vCPU, ~${MEM_MB} MiB RAM, ~${SWAP_MB} MiB swap, ~${FREE_GB} GiB free on /."
+warn "The combined Docs + DocSpace stack is substantially heavier than a Docs-only LXC."
+if [[ "$MEM_MB" =~ ^[0-9]+$ ]] && (( MEM_MB < 8192 )); then
+  warn "Less than 8 GiB RAM detected. The shared-LXC setup can hit the OOM killer during Java/OpenSearch startup."
+fi
+if [[ "$SWAP_MB" =~ ^[0-9]+$ ]] && (( SWAP_MB == 0 )); then
+  warn "No swap detected. Configure Proxmox LXC swap (for example 4 GiB) to absorb startup memory spikes."
+fi
 
 command -v python3 >/dev/null 2>&1 || die "python3 is required to read the existing ONLYOFFICE JWT configuration."
 
@@ -338,6 +345,29 @@ if [[ -f /etc/openresty/conf.d/onlyoffice.conf ]]; then
     /etc/openresty/conf.d/onlyoffice.conf
 fi
 
+# DocSpace generates stream and callback URLs on 127.0.0.1 for this same-LXC
+# topology. Document Server blocks private-address fetches by default, so allow
+# private IPs for its outbound request filter.
+python3 - "$ONLYOFFICE_LOCAL_JSON" <<'PY'
+import json
+import sys
+
+path = sys.argv[1]
+with open(path, "r", encoding="utf-8") as fh:
+    data = json.load(fh)
+
+request_filter = (
+    data.setdefault("services", {})
+        .setdefault("CoAuthoring", {})
+        .setdefault("request-filtering-agent", {})
+)
+request_filter["allowPrivateIPAddress"] = True
+
+with open(path, "w", encoding="utf-8") as fh:
+    json.dump(data, fh, indent=2, ensure_ascii=False)
+    fh.write("\n")
+PY
+
 /usr/local/openresty/nginx/sbin/nginx -t >>"$LOG_FILE" 2>&1
 systemctl restart openresty
 for svc in docspace-api docspace-files docspace-files-worker docspace-doceditor; do
@@ -348,16 +378,34 @@ done
 
 sleep 2
 
-if curl -fsS --max-time 10 "http://127.0.0.1/healthcheck" 2>/dev/null | grep -qi 'true'; then
-  ok "Existing ONLYOFFICE Docs healthcheck is OK."
+if curl -fsS --max-time 10 "http://127.0.0.1:8000/healthcheck" 2>/dev/null | grep -qi 'true'; then
+  ok "ONLYOFFICE DocService healthcheck is OK."
 else
-  warn "ONLYOFFICE Docs healthcheck did not return 'true'. Check: systemctl status onlyoffice-documentserver nginx"
+  warn "DocService on 127.0.0.1:8000 did not return 'true'. Check ds-docservice."
+fi
+
+if curl -fsS --max-time 10 "http://127.0.0.1/healthcheck" 2>/dev/null | grep -qi 'true'; then
+  ok "ONLYOFFICE Docs nginx healthcheck is OK."
+else
+  warn "ONLYOFFICE Docs on port 80 did not return 'true'. Check nginx and ds-docservice."
+fi
+
+if curl -fsS --max-time 10 "http://127.0.0.1:$DOCSPACE_PORT/ds-vpath/healthcheck" 2>/dev/null | grep -qi 'true'; then
+  ok "DocSpace /ds-vpath/ Document Server proxy is OK."
+else
+  warn "DocSpace /ds-vpath/ healthcheck failed. Check OpenResty and the Document Server routing."
 fi
 
 if ss -H -ltn | awk '{print $4}' | grep -qE ":${DOCSPACE_PORT}$"; then
   ok "DocSpace is listening on TCP port $DOCSPACE_PORT."
 else
   warn "DocSpace is not listening on TCP port $DOCSPACE_PORT yet. Inspect systemctl --failed and $LOG_FILE."
+fi
+
+DOCS_VERSION="$(dpkg-query -W -f='${Version}' onlyoffice-documentserver 2>/dev/null || true)"
+if [[ "$DOCS_VERSION" == 9.4.0-* ]]; then
+  warn "ONLYOFFICE Docs $DOCS_VERSION is affected by the Analytics.js/ad-blocker editor issue."
+  warn "If the editor stays as an empty skeleton, disable browser/ad-block filtering for this origin or upgrade Docs."
 fi
 
 AUTO_ACTIVATE_ARG="false"
