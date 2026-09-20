@@ -102,26 +102,31 @@ for _ in $(seq 1 150); do
 done
 
 if [[ -f /etc/opensearch/jvm.options && -n "${LEAN_OPENSEARCH_HEAP:-}" ]]; then
-  python3 - /etc/opensearch/jvm.options "$LEAN_OPENSEARCH_HEAP" <<'PY'
+  heap_changed="$(python3 - /etc/opensearch/jvm.options "$LEAN_OPENSEARCH_HEAP" <<'PY'
 import re
 import sys
 
 path, heap = sys.argv[1], sys.argv[2]
 with open(path, "r", encoding="utf-8") as fh:
-    data = fh.read()
+    before = fh.read()
 
-data, n1 = re.subn(r"(?m)^-Xms\S+\s*$", f"-Xms{heap}", data, count=1)
-data, n2 = re.subn(r"(?m)^-Xmx\S+\s*$", f"-Xmx{heap}", data, count=1)
+after, n1 = re.subn(r"(?m)^-Xms\S+\s*$", f"-Xms{heap}", before, count=1)
+after, n2 = re.subn(r"(?m)^-Xmx\S+\s*$", f"-Xmx{heap}", after, count=1)
 if not n1:
-    data += f"\n-Xms{heap}\n"
+    after += f"\n-Xms{heap}\n"
 if not n2:
-    data += f"-Xmx{heap}\n"
+    after += f"-Xmx{heap}\n"
 
-with open(path, "w", encoding="utf-8") as fh:
-    fh.write(data)
+if after != before:
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(after)
+    print("yes")
+else:
+    print("no")
 PY
+)"
 
-  if systemctl is-active --quiet opensearch; then
+  if [[ "$heap_changed" == "yes" ]] && systemctl is-active --quiet opensearch; then
     systemctl restart opensearch
   fi
 fi
