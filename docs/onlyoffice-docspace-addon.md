@@ -192,7 +192,7 @@ Remove the persistent lean-mode machinery:
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- remove
 ```
 
-Removal does not automatically restore prior OpenSearch heap values or re-enable services.
+Removal does not automatically restore prior OpenSearch heap values, re-enable services or remove the `core.hosting.singletonMode` override. Set `DOCSPACE_LEAN_SINGLETON_MODE=false` before removal if you want to return the override to `false`.
 
 ## What the installer changes
 
