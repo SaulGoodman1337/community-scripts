@@ -135,6 +135,37 @@ if [[ "$mqtt_enabled" == "1" && -c /dev/ttyUSB0 ]]; then
   # remains useful even if Home Assistant/MQTT is temporarily unavailable.
   if timeout 45s runuser -u optolink --       "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py"; then
     echo "Home Assistant MQTT discovery published."
+
+    # Discovery is published after the splitter has already started. New HA
+    # entities can therefore miss their first non-retained state message.
+    # Clear the splitters MQTT publish cache and force one complete poll after
+    # HA has subscribed to the newly created discovery entities.
+    echo "Refreshing MQTT states after discovery..."
+    if timeout 20s runuser -u optolink -- "$APP_DIR/venv/bin/python" - <<'PY'
+import time
+from c_settings_adapter import settings
+from homeassistant_publish import connect_mqtt
+
+client = connect_mqtt(retries=2, delay=2)
+if client is None:
+    raise SystemExit(1)
+
+try:
+    if not settings.mqtt_listen:
+        raise RuntimeError("mqtt_listen is disabled")
+    client.publish(settings.mqtt_listen, "reset").wait_for_publish()
+    time.sleep(0.5)
+    client.publish(settings.mqtt_listen, "forcepoll").wait_for_publish()
+    time.sleep(1.0)
+finally:
+    client.loop_stop()
+    client.disconnect()
+PY
+    then
+      echo "MQTT state refresh triggered."
+    else
+      echo "WARNING: Could not trigger MQTT state refresh; restart optolink-splitter to republish states." >&2
+    fi
   else
     rc=$?
     if [[ "$rc" == "124" ]]; then
