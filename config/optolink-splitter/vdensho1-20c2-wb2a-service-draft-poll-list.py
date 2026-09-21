@@ -266,9 +266,21 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     Together with the earlier 0x0A10=3 sample during DHW direction, the new
     0x0A10=1 sample confirms the exact enum 1=heating, 3=DHW on hardware.
     Result: schedules, 0x2544, 0x6513, 0x650A and 0x0A10 are hardware-readable
-    on this appliance. 0x081A and 0x080C remain optional-sensor candidates:
-    both reading exactly 20.0 C is not sufficient evidence that physical
-    sensors are installed.
+    on this appliance.
+
+  Optional-hardware inventory:
+    0x7752 = 0 -> hydraulic separator NOT configured/present.
+      Therefore 0x080C = 20.0 C is a default/non-physical value on this system;
+      keep it out of productive polling.
+    0x7754 = 0 -> no Vitosolic solar controller configured.
+    0x656A = 0, 0x6552 = 0 and both 0x6564/0x6566 = 3276.7 C.
+      3276.7 C corresponds to raw 0x7FFF with div10 and is an invalid/sentinel
+      temperature here. Solar datapoints are not applicable on this system.
+    System schema 0x7700 = 2 already identifies A1 + DHW with no M2 circuit.
+      M2 probes additionally returned 0x3900=0.0 C, 0x3544=0.0 C,
+      0x0898=20.0 C and 0x7665=0000: inactive/default values, not a live M2.
+    0x081A = 20.0 C remains unresolved until the exact VLTS sensor-status
+    datapoint 0x0840 is checked.
 '''
 
 poll_interval = 2
@@ -280,7 +292,8 @@ poll_groups = {
     "SLOW": 150,         # ~5 min
     "RARE": 900,         # ~30 min
 
-    # Optional hardware not yet inventoried on the real installation.
+    # Optional hardware. M2, solar and hydraulic separator are confirmed absent
+    # on this appliance; VTS/VLTS sensor presence at 0x081A is still unresolved.
     "OPTIONAL_M2": -1,
     "OPTIONAL_SOLAR": -1,
     "OPTIONAL_EXT": -1,
@@ -300,6 +313,8 @@ poll_items = [
     ('ONCE', 'codierstecker_kennung_raw', 0x1040, 2),  # HW verified raw: 0215; catalog rotatebytes
     ('ONCE', 'bedienteil_sw_index', 0x7330, 1, 1, False),  # HW verified: 1
     ('ONCE', 'gfa_kennung', 0x7650, 1, 1, False),  # HW verified: 0x20
+    ('ONCE', 'hydraulische_weiche_vorhanden', 0x7752, 1, 1, False),  # HW verified: 0=nicht vorhanden
+    ('ONCE', 'solar_typ', 0x7754, 1, 1, False),  # HW verified: 0=ohne
 
     # ---------------------------------------------------------------------
     # Core temperatures
@@ -317,7 +332,7 @@ poll_items = [
     ('NORMAL', 'warmwasser_solltemperatur', 0x6300, 1, 1, False),  # HW verified R/W: 45->44->45 C
     ('NORMAL', 'warmwasser_solltemperatur_aktuell', 0x6500, 2, 0.1, True),  # HW verified: 45.0 C
 
-    ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),  # HW readable: 20.0 C; sensor presence TBD
+    ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),  # HW default 20.0 C; 0x7752=0 confirms no physical separator
     ('OPTIONAL_EXT', 'vorlaufsensor_vts_temperatur', 0x081A, 2, 0.1, True),  # HW readable: 20.0 C; physical sensor presence TBD
 
     # ---------------------------------------------------------------------
@@ -466,11 +481,11 @@ poll_items = [
     # ---------------------------------------------------------------------
     ('OPTIONAL_M2', 'heizkreis_m2_sparbetrieb', 0x3302, 1, 1, False),
     ('OPTIONAL_M2', 'heizkreis_m2_partybetrieb', 0x3303, 1, 1, False),
-    ('OPTIONAL_M2', 'heizkreis_m2_raumtemperatur', 0x0898, 2, 0.1, True),
-    ('OPTIONAL_M2', 'heizkreis_m2_vorlauftemperatur', 0x3900, 2, 0.1, True),
-    ('OPTIONAL_M2', 'heizkreis_m2_vorlaufsolltemperatur', 0x3544, 2, 0.1, True),
+    ('OPTIONAL_M2', 'heizkreis_m2_raumtemperatur', 0x0898, 2, 0.1, True),  # HW default 20.0 C; schema confirms no M2
+    ('OPTIONAL_M2', 'heizkreis_m2_vorlauftemperatur', 0x3900, 2, 0.1, True),  # HW 0.0 C; no M2
+    ('OPTIONAL_M2', 'heizkreis_m2_vorlaufsolltemperatur', 0x3544, 2, 0.1, True),  # HW 0.0 C; no M2
     ('OPTIONAL_M2', 'heizkreis_m2_pumpe_status', 0x3906, 1, 1, False),
-    ('OPTIONAL_M2', 'heizkreis_m2_pumpe_drehzahl', 0x7665, 2, 'b:1:1', 1, False),
+    ('OPTIONAL_M2', 'heizkreis_m2_pumpe_drehzahl', 0x7665, 2, 'b:1:1', 1, False),  # HW block 0000; no M2
     ('OPTIONAL_M2', 'heizkreis_m2_vorlauf_min_c5', 0x37C5, 1, 1, False),
     ('OPTIONAL_M2', 'heizkreis_m2_vorlauf_max_c6', 0x37C6, 1, 1, False),
     ('OPTIONAL_M2', 'heizkreis_m2_heizkennlinie_neigung_d3', 0x37D3, 1, 0.1, False),
@@ -479,9 +494,9 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Optional solar
     # ---------------------------------------------------------------------
-    ('OPTIONAL_SOLAR', 'solar_kollektortemperatur', 0x6564, 2, 0.1, True),
-    ('OPTIONAL_SOLAR', 'solar_speichertemperatur', 0x6566, 2, 0.1, True),
-    ('OPTIONAL_SOLAR', 'solarpumpe_status', 0x6552, 1, 1, False),
+    ('OPTIONAL_SOLAR', 'solar_kollektortemperatur', 0x6564, 2, 0.1, True),  # HW invalid sentinel 3276.7 C; 0x7754=0 no solar
+    ('OPTIONAL_SOLAR', 'solar_speichertemperatur', 0x6566, 2, 0.1, True),  # HW invalid sentinel 3276.7 C; no solar
+    ('OPTIONAL_SOLAR', 'solarpumpe_status', 0x6552, 1, 1, False),  # HW 0; no solar controller
     ('OPTIONAL_SOLAR', 'solarpumpe_betriebsstunden', 0x6568, 2, 1, False),
     ('OPTIONAL_SOLAR', 'solarenergie', 0x6560, 4, 1, False),
 
