@@ -146,7 +146,11 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     Decoded for Monday through Sunday: 05:30-21:00, one active interval/day.
     At 2026-09-21 20:57 the live state matched the schedule:
       0x6515 = 1, 0x0842 = 1, 0x6773 = 0 (timer mode).
-    Expected timer transition to OFF: 21:00 local controller time.
+    A follow-up after 21:00 still showed 0x6515 = 1 and 0x0842 = 1 while
+    0x6773 remained 0. A 0->7->0 probe again verified 0x6773 read/write,
+    but still could not prove the physical forcing effect because the pump
+    never reached an OFF baseline. Check controller clock 0x088E before
+    attributing this to timer/run-on logic.
 '''
 
 poll_interval = 2
