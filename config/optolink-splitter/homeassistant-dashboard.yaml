@@ -548,7 +548,7 @@ views:
               - number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9_einstellung
               - number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9_einstellung
               - number.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31_einstellung
-              - sensor.vitodens_200_wb2a_interne_pumpe_kennung_30
+              - sensor.vitodens_200_wb2a_interne_pumpe_kennung_30_anzeige
       - type: grid
         column_span: 2
         cards:
