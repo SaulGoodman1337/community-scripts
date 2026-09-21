@@ -20,6 +20,8 @@ PRINTER_IP="${PRINTER_IP:-}"
 FRONTEND_SHARE="${FRONTEND_SHARE:-scan}"
 FRONTEND_USER="${FRONTEND_USER:-scanner}"
 FRONTEND_PASSWORD="${FRONTEND_PASSWORD:-}"
+FRONTEND_MIN_PROTOCOL="${FRONTEND_MIN_PROTOCOL:-SMB2_02}"
+FRONTEND_MAX_PROTOCOL="${FRONTEND_MAX_PROTOCOL:-SMB2_02}"
 BACKEND_HOST="${BACKEND_HOST:-}"
 BACKEND_SHARE="${BACKEND_SHARE:-}"
 BACKEND_SUBDIR="${BACKEND_SUBDIR:-}"
@@ -45,6 +47,15 @@ if [[ -z "$FRONTEND_PASSWORD" ]]; then
   echo "FRONTEND_PASSWORD must not be empty" >&2
   exit 1
 fi
+
+case "$FRONTEND_MIN_PROTOCOL" in
+  NT1|SMB2_02|SMB2_10|SMB3) ;;
+  *) echo "Unsupported FRONTEND_MIN_PROTOCOL: $FRONTEND_MIN_PROTOCOL" >&2; exit 1 ;;
+esac
+case "$FRONTEND_MAX_PROTOCOL" in
+  NT1|SMB2_02|SMB2_10|SMB3) ;;
+  *) echo "Unsupported FRONTEND_MAX_PROTOCOL: $FRONTEND_MAX_PROTOCOL" >&2; exit 1 ;;
+esac
 
 if [[ -n "$PRINTER_IP" ]]; then
   python3 - "$PRINTER_IP" <<'PY'
@@ -85,11 +96,10 @@ cat >"$SMB_CONF" <<EOF
    security = user
    map to guest = Never
 
-   # Legacy protocol is exposed only on this isolated frontend.
-   server min protocol = NT1
-   server max protocol = NT1
+   # Compatibility protocol is exposed only on this isolated frontend.
+   server min protocol = $FRONTEND_MIN_PROTOCOL
+   server max protocol = $FRONTEND_MAX_PROTOCOL
    ntlm auth = ntlmv1-permitted
-   lanman auth = no
 
    # This process may also act as a modern SMB client via smbclient.
    client min protocol = SMB2_02
