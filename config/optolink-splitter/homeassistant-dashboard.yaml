@@ -784,26 +784,26 @@ views:
             icon: mdi:information-outline
             badges:
               - type: entity
-                entity: sensor.vitodens_200_wb2a_systemzeit
+                entity: sensor.vitodens_200_wb2a_systemzeit_anzeige
                 name: Systemzeit
                 show_state: true
                 show_icon: false
               - type: entity
-                entity: sensor.vitodens_200_wb2a_anlagenschema
+                entity: sensor.vitodens_200_wb2a_anlagenschema_anzeige
                 name: Schema
                 show_state: true
                 show_icon: false
           - type: entities
             title: Identifikation
             entities:
-              - sensor.vitodens_200_wb2a_geraete_id
-              - sensor.vitodens_200_wb2a_codierstecker_sachnummer
-              - sensor.vitodens_200_wb2a_codierstecker_kennung
-              - sensor.vitodens_200_wb2a_bedienteil_sw_index
-              - sensor.vitodens_200_wb2a_gfa_kennung
-              - sensor.vitodens_200_wb2a_anlagenschema
-              - sensor.vitodens_200_wb2a_anlagentyp
-              - sensor.vitodens_200_wb2a_bauart_warmwasser
+              - sensor.vitodens_200_wb2a_geraete_id_anzeige
+              - sensor.vitodens_200_wb2a_codierstecker_sachnummer_anzeige
+              - sensor.vitodens_200_wb2a_codierstecker_kennung_anzeige
+              - sensor.vitodens_200_wb2a_bedienteil_sw_index_anzeige
+              - sensor.vitodens_200_wb2a_gfa_kennung_anzeige
+              - sensor.vitodens_200_wb2a_anlagenschema_anzeige
+              - sensor.vitodens_200_wb2a_anlagentyp_anzeige
+              - sensor.vitodens_200_wb2a_bauart_warmwasser_anzeige
       - type: grid
         column_span: 2
         cards:
@@ -814,12 +814,12 @@ views:
           - type: entities
             title: Diagnose
             entities:
-              - sensor.vitodens_200_wb2a_sensorstatus_aussentemperatur
-              - sensor.vitodens_200_wb2a_sensorstatus_kesseltemperatur
-              - sensor.vitodens_200_wb2a_sensorstatus_sts2
-              - sensor.vitodens_200_wb2a_sensorstatus_vlts
-              - sensor.vitodens_200_wb2a_sensorstatus_raum_m1
-              - sensor.vitodens_200_wb2a_heizkreis_m1_reglervariante
+              - sensor.vitodens_200_wb2a_sensorstatus_aussentemperatur_anzeige
+              - sensor.vitodens_200_wb2a_sensorstatus_kesseltemperatur_anzeige
+              - sensor.vitodens_200_wb2a_sensorstatus_sts2_anzeige
+              - sensor.vitodens_200_wb2a_sensorstatus_vlts_anzeige
+              - sensor.vitodens_200_wb2a_sensorstatus_raum_m1_anzeige
+              - sensor.vitodens_200_wb2a_heizkreis_m1_reglervariante_anzeige
               - binary_sensor.vitodens_200_wb2a_feuerungsautomat_verriegelt
       - type: grid
         column_span: 2
@@ -831,16 +831,16 @@ views:
           - type: entities
             title: Letzte 10 Fehlercodes
             entities:
-              - sensor.vitodens_200_wb2a_fehlerhistorie_01
-              - sensor.vitodens_200_wb2a_fehlerhistorie_02
-              - sensor.vitodens_200_wb2a_fehlerhistorie_03
-              - sensor.vitodens_200_wb2a_fehlerhistorie_04
-              - sensor.vitodens_200_wb2a_fehlerhistorie_05
-              - sensor.vitodens_200_wb2a_fehlerhistorie_06
-              - sensor.vitodens_200_wb2a_fehlerhistorie_07
-              - sensor.vitodens_200_wb2a_fehlerhistorie_08
-              - sensor.vitodens_200_wb2a_fehlerhistorie_09
-              - sensor.vitodens_200_wb2a_fehlerhistorie_10
+              - sensor.vitodens_200_wb2a_fehlerhistorie_01_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_02_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_03_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_04_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_05_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_06_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_07_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_08_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_09_anzeige
+              - sensor.vitodens_200_wb2a_fehlerhistorie_10_anzeige
       - type: grid
         column_span: 2
         cards:
@@ -851,33 +851,33 @@ views:
           - type: entities
             title: Heizung
             entities:
-              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_montag
-              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_dienstag
-              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_mittwoch
-              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_donnerstag
-              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_freitag
-              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_samstag
-              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_sonntag
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_montag_anzeige
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_dienstag_anzeige
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_mittwoch_anzeige
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_donnerstag_anzeige
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_freitag_anzeige
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_samstag_anzeige
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_sonntag_anzeige
           - type: entities
             title: Warmwasser
             entities:
-              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_montag
-              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_dienstag
-              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_mittwoch
-              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_donnerstag
-              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_freitag
-              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_samstag
-              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_sonntag
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_montag_anzeige
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_dienstag_anzeige
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_mittwoch_anzeige
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_donnerstag_anzeige
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_freitag_anzeige
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_samstag_anzeige
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_sonntag_anzeige
           - type: entities
             title: Zirkulation
             entities:
-              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_montag
-              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_dienstag
-              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_mittwoch
-              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_donnerstag
-              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_freitag
-              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_samstag
-              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_sonntag
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_montag_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_dienstag_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_mittwoch_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_donnerstag_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_freitag_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_samstag_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_sonntag_anzeige
     cards: []
 
   - title: Graphen
