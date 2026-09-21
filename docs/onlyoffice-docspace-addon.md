@@ -1,5 +1,8 @@
 # ONLYOFFICE Docs + DocSpace in one LXC
 
+> **Private repository:** define the authenticated `csrun` helper first; see [Private repository access](private-access.md). The required fine-grained PAT only needs `Contents: Read-only` on this repository.
+
+
 This add-on installs **ONLYOFFICE DocSpace Community** next to an existing native **ONLYOFFICE Docs / Document Server** installation in the same Debian LXC.
 
 It is designed for an existing Proxmox Community Scripts ONLYOFFICE LXC. It does **not** install a new Document Server from scratch.
@@ -72,7 +75,7 @@ The add-on deliberately does not create a swap file inside the LXC.
 Run **inside the existing ONLYOFFICE Docs LXC**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 The installer is install-only. If DocSpace is already fully installed, it refuses to perform an in-place upgrade.
@@ -97,14 +100,14 @@ Example:
 ```bash
 DOCSPACE_PORT=8188 \
 DOCSPACE_OPENSEARCH_HEAP=1g \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 Skipping the upstream hardware check is possible but should not be used as a substitute for sufficient RAM/disk:
 
 ```bash
 DOCSPACE_SKIP_HARDWARE_CHECK=true \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 ## Lean mode for small installations
@@ -113,7 +116,7 @@ For a small trusted installation with roughly one or two users:
 
 ```bash
 DOCSPACE_LEAN_MODE=true \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 The default lean profile deliberately stays conservative:
@@ -141,7 +144,7 @@ If you want to cap the two Java identity services as an additional, more aggress
 ```bash
 DOCSPACE_LEAN_MODE=true \
 DOCSPACE_LEAN_IDENTITY_HEAP=640m \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 The identity heap limit is optional because it is more workload-sensitive than the safe service removals.
@@ -170,26 +173,26 @@ This is necessary because the upstream DocSpace configurator enables and restart
 For an already installed DocSpace instance, install lean mode directly:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- install
+csrun tools/docspace-lean-mode.sh install
 ```
 
 Optional identity cap on an existing installation:
 
 ```bash
 DOCSPACE_LEAN_IDENTITY_HEAP=640m \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- install
+csrun tools/docspace-lean-mode.sh install
 ```
 
 Status:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- status
+csrun tools/docspace-lean-mode.sh status
 ```
 
 Remove the persistent lean-mode machinery:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- remove
+csrun tools/docspace-lean-mode.sh remove
 ```
 
 Removal does not automatically restore prior OpenSearch heap values, re-enable services or remove the `core.hosting.singletonMode` override. Set `DOCSPACE_LEAN_SINGLETON_MODE=false` before removal if you want to return the override to `false`.
@@ -313,7 +316,7 @@ Override when needed:
 
 ```bash
 DOCSPACE_OPENSEARCH_HEAP=2g \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 For small homelab systems, reducing below 1 GiB may work but should be tested carefully.
@@ -378,7 +381,7 @@ DocSpace normally expects local users to complete email activation. For a truste
 ### Activate one account
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-activate-user.sh)" -- user@example.com
+csrun tools/docspace-activate-user.sh user@example.com
 ```
 
 The helper locates exactly one matching DocSpace user and changes its `activation_status` to `1`.
@@ -388,19 +391,19 @@ The helper locates exactly one matching DocSpace user and changes its `activatio
 Install:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- install
+csrun tools/docspace-auto-activate-users.sh install
 ```
 
 Status:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- status
+csrun tools/docspace-auto-activate-users.sh status
 ```
 
 Remove:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh)" -- remove
+csrun tools/docspace-auto-activate-users.sh remove
 ```
 
 The automatic helper affects only active local users with an email address. It excludes removed users, LDAP users, SSO users and auto-generated accounts. Pending invitation accounts keep their normal registration/password flow until they become active.
@@ -411,7 +414,7 @@ To install DocSpace and enable this behavior in one run:
 
 ```bash
 DOCSPACE_AUTO_ACTIVATE_USERS=true \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 ## Important files
