@@ -29,6 +29,12 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
   0x0816 len2 div10 signed -> 31.6 C
   0x0896 len2 div10 signed -> 20.0 C
   0xA305 len1 *0.5 -> 0.0 %
+  0x55D3 len9 -> 00 B2 B0 00 00 01 00 00 00
+    byte 5 mask 0x20 -> flame false
+    byte 5 mask 0x40 -> fire-control lockout false
+  0x55DD len1 -> 0x01 (raw; mask 0x20 is false)
+  0x0B1C len2 -> P300 error response (retcode 3, payload 0x01)
+  0x0B1E len2 -> P300 error response (retcode 3, payload 0x01)
 '''
 
 poll_interval = 2
@@ -96,11 +102,11 @@ poll_items = [
 
     # The VDensHO1 catalog exposes flame and lockout as bit fields in the
     # 9-byte block beginning at 0x55D3.
-    ('FAST', 'brenner_flamme', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),
-    ('FAST', 'feuerungsautomat_verriegelt', 0x55D3, 9, 'b:5:5:0x40', 'bool', False),
+    ('FAST', 'brenner_flamme', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),  # HW verified block readable
+    ('FAST', 'feuerungsautomat_verriegelt', 0x55D3, 9, 'b:5:5:0x40', 'bool', False),  # HW verified block readable
 
     # Alternative direct flame flag from the fire-control diagnostic block.
-    ('NORMAL', 'brenner_flamme_gfa', 0x55DD, 1, 'b:0:0:0x20', 'bool', False),
+    ('NORMAL', 'brenner_flamme_gfa', 0x55DD, 1, 'b:0:0:0x20', 'bool', False),  # HW read raw=0x01, flame bit clear
 
     # ---------------------------------------------------------------------
     # Heating circuit A1/M1 - operating state
@@ -266,4 +272,6 @@ poll_items = [
 #   filtered out of the standard Optolink-readable catalog because they require
 #   a non-Virtual_READ access method. Therefore no guessed fan-RPM poll item is
 #   enabled here. 0x0B1C/0x0B1E remain community candidates for later manual
-#   read-only probing, not trusted VDensHO1 datapoints.
+#   probing. On this exact 20C2/0x03 controller, both 0x0B1C and 0x0B1E
+#   returned P300 error telegrams (retcode 3 / payload 0x01) for len=2, so
+#   they are not usable as ordinary VDensHO1 Virtual_READ datapoints.
