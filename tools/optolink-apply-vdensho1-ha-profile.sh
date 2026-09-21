@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
+CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+APP_DIR="/opt/optolink"
+PROFILE_REL="config/optolink-splitter/vdensho1-20c2-wb2a-homeassistant.py"
+PROFILE_NAME="vdensho1-20c2-wb2a-homeassistant.py"
+
+cs_repo_fetch() {
+  local rel="${1:?repo-relative path}"
+  local dest="${2:?destination}"
+
+  if [[ -n "${COMMUNITY_SCRIPTS_ROOT:-}" && -f "${COMMUNITY_SCRIPTS_ROOT}/$rel" ]]; then
+    cp "${COMMUNITY_SCRIPTS_ROOT}/$rel" "$dest"
+    return 0
+  fi
+
+  local token="${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}"
+  if [[ -z "$token" ]]; then
+    printf 'GitHub token: ' >/dev/tty
+    read -rs token </dev/tty
+    printf '\n' >/dev/tty
+  fi
+  [[ -n "$token" ]] || { echo "A GitHub token is required." >&2; return 1; }
+
+  curl -fsSL \
+    -H "Authorization: Bearer $token" \
+    -H "Accept: application/vnd.github.raw+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+    -o "$dest"
+}
+
+if [[ ! -d "$APP_DIR" || ! -f "$APP_DIR/settings_ini.py" ]]; then
+  echo "Optolink-Splitter installation not found in $APP_DIR" >&2
+  exit 1
+fi
+
+STAMP="$(date +%Y%m%d-%H%M%S)"
+install -d -m 0755 "$APP_DIR/profiles"
+
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+
+cs_repo_fetch "$PROFILE_REL" "$tmp"
+python3 -m py_compile "$tmp"
+
+cp "$tmp" "$APP_DIR/profiles/$PROFILE_NAME"
+
+cp -a "$APP_DIR/settings_ini.py" "$APP_DIR/settings_ini.py.bak-$STAMP"
+if [[ -f "$APP_DIR/poll_list.py" ]]; then
+  cp -a "$APP_DIR/poll_list.py" "$APP_DIR/poll_list.py.bak-$STAMP"
+fi
+if [[ -f "$APP_DIR/homeassistant_poll_list.py" ]]; then
+  cp -a "$APP_DIR/homeassistant_poll_list.py" "$APP_DIR/homeassistant_poll_list.py.bak-$STAMP"
+fi
+
+cp "$tmp" "$APP_DIR/homeassistant_poll_list.py"
+
+# c_polllist.py gives poll_list.py precedence. Remove it after creating a
+# timestamped backup so the Home Assistant adapter becomes the active source.
+rm -f "$APP_DIR/poll_list.py"
+
+chown optolink:optolink   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"   "$APP_DIR/profiles/$PROFILE_NAME"
+chmod 640   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"   "$APP_DIR/profiles/$PROFILE_NAME"
+
+# Validate the generated HA discovery configuration before touching the service.
+if ! runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
+  echo "Home Assistant discovery dry-run failed." >&2
+  cat /root/optolink-ha-discovery-dry-run.txt >&2
+  exit 1
+fi
+
+systemctl daemon-reload
+
+if [[ -c /dev/ttyUSB0 ]]; then
+  systemctl restart optolink-splitter.service
+  sleep 3
+
+  if ! systemctl is-active --quiet optolink-splitter.service; then
+    echo "Optolink-Splitter did not stay active." >&2
+    journalctl -u optolink-splitter.service -n 30 --no-pager >&2 || true
+    exit 1
+  fi
+else
+  systemctl stop optolink-splitter.service 2>/dev/null || true
+  echo "No /dev/ttyUSB0 present; profile installed but service left stopped."
+fi
+
+mqtt_enabled="$(runuser -u optolink -- "$APP_DIR/venv/bin/python" - <<'PY'
+import sys
+sys.path.insert(0, "/opt/optolink")
+import settings_ini
+print("1" if getattr(settings_ini, "mqtt_broker", None) else "0")
+PY
+)"
+
+if [[ "$mqtt_enabled" == "1" && -c /dev/ttyUSB0 ]]; then
+  # Discovery publishing is intentionally non-fatal: the Optolink service
+  # remains useful even if Home Assistant/MQTT is temporarily unavailable.
+  if runuser -u optolink --       "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py"; then
+    echo "Home Assistant MQTT discovery published."
+  else
+    echo "WARNING: HA discovery publish failed; see output above." >&2
+    echo "Retry later with: cd /opt/optolink && ./venv/bin/python homeassistant_publish.py" >&2
+  fi
+else
+  echo "MQTT is disabled; discovery was validated but not published."
+fi
+
+echo "VDensHO1/20C2 Home Assistant profile is active."
+echo "Active profile: $APP_DIR/homeassistant_poll_list.py"
+echo "Discovery dry-run: /root/optolink-ha-discovery-dry-run.txt"
+if [[ -f "$APP_DIR/poll_list.py.bak-$STAMP" ]]; then
+  echo "Previous poll list backup: $APP_DIR/poll_list.py.bak-$STAMP"
+fi
+if [[ -f "$APP_DIR/homeassistant_poll_list.py.bak-$STAMP" ]]; then
+  echo "Previous HA profile backup: $APP_DIR/homeassistant_poll_list.py.bak-$STAMP"
+fi
