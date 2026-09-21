@@ -129,6 +129,10 @@ find /var/lib/smb-scan-proxy/queue -maxdepth 1 -type f -printf '%f\n' 2>/dev/nul
 EOF_STATUS
 chmod 755 /usr/local/bin/smb-scan-proxy-status
 
+ln -sf /usr/local/sbin/smb-scan-proxy-apply /usr/bin/smb-scan-proxy-apply
+ln -sf /usr/local/bin/smb-scan-proxy-config /usr/bin/smb-scan-proxy-config
+ln -sf /usr/local/bin/smb-scan-proxy-status /usr/bin/smb-scan-proxy-status
+
 msg_info "Applying safe initial configuration"
 /usr/local/sbin/smb-scan-proxy-apply
 msg_ok "Safe initial configuration applied"
