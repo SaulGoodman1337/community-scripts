@@ -3,6 +3,42 @@
 # Copyright (c) 2026
 # License: MIT
 
+CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
+CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+
+cs_repo_fetch() {
+  local rel="${1:?repo-relative path}"
+  local dest="${2:?destination}"
+  if [[ -n "${COMMUNITY_SCRIPTS_ROOT:-}" && -f "${COMMUNITY_SCRIPTS_ROOT}/$rel" ]]; then
+    cp "${COMMUNITY_SCRIPTS_ROOT}/$rel" "$dest"
+    return 0
+  fi
+  if [[ -z "${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}" ]]; then
+    echo "Missing COMMUNITY_SCRIPTS_GITHUB_TOKEN for private repository access." >&2
+    return 1
+  fi
+  curl -fsSL \
+    -H "Authorization: Bearer $COMMUNITY_SCRIPTS_GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.raw+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+    -o "$dest"
+}
+
+install_private_update() {
+  local target="${1:?ct script path}"
+  install -d -m 0755 /usr/local/lib/community-scripts
+  cs_repo_fetch tools/private-update.sh /usr/local/lib/community-scripts/private-update.sh
+  chmod 755 /usr/local/lib/community-scripts/private-update.sh
+  cat >/etc/community-scripts-private.conf <<EOF_PRIVATE_UPDATE
+COMMUNITY_SCRIPTS_REPO=$CS_REPO
+COMMUNITY_SCRIPTS_REF=$CS_REF
+COMMUNITY_SCRIPTS_TARGET=$target
+EOF_PRIVATE_UPDATE
+  chmod 600 /etc/community-scripts-private.conf
+  ln -sf /usr/local/lib/community-scripts/private-update.sh /usr/bin/update
+}
+
 source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
 verb_ip6
@@ -24,11 +60,9 @@ install -d -o scanproxy -g scanproxy -m 0770 /var/lib/smb-scan-proxy/queue
 install -d -m 0755 /opt/smb-scan-proxy
 msg_ok "Created service account and directories"
 
-BASE_URL="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main"
-
 msg_info "Installing SMB scan proxy"
-curl -fsSL "$BASE_URL/apps/smb-scan-proxy/worker.py" -o /opt/smb-scan-proxy/worker.py
-curl -fsSL "$BASE_URL/tools/smb-scan-proxy-apply.sh" -o /usr/local/sbin/smb-scan-proxy-apply
+cs_repo_fetch apps/smb-scan-proxy/worker.py /opt/smb-scan-proxy/worker.py
+cs_repo_fetch tools/smb-scan-proxy-apply.sh /usr/local/sbin/smb-scan-proxy-apply
 chmod 755 /opt/smb-scan-proxy/worker.py /usr/local/sbin/smb-scan-proxy-apply
 python3 -m py_compile /opt/smb-scan-proxy/worker.py
 msg_ok "Installed SMB scan proxy"
@@ -142,3 +176,4 @@ msg_ok "Safe initial configuration applied"
 motd_ssh
 customize
 cleanup_lxc
+install_private_update ct/smb-scan-proxy.sh
