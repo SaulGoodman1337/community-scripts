@@ -4,6 +4,42 @@
 # License: MIT
 # Source: https://github.com/philippoo66/optolink-splitter
 
+CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
+CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+
+cs_repo_fetch() {
+  local rel="${1:?repo-relative path}"
+  local dest="${2:?destination}"
+  if [[ -n "${COMMUNITY_SCRIPTS_ROOT:-}" && -f "${COMMUNITY_SCRIPTS_ROOT}/$rel" ]]; then
+    cp "${COMMUNITY_SCRIPTS_ROOT}/$rel" "$dest"
+    return 0
+  fi
+  if [[ -z "${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}" ]]; then
+    echo "Missing COMMUNITY_SCRIPTS_GITHUB_TOKEN for private repository access." >&2
+    return 1
+  fi
+  curl -fsSL \
+    -H "Authorization: Bearer $COMMUNITY_SCRIPTS_GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.raw+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+    -o "$dest"
+}
+
+install_private_update() {
+  local target="${1:?ct script path}"
+  install -d -m 0755 /usr/local/lib/community-scripts
+  cs_repo_fetch tools/private-update.sh /usr/local/lib/community-scripts/private-update.sh
+  chmod 755 /usr/local/lib/community-scripts/private-update.sh
+  cat >/etc/community-scripts-private.conf <<EOF_PRIVATE_UPDATE
+COMMUNITY_SCRIPTS_REPO=$CS_REPO
+COMMUNITY_SCRIPTS_REF=$CS_REF
+COMMUNITY_SCRIPTS_TARGET=$target
+EOF_PRIVATE_UPDATE
+  chmod 600 /etc/community-scripts-private.conf
+  ln -sf /usr/local/lib/community-scripts/private-update.sh /usr/bin/update
+}
+
 source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
 verb_ip6
@@ -38,8 +74,7 @@ msg_ok "Installed Optolink-Splitter"
 msg_info "Preparing configuration"
 cp /opt/optolink/settings_ini.py.example /opt/optolink/settings_ini.py
 
-PROFILE_BASE="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/config/optolink-splitter"
-curl -fsSL "$PROFILE_BASE/vscotho1-20cb-poll-list.py" -o /opt/optolink/poll_list.py
+cs_repo_fetch config/optolink-splitter/vscotho1-20cb-poll-list.py /opt/optolink/poll_list.py
 python3 -m py_compile /opt/optolink/poll_list.py
 
 sed -i \
@@ -51,12 +86,10 @@ sed -i \
   -e 's|^mqtt_fstr = .*|mqtt_fstr = "{dpname}"|' \
   /opt/optolink/settings_ini.py
 
-curl -fsSL \
-  https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/optolink-apply-vscotho1-profile.sh \
-  -o /usr/local/bin/optolink-apply-vscotho1-profile
+cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
 chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
 
-curl -fsSL "$PROFILE_BASE/vcontrol-mapping.md" -o /root/optolink-vcontrol-mapping.md
+cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
 
 chown optolink:optolink /opt/optolink/settings_ini.py /opt/optolink/poll_list.py
 chmod 640 /opt/optolink/settings_ini.py /opt/optolink/poll_list.py
@@ -125,3 +158,4 @@ fi
 motd_ssh
 customize
 cleanup_lxc
+install_private_update ct/optolink-splitter.sh
