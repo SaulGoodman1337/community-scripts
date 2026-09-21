@@ -462,19 +462,6 @@ poll_list = {
                     ],
                 },
                 {
-                    "min": 0,
-                    "max": 10,
-                    "step": 1,
-                    "unit_of_measurement": "K",
-                    "nopoll": [
-                        {
-                            "name": "warmwasser_einschalt_offset_59_einstellung",
-                            "state_topic": "{mqtt_base}/warmwasser_einschalt_offset_59",
-                            "command_topic": "{mqtt_base}/warmwasser_einschalt_offset_59/set",
-                        },
-                    ],
-                },
-                {
                     "min": 5,
                     "max": 25,
                     "step": 1,
@@ -506,26 +493,39 @@ poll_list = {
                 },
             ],
         },
+        # -----------------------------------------------------------------
+        # Dashboard aliases for service values.
+        # These use new unique_ids so existing HA registry entries that were
+        # previously disabled do not suppress the dashboard values.
+        # -----------------------------------------------------------------
         {
-            "domain": "select",
-            "entity_category": "config",
-            "options": [
-                "Nach Zeitprogramm",
-                "Aus bei WW-Ladung",
-                "Ein bei WW-Ladung",
-            ],
-            "command_template": "{% if value == 'Nach Zeitprogramm' %}0{% elif value == 'Aus bei WW-Ladung' %}1{% elif value == 'Ein bei WW-Ladung' %}2{% endif %}",
-            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Nach Zeitprogramm{% elif v == 1 %}Aus bei WW-Ladung{% elif v == 2 %}Ein bei WW-Ladung{% else %}Unbekannt ({{ v }}){% endif %}",
+            "domain": "sensor",
+            "entity_category": "diagnostic",
             "nopoll": [
                 {
-                    "name": "zirkulation_bei_ww_soll1_71_einstellung",
-                    "state_topic": "{mqtt_base}/zirkulation_bei_ww_soll1_71",
-                    "command_topic": "{mqtt_base}/zirkulation_bei_ww_soll1_71/set",
+                    "name": "warmwasser_sollbereich_56_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_sollbereich_56",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}10–60 °C{% else %}Wert {{ v }}{% endif %}",
                 },
                 {
-                    "name": "zirkulation_bei_ww_soll2_72_einstellung",
+                    "name": "warmwasser_einschalt_offset_59_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_einschalt_offset_59",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}2,5 K unter Soll{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "umschaltventil_bauart_65_anzeige",
+                    "state_topic": "{mqtt_base}/umschaltventil_bauart_65",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 3 %}Grundfos Ventil{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "zirkulation_bei_ww_soll1_71_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_bei_ww_soll1_71",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Regelfunktion{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "zirkulation_bei_ww_soll2_72_anzeige",
                     "state_topic": "{mqtt_base}/zirkulation_bei_ww_soll2_72",
-                    "command_topic": "{mqtt_base}/zirkulation_bei_ww_soll2_72/set",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Regelfunktion{% else %}Wert {{ v }}{% endif %}",
                 },
             ],
         },
