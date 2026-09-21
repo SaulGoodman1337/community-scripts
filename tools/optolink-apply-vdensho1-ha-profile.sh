@@ -89,8 +89,13 @@ chmod 640   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"  
 
 echo "Validating Home Assistant discovery configuration..."
 # Validate the generated HA discovery configuration before touching the service.
-if ! runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
-  echo "Home Assistant discovery dry-run failed." >&2
+if ! timeout 30s runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
+  rc=$?
+  if [[ "$rc" == "124" ]]; then
+    echo "Home Assistant discovery dry-run timed out after 30s." >&2
+  else
+    echo "Home Assistant discovery dry-run failed (exit $rc)." >&2
+  fi
   cat /root/optolink-ha-discovery-dry-run.txt >&2
   rollback_profile
   exit 1
