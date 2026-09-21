@@ -79,8 +79,8 @@ function update_script() {
   msg_ok "Updated base system"
 
   msg_info "Updating SMB scan proxy"
-  $STD cs_repo_fetch apps/smb-scan-proxy/worker.py /opt/smb-scan-proxy/worker.py
-  $STD cs_repo_fetch tools/smb-scan-proxy-apply.sh /usr/local/sbin/smb-scan-proxy-apply
+  cs_repo_fetch apps/smb-scan-proxy/worker.py /opt/smb-scan-proxy/worker.py
+  cs_repo_fetch tools/smb-scan-proxy-apply.sh /usr/local/sbin/smb-scan-proxy-apply
   chmod 755 /opt/smb-scan-proxy/worker.py /usr/local/sbin/smb-scan-proxy-apply
   ln -sf /usr/local/sbin/smb-scan-proxy-apply /usr/bin/smb-scan-proxy-apply
   [[ -x /usr/local/bin/smb-scan-proxy-config ]] && ln -sf /usr/local/bin/smb-scan-proxy-config /usr/bin/smb-scan-proxy-config
