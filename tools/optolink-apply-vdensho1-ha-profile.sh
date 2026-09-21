@@ -49,12 +49,34 @@ python3 -m py_compile "$tmp"
 cp "$tmp" "$APP_DIR/profiles/$PROFILE_NAME"
 
 cp -a "$APP_DIR/settings_ini.py" "$APP_DIR/settings_ini.py.bak-$STAMP"
+
+had_poll=0
+had_ha=0
 if [[ -f "$APP_DIR/poll_list.py" ]]; then
+  had_poll=1
   cp -a "$APP_DIR/poll_list.py" "$APP_DIR/poll_list.py.bak-$STAMP"
 fi
 if [[ -f "$APP_DIR/homeassistant_poll_list.py" ]]; then
+  had_ha=1
   cp -a "$APP_DIR/homeassistant_poll_list.py" "$APP_DIR/homeassistant_poll_list.py.bak-$STAMP"
 fi
+
+rollback_profile() {
+  echo "Rolling back Optolink profile..." >&2
+  if [[ "$had_poll" == "1" ]]; then
+    cp -a "$APP_DIR/poll_list.py.bak-$STAMP" "$APP_DIR/poll_list.py"
+  else
+    rm -f "$APP_DIR/poll_list.py"
+  fi
+  if [[ "$had_ha" == "1" ]]; then
+    cp -a "$APP_DIR/homeassistant_poll_list.py.bak-$STAMP" "$APP_DIR/homeassistant_poll_list.py"
+  else
+    rm -f "$APP_DIR/homeassistant_poll_list.py"
+  fi
+  chown optolink:optolink "$APP_DIR/settings_ini.py" 2>/dev/null || true
+  [[ ! -f "$APP_DIR/poll_list.py" ]] || chown optolink:optolink "$APP_DIR/poll_list.py"
+  [[ ! -f "$APP_DIR/homeassistant_poll_list.py" ]] || chown optolink:optolink "$APP_DIR/homeassistant_poll_list.py"
+}
 
 cp "$tmp" "$APP_DIR/homeassistant_poll_list.py"
 
@@ -69,6 +91,7 @@ chmod 640   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"  
 if ! runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
   echo "Home Assistant discovery dry-run failed." >&2
   cat /root/optolink-ha-discovery-dry-run.txt >&2
+  rollback_profile
   exit 1
 fi
 
@@ -79,8 +102,10 @@ if [[ -c /dev/ttyUSB0 ]]; then
   sleep 3
 
   if ! systemctl is-active --quiet optolink-splitter.service; then
-    echo "Optolink-Splitter did not stay active." >&2
+    echo "Optolink-Splitter did not stay active with the new profile." >&2
     journalctl -u optolink-splitter.service -n 30 --no-pager >&2 || true
+    rollback_profile
+    systemctl restart optolink-splitter.service || true
     exit 1
   fi
 else
