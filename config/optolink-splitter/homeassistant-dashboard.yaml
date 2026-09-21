@@ -580,13 +580,13 @@ views:
             title: Warmwasser-/Zirkulationsparameter
             icon: mdi:tune-variant
             entities:
-              - sensor.vitodens_200_wb2a_warmwasser_sollbereich_56
-              - number.vitodens_200_wb2a_warmwasser_einschalt_offset_59_einstellung
+              - sensor.vitodens_200_wb2a_warmwasser_sollbereich_56_anzeige
+              - sensor.vitodens_200_wb2a_warmwasser_einschalt_offset_59_anzeige
               - number.vitodens_200_wb2a_warmwasser_kessel_offset_60_einstellung
               - number.vitodens_200_wb2a_warmwasser_pumpennachlauf_62_einstellung
-              - sensor.vitodens_200_wb2a_umschaltventil_bauart_65
-              - select.vitodens_200_wb2a_zirkulation_bei_ww_soll1_71_einstellung
-              - select.vitodens_200_wb2a_zirkulation_bei_ww_soll2_72_einstellung
+              - sensor.vitodens_200_wb2a_umschaltventil_bauart_65_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll1_71_anzeige
+              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll2_72_anzeige
     cards: []
 
   - title: Nachtabsenkung
