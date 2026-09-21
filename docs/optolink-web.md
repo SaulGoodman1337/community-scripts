@@ -1,5 +1,8 @@
 # Optolink-Web LXC
 
+> **Private repository:** define the authenticated `csrun` helper first; see [Private repository access](private-access.md). The required fine-grained PAT only needs `Contents: Read-only` on this repository.
+
+
 Optolink-Web is a lightweight browser UI for an existing [Optolink-Splitter](https://github.com/philippoo66/optolink-splitter) installation. It does **not** access the Viessmann USB/Optolink adapter directly. The splitter remains the single owner of the physical adapter and exposes the heating control over TCP and, optionally, MQTT.
 
 The first MVP provides:
@@ -29,7 +32,7 @@ Optolink-Web belongs in a **separate unprivileged LXC**. It does not need USB pa
 Run on the Proxmox VE host:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/optolink-web.sh)"
+csrun ct/optolink-web.sh
 ```
 
 Default resources:
