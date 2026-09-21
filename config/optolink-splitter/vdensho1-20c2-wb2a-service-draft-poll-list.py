@@ -17,6 +17,18 @@ Primary sources:
 
 No write-only or safety-relevant command is exposed here unless the VDensHO1
 catalog clearly supports it and we have hardware-verified semantics.
+
+Hardware verification on the real appliance (20C2 / software index 0x03):
+  0x27C5 len1 -> 0x26
+  0x27C6 len1 -> 0x32
+  0x2302 len1 -> 0x00
+  0x2303 len1 -> 0x00
+  0x6515 len1 -> 0x01
+  0x0842 len1 -> 0x01
+  0x0810 len2 div10 signed -> 31.0 C
+  0x0816 len2 div10 signed -> 31.6 C
+  0x0896 len2 div10 signed -> 20.0 C
+  0xA305 len1 *0.5 -> 0.0 %
 '''
 
 poll_interval = 2
@@ -56,9 +68,9 @@ poll_items = [
     ('NORMAL', 'aussentemperatur_tiefpass', 0x5525, 2, 0.1, True),
     ('NORMAL', 'aussentemperatur_gedaempft', 0x5527, 2, 0.1, True),
 
-    ('FAST', 'kesseltemperatur', 0x0810, 2, 0.1, True),
+    ('FAST', 'kesseltemperatur', 0x0810, 2, 0.1, True),  # HW verified: 31.0 C
     ('FAST', 'kessel_solltemperatur', 0x555A, 2, 0.1, True),
-    ('NORMAL', 'abgastemperatur', 0x0816, 2, 0.1, True),
+    ('NORMAL', 'abgastemperatur', 0x0816, 2, 0.1, True),  # HW verified: 31.6 C
 
     ('FAST', 'warmwasser_temperatur', 0x0812, 2, 0.1, True),
     ('NORMAL', 'warmwasser_solltemperatur', 0x6300, 1, 1, False),
@@ -70,7 +82,7 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Burner / pumps / valves
     # ---------------------------------------------------------------------
-    ('FAST', 'brenner_modulationsgrad', 0xA305, 1, 0.5, False),
+    ('FAST', 'brenner_modulationsgrad', 0xA305, 1, 0.5, False),  # HW verified: 0.0 % while burner off
 
     # One two-byte read can feed both state and speed.
     ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),
@@ -78,9 +90,9 @@ poll_items = [
 
     ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),
     ('FAST', 'speicherladepumpe_status', 0x6513, 1, 1, False),
-    ('FAST', 'zirkulationspumpe_status', 0x6515, 1, 1, False),
+    ('FAST', 'zirkulationspumpe_status', 0x6515, 1, 1, False),  # HW verified: 1
     ('FAST', 'umschaltventil_stellung', 0x0A10, 1, 1, False),
-    ('FAST', 'relais_k12_status', 0x0842, 1, 1, False),
+    ('FAST', 'relais_k12_status', 0x0842, 1, 1, False),  # HW verified: 1
 
     # The VDensHO1 catalog exposes flame and lockout as bit fields in the
     # 9-byte block beginning at 0x55D3.
@@ -94,14 +106,14 @@ poll_items = [
     # Heating circuit A1/M1 - operating state
     # ---------------------------------------------------------------------
     ('NORMAL', 'heizkreis_m1_betriebsart', 0x2323, 1, 1, False),
-    ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),
-    ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),
+    ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),  # HW verified: 0
+    ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified: 0
 
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, True),
 
-    ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),
+    ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW verified: 20.0 C
 
     # Current effective room target is inside the 0x2500 block.
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_aktuell', 0x2500, 22, 'b:12:13', 0.1, True),
@@ -121,8 +133,8 @@ poll_items = [
     ('SLOW', 'heizkreis_m1_mischersparfunktion_a7', 0x27A7, 1, 1, False),
     ('SLOW', 'heizkreis_m1_pumpenstillstand_a9', 0x27A9, 1, 1, False),
 
-    ('SLOW', 'heizkreis_m1_vorlauf_min_c5', 0x27C5, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_vorlauf_max_c6', 0x27C6, 1, 1, False),
+    ('SLOW', 'heizkreis_m1_vorlauf_min_c5', 0x27C5, 1, 1, False),  # HW verified raw=0x26
+    ('SLOW', 'heizkreis_m1_vorlauf_max_c6', 0x27C6, 1, 1, False),  # HW verified raw=0x32
 
     ('SLOW', 'heizkreis_m1_heizkennlinie_neigung_d3', 0x27D3, 1, 0.1, False),
     ('SLOW', 'heizkreis_m1_heizkennlinie_niveau_d4', 0x27D4, 1, 1, True),
