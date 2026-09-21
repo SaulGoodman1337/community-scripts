@@ -90,6 +90,9 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     Result: 0x2302 is hardware-verified READ, but writing it is ineffective
     on this exact 20C2 / SW-index 0x03 controller. Do not expose 0x2302 as
     an HA command topic merely because the P300 write telegram is ACKed.
+    Probe of alternate command register 0x2331 len1 returned P300 error
+    (retcode 3 / payload 0x01), so 0x2331 is not available as an ordinary
+    datapoint on this firmware either.
 '''
 
 poll_interval = 2
@@ -321,7 +324,8 @@ poll_items = [
 #   the live heating-circuit state block does not change.
 #   Some other Viessmann generations use 0x2331 as an economy-mode command,
 #   but 0x2331 is absent from the exact VDensHO1 Vitosoft-derived catalog.
-#   Do not use 0x2331 here without a separate hardware/readability test.
+#   Hardware probe on this 20C2/SW03 returned P300 retcode 3 for read 0x2331,
+#   confirming that 0x2331 is not a usable ordinary datapoint here.
 #   Strong write candidate for THIS exact generation: 0x2303 len1 values 0/1.
 #   Evidence:
 #     - a historical FHEM field report from a Vitodens 200 HO1 reporting
