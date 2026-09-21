@@ -46,6 +46,14 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
   0x0883 len1 -> 0x00 (flow switch OFF)
   0x080C len2 div10 signed -> 20.0 C (readable; physical sensor presence still to verify)
   0x6500 len2 div10 signed -> 45.0 C current effective DHW setpoint
+  Party mode enabled at the real control panel:
+    0x2303 len1 -> 0x01 (party ON)
+    0x2308 len1 -> 0x15 = 21 C party room setpoint
+    0x2500 len22 -> 02 02 65 1A 00 00 00 00 02 00 00 01 D2 00 00 00 00 00 00 00 D2 00
+      byte 1 -> 0x02 = normal operation while party mode is active
+      bytes 12..13 -> 0x00D2 = 21.0 C effective room setpoint
+      bytes 20..21 also mirror 0x00D2 in this sample
+    0x0842 len1 -> 0x01 unchanged, so relay K12 does not track party mode
 '''
 
 poll_interval = 2
@@ -127,18 +135,18 @@ poll_items = [
     # ---------------------------------------------------------------------
     ('NORMAL', 'heizkreis_m1_bedienteil_betriebsart', 0x2323, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),  # HW verified: 0
-    ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified: 0
+    ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified: 0=off, 1=on
 
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),
-    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, True),
+    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, True),  # HW verified: raw 0x15 = 21 C
 
     ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW verified: 20.0 C
 
     # One 22-byte state block feeds multiple A1/M1 entities.
     # Hardware sample: 02 01 00 00 00 00 00 00 01 00 00 01 B4 00 00 00 00 00 00 00 B4 00
-    ('NORMAL', 'heizkreis_m1_betriebsart_aktuell', 0x2500, 22, 'b:1:1', 1, False),  # HW verified: 1 = Reduziert
-    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_aktuell', 0x2500, 22, 'b:12:13', 0.1, True),  # HW verified: 18.0 C
+    ('NORMAL', 'heizkreis_m1_betriebsart_aktuell', 0x2500, 22, 'b:1:1', 1, False),  # HW verified: 1=Reduziert, 2=Normal during Party
+    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_aktuell', 0x2500, 22, 'b:12:13', 0.1, True),  # HW verified: 18.0 C reduced, 21.0 C party
     ('NORMAL', 'heizkreis_m1_frostgefahr', 0x2500, 22, 'b:16:16:0x01', 'bool', False),  # HW verified: false
     ('NORMAL', 'heizkreis_m1_ferienbetrieb', 0x2535, 1, 'b:0:0:0x01', 'bool', False),  # HW verified: false
 
