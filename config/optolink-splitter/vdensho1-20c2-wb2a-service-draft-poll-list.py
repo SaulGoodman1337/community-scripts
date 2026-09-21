@@ -263,6 +263,8 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     0x0A10 = 1 (diverter valve direction heating)
     0x081A = 20.0 C (VTS filtered temperature)
     0x080C = 20.0 C (hydraulic separator temperature)
+    Together with the earlier 0x0A10=3 sample during DHW direction, the new
+    0x0A10=1 sample confirms the exact enum 1=heating, 3=DHW on hardware.
     Result: schedules, 0x2544, 0x6513, 0x650A and 0x0A10 are hardware-readable
     on this appliance. 0x081A and 0x080C remain optional-sensor candidates:
     both reading exactly 20.0 C is not sufficient evidence that physical
