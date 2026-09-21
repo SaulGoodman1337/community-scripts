@@ -74,6 +74,22 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     0x2500 bytes 12..13 and 20..21 -> 0x00D2 = 21.0 C
     Result: 0x2308 is hardware-verified READ/WRITE for the party room
     setpoint on this exact controller.
+
+  Normal/reduced room setpoint P300 write tests:
+    0x2306 initial 21 C -> write 22 -> ACK -> read-back 22 -> restore 21
+    0x2307 initial 18 C -> write 19 -> ACK -> read-back 19
+      current reduced-mode 0x2500 effective setpoint changed 18.0 -> 19.0 C
+      restore 18 -> effective setpoint returned to 18.0 C
+    Result: 0x2306 and 0x2307 are hardware-verified READ/WRITE.
+
+  Economy mode write probe:
+    0x2302 initial/read-back 0
+    write 1 -> transport ACK, but read-back immediately remained 0 and
+      0x2500 did not change
+    write 0 -> ACK, read-back 0
+    Result: 0x2302 is hardware-verified READ, but writing it is ineffective
+    on this exact 20C2 / SW-index 0x03 controller. Do not expose 0x2302 as
+    an HA command topic merely because the P300 write telegram is ACKed.
 '''
 
 poll_interval = 2
@@ -154,11 +170,11 @@ poll_items = [
     # Heating circuit A1/M1 - operating state
     # ---------------------------------------------------------------------
     ('NORMAL', 'heizkreis_m1_bedienteil_betriebsart', 0x2323, 1, 1, False),
-    ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),  # HW verified: 0
+    ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),  # HW verified read; write ACKed but ignored
     ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified R/W: 0=off, 1=on
 
-    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),
-    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),
+    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),  # HW verified R/W: 21->22->21 C
+    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),  # HW verified R/W: 18->19->18 C
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, True),  # HW verified R/W: 21->22->21 C
 
     ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW verified: 20.0 C
@@ -300,6 +316,12 @@ poll_items = [
 #
 # Party / economy:
 #   VDensHO1 clearly exposes read state at 0x2303 / 0x2302.
+#   0x2302 is NOT an effective write register on this exact controller:
+#   write 1 is ACKed at protocol level but immediate read-back remains 0 and
+#   the live heating-circuit state block does not change.
+#   Some other Viessmann generations use 0x2331 as an economy-mode command,
+#   but 0x2331 is absent from the exact VDensHO1 Vitosoft-derived catalog.
+#   Do not use 0x2331 here without a separate hardware/readability test.
 #   Strong write candidate for THIS exact generation: 0x2303 len1 values 0/1.
 #   Evidence:
 #     - a historical FHEM field report from a Vitodens 200 HO1 reporting
