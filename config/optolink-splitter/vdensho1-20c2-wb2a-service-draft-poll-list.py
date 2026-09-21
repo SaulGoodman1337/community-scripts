@@ -208,6 +208,47 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       0x555A effective boiler target varied 30.0 -> 19.0 -> 20.9 -> 22.7 C,
       then returned to 5.0 C after flame-off.
       0x0816 filtered flue-gas temperature stayed near 32 C in these samples.
+
+  Coding/topology readout:
+    0x7700 len2 = 02 01, i.e. 0x7700=2 (A1 + DHW) and adjacent
+    0x7701=1 (single-boiler installation). Use len1 per datapoint in the poll list.
+    0x1010 len7 = ASCII "7833971" (boiler coding plug part number).
+    0x1040 len2 = 02 15 (coding-plug identifier raw; catalog uses rotatebytes).
+    0x7330 = 1 (control-unit software index).
+    0x7650 = 0x20 (GFA identifier).
+
+  A1/M1 coding readout:
+    A2=2 (storage priority)
+    A3=-9 C (frost threshold)
+    A4=0 (frost protection active / not blocked)
+    A5=5 (summer-save/HPL threshold: outdoor > room target + 1 K)
+    A6=5 C (absolute summer-save threshold)
+    A7=0 (no mixer economy function)
+    A9=7 min (HC pump behavior in reduced operation)
+    C5=38 C, C6=50 C
+    D3=0.8 heating-curve slope, D4=+5 K heating-curve level
+    E5=0 (staged HC pump)
+    E6=100 percent max, E7=30 percent min
+    E8=0 (minimum according to E7), E9=50 percent reduced speed
+    F1=0 (temperature program passive), F2=8 h party time limit
+    0x27F8/0x27F9/0x27FA/0x27FB all return P300 error retcode 3 / payload 0x01
+    on this exact SW03 controller; do not poll them in normal groups.
+
+  Boiler/DHW coding readout:
+    0x5706=81 C boiler maximum
+    0x5730=1 internal pump speed-controlled
+    0x5731=100 percent internal-pump setting
+    0x6760=20 K DHW boiler offset
+    0x6762 byte0=5 min DHW loading-pump overrun; exact catalog length is 1
+    0x6765=3 Grundfos diverter valve
+
+  Fault-history hardware readout:
+    All ten 9-byte slots 0x7507..0x7558 are readable.
+    Newest: F9 at 2026-09-21 17:31:44.
+    Slots 2..10: recurring B7 entries from 2026-07-09 through 2026-09-19.
+    This VDensHO1 encodes weekday as ISO-style Monday=1 .. Sunday=7 in the
+    observed history records (and 0x088E Monday=1), unlike the Sunday=0
+    convention observed on some other controller families.
 '''
 
 poll_interval = 2
@@ -233,11 +274,12 @@ poll_items = [
     # Identification / topology
     # ---------------------------------------------------------------------
     ('ONCE', 'device_ident_raw', 0x00F8, 8),
-    ('ONCE', 'anlagenschema', 0x7700, 2, 'b:0:0', 1, False),
-    ('ONCE', 'codierstecker_sachnummer_raw', 0x1010, 7),
-    ('ONCE', 'codierstecker_kennung_raw', 0x1040, 2),
-    ('ONCE', 'bedienteil_sw_index', 0x7330, 1, 1, False),
-    ('ONCE', 'gfa_kennung', 0x7650, 1, 1, False),
+    ('ONCE', 'anlagenschema', 0x7700, 1, 1, False),  # HW verified: 2=A1+WW
+    ('ONCE', 'anlagentyp', 0x7701, 1, 1, False),  # HW observed via 0x7700 len2: 1=Einkessel
+    ('ONCE', 'codierstecker_sachnummer_raw', 0x1010, 7),  # HW verified ASCII: 7833971
+    ('ONCE', 'codierstecker_kennung_raw', 0x1040, 2),  # HW verified raw: 0215; catalog rotatebytes
+    ('ONCE', 'bedienteil_sw_index', 0x7330, 1, 1, False),  # HW verified: 1
+    ('ONCE', 'gfa_kennung', 0x7650, 1, 1, False),  # HW verified: 0x20
 
     # ---------------------------------------------------------------------
     # Core temperatures
@@ -310,43 +352,43 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Heating circuit A1/M1 - service coding
     # ---------------------------------------------------------------------
-    ('SLOW', 'heizkreis_m1_speichervorrang_a2', 0x27A2, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_frostgrenze_a3', 0x27A3, 1, 1, True),
-    ('SLOW', 'heizkreis_m1_frostschutz_a4', 0x27A4, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_pumpenlogik_a5', 0x27A5, 1, 1, True),
-    ('SLOW', 'heizkreis_m1_sommersparabschaltung_a6', 0x27A6, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_mischersparfunktion_a7', 0x27A7, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_pumpenstillstand_a9', 0x27A9, 1, 1, False),
+    ('SLOW', 'heizkreis_m1_speichervorrang_a2', 0x27A2, 1, 1, False),  # HW verified: 2=Speichervorrang
+    ('SLOW', 'heizkreis_m1_frostgrenze_a3', 0x27A3, 1, 1, True),  # HW verified: -9 C
+    ('SLOW', 'heizkreis_m1_frostschutz_a4', 0x27A4, 1, 1, False),  # HW verified: 0=aktiv
+    ('SLOW', 'heizkreis_m1_sommerspar_schaltschwelle_a5', 0x27A5, 1, 1, False),  # HW verified: 5=AT > RTsoll + 1 K
+    ('SLOW', 'heizkreis_m1_sommersparabschaltung_a6', 0x27A6, 1, 1, False),  # HW verified: 5 C
+    ('SLOW', 'heizkreis_m1_mischersparfunktion_a7', 0x27A7, 1, 1, False),  # HW verified: 0=ohne
+    ('SLOW', 'heizkreis_m1_pumpe_reduziert_a9', 0x27A9, 1, 1, False),  # HW verified: 7 min
 
     ('SLOW', 'heizkreis_m1_vorlauf_min_c5', 0x27C5, 1, 1, False),  # HW verified raw=0x26
     ('SLOW', 'heizkreis_m1_vorlauf_max_c6', 0x27C6, 1, 1, False),  # HW verified raw=0x32
 
-    ('SLOW', 'heizkreis_m1_heizkennlinie_neigung_d3', 0x27D3, 1, 0.1, False),
-    ('SLOW', 'heizkreis_m1_heizkennlinie_niveau_d4', 0x27D4, 1, 1, True),
+    ('SLOW', 'heizkreis_m1_heizkennlinie_neigung_d3', 0x27D3, 1, 0.1, False),  # HW verified: 0.8
+    ('SLOW', 'heizkreis_m1_heizkennlinie_niveau_d4', 0x27D4, 1, 1, True),  # HW verified: +5 K
 
-    ('SLOW', 'heizkreis_m1_pumpentyp_e5', 0x27E5, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_pumpe_max_drehzahl_e6', 0x27E6, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_pumpe_min_drehzahl_e7', 0x27E7, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_pumpe_nebenbetrieb_e8', 0x27E8, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_pumpe_reduziert_e9', 0x27E9, 1, 1, False),
+    ('SLOW', 'heizkreis_m1_pumpentyp_e5', 0x27E5, 1, 1, False),  # HW verified: 0=stufig
+    ('SLOW', 'heizkreis_m1_pumpe_max_drehzahl_e6', 0x27E6, 1, 1, False),  # HW verified: 100%
+    ('SLOW', 'heizkreis_m1_pumpe_min_drehzahl_e7', 0x27E7, 1, 1, False),  # HW verified: 30%
+    ('SLOW', 'heizkreis_m1_pumpe_nebenbetrieb_e8', 0x27E8, 1, 1, False),  # HW verified: 0=minimal nach E7
+    ('SLOW', 'heizkreis_m1_pumpe_reduziert_e9', 0x27E9, 1, 1, False),  # HW verified: 50%
 
-    ('SLOW', 'heizkreis_m1_estrichfunktion_f1', 0x27F1, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_party_zeitbegrenzung_f2', 0x27F2, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_reduziert_anhebung_start_f8', 0x27F8, 1, 1, True),
-    ('SLOW', 'heizkreis_m1_reduziert_anhebung_ende_f9', 0x27F9, 1, 1, True),
-    ('SLOW', 'heizkreis_m1_vorlauf_ueberhoehung_fa', 0x27FA, 1, 1, False),
-    ('SLOW', 'heizkreis_m1_vorlauf_ueberhoehung_dauer_fb', 0x27FB, 1, 2, False),
+    ('SLOW', 'heizkreis_m1_temperaturprogramm_f1', 0x27F1, 1, 1, False),  # HW verified: 0=Passiv
+    ('SLOW', 'heizkreis_m1_party_zeitbegrenzung_f2', 0x27F2, 1, 1, False),  # HW verified: 8 h
+    ('EXPERIMENTAL', 'heizkreis_m1_reduziert_anhebung_start_f8', 0x27F8, 1, 1, True),
+    ('EXPERIMENTAL', 'heizkreis_m1_reduziert_anhebung_ende_f9', 0x27F9, 1, 1, True),
+    ('EXPERIMENTAL', 'heizkreis_m1_vorlauf_ueberhoehung_fa', 0x27FA, 1, 1, False),
+    ('EXPERIMENTAL', 'heizkreis_m1_vorlauf_ueberhoehung_dauer_fb', 0x27FB, 1, 2, False),
 
     # ---------------------------------------------------------------------
     # Boiler / DHW service coding
     # ---------------------------------------------------------------------
-    ('SLOW', 'kessel_maximaltemperatur_06', 0x5706, 1, 1, False),
-    ('SLOW', 'interne_pumpe_kennung_30', 0x5730, 1, 1, False),
-    ('SLOW', 'interne_pumpe_solldrehzahl_31', 0x5731, 1, 1, False),
+    ('SLOW', 'kessel_maximaltemperatur_06', 0x5706, 1, 1, False),  # HW verified: 81 C
+    ('SLOW', 'interne_pumpe_kennung_30', 0x5730, 1, 1, False),  # HW verified: 1=drehzahlgeregelt
+    ('SLOW', 'interne_pumpe_solldrehzahl_31', 0x5731, 1, 1, False),  # HW verified: 100%
 
-    ('SLOW', 'warmwasser_kessel_offset_60', 0x6760, 1, 1, False),
-    ('SLOW', 'warmwasser_pumpennachlauf_62', 0x6762, 2, 1, False),
-    ('SLOW', 'umschaltventil_bauart_65', 0x6765, 1, 1, False),
+    ('SLOW', 'warmwasser_kessel_offset_60', 0x6760, 1, 1, False),  # HW verified: 20 K
+    ('SLOW', 'warmwasser_pumpennachlauf_62', 0x6762, 1, 1, False),  # HW verified byte0=5 min; exact length1
+    ('SLOW', 'umschaltventil_bauart_65', 0x6765, 1, 1, False),  # HW verified: 3=Grundfos Ventil
 
     ('SLOW', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),  # HW verified read: 0=Regelfunktion
     ('SLOW', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),  # HW verified read: 0=Regelfunktion
@@ -361,16 +403,16 @@ poll_items = [
     ('RARE', 'brenner_betriebsstunden_stufe1', 0x0886, 4, 0.0002777777777777778, False),  # HW verified: 17731.4 h
     ('RARE', 'systemzeit', 0x088E, 8, 'vdatetime', False),  # HW verified R/W DateTimeBCD
 
-    ('RARE', 'fehlerhistorie_01', 0x7507, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_02', 0x7510, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_03', 0x7519, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_04', 0x7522, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_05', 0x752B, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_06', 0x7534, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_07', 0x753D, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_08', 0x7546, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_09', 0x754F, 9, 'b:0:0', 'f:02X', False),
-    ('RARE', 'fehlerhistorie_10', 0x7558, 9, 'b:0:0', 'f:02X', False),
+    ('RARE', 'fehlerhistorie_01', 0x7507, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_02', 0x7510, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_03', 0x7519, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_04', 0x7522, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_05', 0x752B, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_06', 0x7534, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_07', 0x753D, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_08', 0x7546, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_09', 0x754F, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
+    ('RARE', 'fehlerhistorie_10', 0x7558, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
 
     # ---------------------------------------------------------------------
     # Time programs
