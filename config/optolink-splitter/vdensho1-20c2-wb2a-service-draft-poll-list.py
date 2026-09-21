@@ -35,6 +35,17 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
   0x55DD len1 -> 0x01 (raw; mask 0x20 is false)
   0x0B1C len2 -> P300 error response (retcode 3, payload 0x01)
   0x0B1E len2 -> P300 error response (retcode 3, payload 0x01)
+  0x2906 len1 -> 0x01 (A1/M1 heating-circuit pump ON)
+  0x650A len1 -> 0x00 (DHW charging inactive)
+  0x0A10 len1 -> 0x03 (diverter valve toward DHW)
+  0x2500 len22 -> 02 01 00 00 00 00 00 00 01 00 00 01 B4 00 00 00 00 00 00 00 B4 00
+    byte 1 -> 0x01 = reduced operation
+    bytes 12..13 -> 0x00B4 = 18.0 C current effective room setpoint
+    byte 16 bit 0 -> frost danger false
+  0x2535 len1 -> 0x00 (holiday mode false)
+  0x0883 len1 -> 0x00 (flow switch OFF)
+  0x080C len2 div10 signed -> 20.0 C (readable; physical sensor presence still to verify)
+  0x6500 len2 div10 signed -> 45.0 C current effective DHW setpoint
 '''
 
 poll_interval = 2
@@ -80,9 +91,9 @@ poll_items = [
 
     ('FAST', 'warmwasser_temperatur', 0x0812, 2, 0.1, True),
     ('NORMAL', 'warmwasser_solltemperatur', 0x6300, 1, 1, False),
-    ('NORMAL', 'warmwasser_solltemperatur_aktuell', 0x6500, 2, 0.1, True),
+    ('NORMAL', 'warmwasser_solltemperatur_aktuell', 0x6500, 2, 0.1, True),  # HW verified: 45.0 C
 
-    ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),
+    ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),  # HW readable: 20.0 C; sensor presence TBD
     ('OPTIONAL_EXT', 'vorlaufsensor_vts_temperatur', 0x081A, 2, 0.1, True),
 
     # ---------------------------------------------------------------------
@@ -95,10 +106,13 @@ poll_items = [
     ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),
 
     ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),
+    ('FAST', 'heizkreis_m1_pumpe_status', 0x2906, 1, 1, False),  # HW verified: ON
     ('FAST', 'speicherladepumpe_status', 0x6513, 1, 1, False),
+    ('FAST', 'warmwasser_ladestatus', 0x650A, 1, 1, False),  # HW verified: 0 = inactive
     ('FAST', 'zirkulationspumpe_status', 0x6515, 1, 1, False),  # HW verified: 1
-    ('FAST', 'umschaltventil_stellung', 0x0A10, 1, 1, False),
+    ('FAST', 'umschaltventil_stellung', 0x0A10, 1, 1, False),  # HW verified: 3 = Richtung Warmwasser
     ('FAST', 'relais_k12_status', 0x0842, 1, 1, False),  # HW verified: 1
+    ('NORMAL', 'warmwasser_flowswitch', 0x0883, 1, 1, False),  # HW verified: OFF
 
     # The VDensHO1 catalog exposes flame and lockout as bit fields in the
     # 9-byte block beginning at 0x55D3.
@@ -111,7 +125,7 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Heating circuit A1/M1 - operating state
     # ---------------------------------------------------------------------
-    ('NORMAL', 'heizkreis_m1_betriebsart', 0x2323, 1, 1, False),
+    ('NORMAL', 'heizkreis_m1_bedienteil_betriebsart', 0x2323, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),  # HW verified: 0
     ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified: 0
 
@@ -121,10 +135,12 @@ poll_items = [
 
     ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW verified: 20.0 C
 
-    # Current effective room target is inside the 0x2500 block.
-    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_aktuell', 0x2500, 22, 'b:12:13', 0.1, True),
-    ('NORMAL', 'heizkreis_m1_frostgefahr', 0x2500, 22, 'b:16:16:0x01', 'bool', False),
-    ('NORMAL', 'heizkreis_m1_ferienbetrieb', 0x2535, 1, 'b:0:0:0x01', 'bool', False),
+    # One 22-byte state block feeds multiple A1/M1 entities.
+    # Hardware sample: 02 01 00 00 00 00 00 00 01 00 00 01 B4 00 00 00 00 00 00 00 B4 00
+    ('NORMAL', 'heizkreis_m1_betriebsart_aktuell', 0x2500, 22, 'b:1:1', 1, False),  # HW verified: 1 = Reduziert
+    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_aktuell', 0x2500, 22, 'b:12:13', 0.1, True),  # HW verified: 18.0 C
+    ('NORMAL', 'heizkreis_m1_frostgefahr', 0x2500, 22, 'b:16:16:0x01', 'bool', False),  # HW verified: false
+    ('NORMAL', 'heizkreis_m1_ferienbetrieb', 0x2535, 1, 'b:0:0:0x01', 'bool', False),  # HW verified: false
 
     ('FAST', 'heizkreis_m1_vorlaufsolltemperatur', 0x2544, 2, 0.1, True),
 
