@@ -2,6 +2,29 @@
 _CS_DEFAULT_URL="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main"
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
+
+CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
+CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+
+cs_repo_fetch() {
+  local rel="${1:?repo-relative path}"
+  local dest="${2:?destination}"
+  if [[ -n "${COMMUNITY_SCRIPTS_ROOT:-}" && -f "${COMMUNITY_SCRIPTS_ROOT}/$rel" ]]; then
+    cp "${COMMUNITY_SCRIPTS_ROOT}/$rel" "$dest"
+    return 0
+  fi
+  if [[ -z "${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}" ]]; then
+    echo "Missing COMMUNITY_SCRIPTS_GITHUB_TOKEN for private repository access." >&2
+    return 1
+  fi
+  curl -fsSL \
+    -H "Authorization: Bearer $COMMUNITY_SCRIPTS_GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.raw+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+    -o "$dest"
+}
+
 # Copyright (c) 2026
 # License: MIT
 # Source: https://github.com/philippoo66/optolink-splitter
@@ -47,13 +70,9 @@ function update_script() {
   msg_ok "Updated Python dependencies"
 
   msg_info "Refreshing VScotHO1 profile helper"
-  $STD curl -fsSL \
-    https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/optolink-apply-vscotho1-profile.sh \
-    -o /usr/local/bin/optolink-apply-vscotho1-profile
+  $STD cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
   chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
-  $STD curl -fsSL \
-    https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/config/optolink-splitter/vcontrol-mapping.md \
-    -o /root/optolink-vcontrol-mapping.md
+  $STD cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
   msg_ok "Refreshed VScotHO1 profile helper"
 
   chown -R optolink:optolink /opt/optolink
