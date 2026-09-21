@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import errno
 import logging
 import os
 import re
+import shutil
 import subprocess
 import time
 from pathlib import Path
@@ -41,6 +43,32 @@ def backend_ready() -> bool:
     )
 
 
+def move_to_queue(source: Path, destination: Path) -> None:
+    """Move a completed scan into the queue.
+
+    A Proxmox/LXC installation may place /srv and /var/lib on different
+    filesystems. os.replace() cannot cross filesystem boundaries, so fall
+    back to copy -> atomic rename inside the queue -> unlink source.
+    """
+    try:
+        source.replace(destination)
+        return
+    except OSError as exc:
+        if exc.errno != errno.EXDEV:
+            raise
+
+    temporary = destination.with_name(f".{destination.name}.copying")
+    try:
+        shutil.copy2(source, temporary)
+        with temporary.open("rb") as handle:
+            os.fsync(handle.fileno())
+        os.replace(temporary, destination)
+        source.unlink()
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
 def enqueue_stable_files() -> None:
     now = time.time()
     current: set[str] = set()
@@ -69,7 +97,7 @@ def enqueue_stable_files() -> None:
         stamp = time.strftime("%Y%m%d-%H%M%S")
         destination = QUEUE / f"{stamp}-{time.time_ns() % 1000000:06d}-{safe_name(path.name)}"
         try:
-            path.replace(destination)
+            move_to_queue(path, destination)
             log.info("Queued scan %s -> %s", path.name, destination.name)
             observed.pop(path.name, None)
         except FileNotFoundError:
