@@ -1,16 +1,19 @@
 '''
 Custom Optolink-Splitter profile for Daniel's VScotHO1 / device 20CB.
 Generated from the supplied vcontrold.xml, vito.xml and Home Assistant MQTT YAML.
-profile-id: vscotho1-20cb-ha-compat-v1
+profile-id: vscotho1-20cb-ha-compat-v2
 '''
 
-poll_interval = 10
+# Fast-changing runtime values are refreshed approximately every 2 seconds.
+# The slower groups retain their previous effective intervals:
+# NORMAL ~= 30 s, SLOW ~= 5 min, RARE ~= 30 min.
+poll_interval = 2
 
 poll_groups = {
     "FAST": 1,
-    "NORMAL": 3,
-    "SLOW": 30,
-    "RARE": 180,
+    "NORMAL": 15,
+    "SLOW": 150,
+    "RARE": 900,
 }
 
 poll_items = [
@@ -43,8 +46,10 @@ poll_items = [
     ('NORMAL', 'heizkreis_m1_pumpe_min_drehzahl', 0x27E7, 1, 1, False),  # legacy=getMinDrehzahlA1M1
     ('NORMAL', 'heizkreis_m1_heizkennlinie_neigung', 0x27D3, 1, 0.1, True),  # legacy=getNeigungM1
     ('NORMAL', 'heizkreis_m1_heizkennlinie_niveau', 0x27D4, 1, 1, True),  # legacy=getNiveauM1
+    # One 2-byte read of 0x7660 feeds both values; adjacent byte filters are
+    # evaluated from the same Optolink response by Optolink-Splitter.
+    ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),  # legacy=getPumpeStatusIntern
     ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),  # legacy=getPumpeDrehzahlIntern
-    ('FAST', 'interne_pumpe_status', 0x7660, 1, 1, False),  # legacy=getPumpeStatusIntern
     ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),  # legacy=getPumpeStatusM1
     ('FAST', 'zirkulationspumpe_status', 0x6515, 1, 1, False),  # legacy=getPumpeStatusZirku
     ('NORMAL', 'heizkreis_m1_pumpe_nebenbetrieb_drehzahl', 0x27E8, 1, 1, False),  # legacy=getSollDrehzahlNebenbetriebA1M1
