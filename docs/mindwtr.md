@@ -1,5 +1,8 @@
 # Mindwtr LXC
 
+> **Private repository:** define the authenticated `csrun` helper first; see [Private repository access](private-access.md). The required fine-grained PAT only needs `Contents: Read-only` on this repository.
+
+
 This repository provides a Proxmox VE LXC wrapper for [Mindwtr](https://github.com/dongdongbh/Mindwtr).
 
 The LXC runs Docker Compose with two upstream containers:
@@ -14,7 +17,7 @@ mindwtr-cloud  -> TCP 8787
 Run on the Proxmox VE host:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/mindwtr.sh)"
+csrun ct/mindwtr.sh
 ```
 
 Default resources:
