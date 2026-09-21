@@ -54,6 +54,15 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       bytes 12..13 -> 0x00D2 = 21.0 C effective room setpoint
       bytes 20..21 also mirror 0x00D2 in this sample
     0x0842 len1 -> 0x01 unchanged, so relay K12 does not track party mode
+
+  Party mode P300 write test on the real appliance:
+    write 0x2303 len1 value 0 -> ACK, read-back 0x00
+      0x2500 returns to reduced operation and 18.0 C effective room setpoint
+    write 0x2303 len1 value 1 -> ACK, read-back 0x01
+      0x2308 remains 21 C
+      0x2500 switches to normal operation and 21.0 C effective room setpoint
+    Result: 0x2303 is hardware-verified READ/WRITE for party mode on this
+    exact 20C2 / software-index 0x03 controller.
 '''
 
 poll_interval = 2
@@ -135,7 +144,7 @@ poll_items = [
     # ---------------------------------------------------------------------
     ('NORMAL', 'heizkreis_m1_bedienteil_betriebsart', 0x2323, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),  # HW verified: 0
-    ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified: 0=off, 1=on
+    ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified R/W: 0=off, 1=on
 
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),
@@ -289,9 +298,13 @@ poll_items = [
 #       remotely via 0x2303;
 #     - our real appliance has now been manually put into party mode and
 #       reports 0x2303=1 plus the expected 21 C effective room setpoint.
-#   Still hardware-test OFF->ON here before exposing it to Home Assistant.
+#   Hardware verification on this exact 20C2 / SW index 0x03 is complete:
+#     write 0 -> ACK + read-back 0 + state block returns to reduced/18 C
+#     write 1 -> ACK + read-back 1 + state block switches to normal/21 C
+#   Therefore 0x2303 len1 values 0/1 is approved as the party-mode R/W datapoint
+#   for this appliance and can be exposed as a Home Assistant switch.
 #   Later generations also use 0x2330, but the exact VDensHO1 Vitosoft-derived
-#   catalog contains no 0x2330 datapoint, so 0x2303 is the preferred candidate.
+#   catalog contains no 0x2330 datapoint, so do not substitute 0x2330 here.
 #
 # Circulation pump:
 #   0x6515 is status. 0x0842 is relay K12 status. Time programs and coding
