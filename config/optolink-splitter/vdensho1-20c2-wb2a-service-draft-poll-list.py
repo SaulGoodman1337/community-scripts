@@ -140,6 +140,13 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     restore write 0 -> ACK/read-back 0x00
     Result: 0x6773 is hardware-verified READ/WRITE. Physical forcing effect
     of value 7 still needs one test while the pump is initially OFF.
+
+  Circulation timer program readout:
+    0x2200/08/10/18/20/28/30 all returned 2B A8 FF FF FF FF FF FF.
+    Decoded for Monday through Sunday: 05:30-21:00, one active interval/day.
+    At 2026-09-21 20:57 the live state matched the schedule:
+      0x6515 = 1, 0x0842 = 1, 0x6773 = 0 (timer mode).
+    Expected timer transition to OFF: 21:00 local controller time.
 '''
 
 poll_interval = 2
@@ -323,13 +330,13 @@ poll_items = [
     ('RARE', 'warmwasser_zeitprogramm_samstag', 0x2128, 8, 'schedvdens', False),
     ('RARE', 'warmwasser_zeitprogramm_sonntag', 0x2130, 8, 'schedvdens', False),
 
-    ('RARE', 'zirkulation_zeitprogramm_montag', 0x2200, 8, 'schedvdens', False),
-    ('RARE', 'zirkulation_zeitprogramm_dienstag', 0x2208, 8, 'schedvdens', False),
-    ('RARE', 'zirkulation_zeitprogramm_mittwoch', 0x2210, 8, 'schedvdens', False),
-    ('RARE', 'zirkulation_zeitprogramm_donnerstag', 0x2218, 8, 'schedvdens', False),
-    ('RARE', 'zirkulation_zeitprogramm_freitag', 0x2220, 8, 'schedvdens', False),
-    ('RARE', 'zirkulation_zeitprogramm_samstag', 0x2228, 8, 'schedvdens', False),
-    ('RARE', 'zirkulation_zeitprogramm_sonntag', 0x2230, 8, 'schedvdens', False),
+    ('RARE', 'zirkulation_zeitprogramm_montag', 0x2200, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'zirkulation_zeitprogramm_dienstag', 0x2208, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'zirkulation_zeitprogramm_mittwoch', 0x2210, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'zirkulation_zeitprogramm_donnerstag', 0x2218, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'zirkulation_zeitprogramm_freitag', 0x2220, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'zirkulation_zeitprogramm_samstag', 0x2228, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'zirkulation_zeitprogramm_sonntag', 0x2230, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
 
     # ---------------------------------------------------------------------
     # Optional M2 heating circuit
