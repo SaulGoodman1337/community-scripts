@@ -407,8 +407,9 @@ poll_items = [
     ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),  # HW verified dynamically: 1 during firing/post-run, 0 while idle
     ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),  # HW verified: 100% firing, 50% post-run
 
+    ('FAST', 'heizkreis_m1_pumpe_ausgang', 0x7663, 2, 'b:0:0', 1, False),  # HW verified: 1 firing, 0 after flame-off
     ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),  # HW verified: 100% firing, 0% after flame-off
-    ('FAST', 'heizkreis_m1_pumpe_status', 0x2906, 1, 1, False),  # HW verified: ON
+    ('FAST', 'heizkreis_m1_pumpe_status', 0x2906, 1, 1, False),  # HW verified logical state; remained 1 after physical 0x7663 output stopped
     ('FAST', 'speicherladepumpe_status', 0x6513, 1, 1, False),  # HW verified: 0=OFF
     ('FAST', 'warmwasser_ladestatus', 0x650A, 1, 1, False),  # HW verified: 0=Ladung inaktiv
     ('FAST', 'zirkulationspumpe_status', 0x6515, 1, 1, False),  # HW verified: 1
