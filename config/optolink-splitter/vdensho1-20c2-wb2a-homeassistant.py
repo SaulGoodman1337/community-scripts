@@ -31,9 +31,9 @@ Write verification on this exact appliance:
   0x6300 DHW target: R/W, current configured range 10..60 C
   0x6773 circulation interval: R/W verified for values 0 and 7
 
-For the live image, writable selects are deliberately restricted to values
-that were hardware-write-tested on this exact appliance. The full source
-enums remain documented in the research draft.
+Writable selects expose the complete VDensHO1 source-documented enums.
+Hardware write tests on this exact appliance have so far covered 0x2323
+values 2 and 4, and 0x6773 values 0 and 7.
 """
 
 poll_list = {
@@ -263,18 +263,21 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
-        # Operating mode 0x2323 - LIVE SAFE SUBSET.
-        # Only 2 <-> 4 were write-tested on this exact appliance.
+        # Operating mode 0x2323.
+        # Exact VDensHO1 enum. Hardware writes verified on this unit for 2 <-> 4.
         # -----------------------------------------------------------------
         {
             "domain": "select",
             "options": [
+                "Abschalt",
+                "Nur WW",
                 "Heizen + WW",
+                "Dauernd Reduziert",
                 "Dauernd Normal",
             ],
             "command_topic": "%mqtt_listen%",
-            "command_template": "{% if value == 'Heizen + WW' %}w;%DpAddr%;%Length%;2{% elif value == 'Dauernd Normal' %}w;%DpAddr%;%Length%;4{% endif %}",
-            "value_template": "{% set v = value | int(-1) %}{% if v == 2 %}Heizen + WW{% elif v == 4 %}Dauernd Normal{% else %}Nicht freigegeben ({{ v }}){% endif %}",
+            "command_template": "{% if value == 'Abschalt' %}w;%DpAddr%;%Length%;0{% elif value == 'Nur WW' %}w;%DpAddr%;%Length%;1{% elif value == 'Heizen + WW' %}w;%DpAddr%;%Length%;2{% elif value == 'Dauernd Reduziert' %}w;%DpAddr%;%Length%;3{% elif value == 'Dauernd Normal' %}w;%DpAddr%;%Length%;4{% endif %}",
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Abschalt{% elif v == 1 %}Nur WW{% elif v == 2 %}Heizen + WW{% elif v == 3 %}Dauernd Reduziert{% elif v == 4 %}Dauernd Normal{% else %}Unbekannt ({{ v }}){% endif %}",
             "optimistic": False,
             "poll": [
                 ("NORMAL", "heizkreis_m1_betriebsart", 0x2323, 1, 1, False),
@@ -282,19 +285,24 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
-        # Circulation control 0x6773 - LIVE SAFE SUBSET.
-        # Only 0 <-> 7 were write-tested on this exact appliance.
-        # The physical boost effect from an actually OFF baseline remains open.
+        # Circulation interval 0x6773.
+        # Exact VDensHO1 enum. Hardware writes verified on this unit for 0 <-> 7.
         # -----------------------------------------------------------------
         {
             "domain": "select",
             "options": [
                 "Schaltuhr",
+                "1 pro Stunde",
+                "2 pro Stunde",
+                "3 pro Stunde",
+                "4 pro Stunde",
+                "5 pro Stunde",
+                "6 pro Stunde",
                 "EIN",
             ],
             "command_topic": "%mqtt_listen%",
-            "command_template": "{% if value == 'Schaltuhr' %}w;%DpAddr%;%Length%;0{% elif value == 'EIN' %}w;%DpAddr%;%Length%;7{% endif %}",
-            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Schaltuhr{% elif v == 7 %}EIN{% else %}Nicht freigegeben ({{ v }}){% endif %}",
+            "command_template": "{% if value == 'Schaltuhr' %}w;%DpAddr%;%Length%;0{% elif value == '1 pro Stunde' %}w;%DpAddr%;%Length%;1{% elif value == '2 pro Stunde' %}w;%DpAddr%;%Length%;2{% elif value == '3 pro Stunde' %}w;%DpAddr%;%Length%;3{% elif value == '4 pro Stunde' %}w;%DpAddr%;%Length%;4{% elif value == '5 pro Stunde' %}w;%DpAddr%;%Length%;5{% elif value == '6 pro Stunde' %}w;%DpAddr%;%Length%;6{% elif value == 'EIN' %}w;%DpAddr%;%Length%;7{% endif %}",
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Schaltuhr{% elif v == 1 %}1 pro Stunde{% elif v == 2 %}2 pro Stunde{% elif v == 3 %}3 pro Stunde{% elif v == 4 %}4 pro Stunde{% elif v == 5 %}5 pro Stunde{% elif v == 6 %}6 pro Stunde{% elif v == 7 %}EIN{% else %}Unbekannt ({{ v }}){% endif %}",
             "optimistic": False,
             "poll": [
                 ("SLOW", "zirkulation_intervall", 0x6773, 1, 1, False),
@@ -547,9 +555,9 @@ poll_list = {
 # * Water-heater/climate aggregate entities:
 #     intentionally deferred until their mode semantics are tested as a unit.
 #
-# * Unverified select values:
-#     0x2323 values 0/1/3 and 0x6773 values 1..6 are documented by the exact
-#     VDensHO1 catalog but intentionally omitted from the live write UI.
+# * Select write coverage:
+#     Full exact-catalog enums are exposed. Hardware write tests on this exact
+#     appliance currently cover 0x2323 values 2/4 and 0x6773 values 0/7.
 #
 # * Direct circulation "boost" abstraction:
 #     0x6773 R/W is verified, but the physical 0->7 forcing effect from an
