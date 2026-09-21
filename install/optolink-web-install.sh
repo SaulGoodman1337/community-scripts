@@ -3,6 +3,42 @@
 # Copyright (c) 2026
 # License: MIT
 
+CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
+CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+
+cs_repo_fetch() {
+  local rel="${1:?repo-relative path}"
+  local dest="${2:?destination}"
+  if [[ -n "${COMMUNITY_SCRIPTS_ROOT:-}" && -f "${COMMUNITY_SCRIPTS_ROOT}/$rel" ]]; then
+    cp "${COMMUNITY_SCRIPTS_ROOT}/$rel" "$dest"
+    return 0
+  fi
+  if [[ -z "${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}" ]]; then
+    echo "Missing COMMUNITY_SCRIPTS_GITHUB_TOKEN for private repository access." >&2
+    return 1
+  fi
+  curl -fsSL \
+    -H "Authorization: Bearer $COMMUNITY_SCRIPTS_GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.raw+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+    -o "$dest"
+}
+
+install_private_update() {
+  local target="${1:?ct script path}"
+  install -d -m 0755 /usr/local/lib/community-scripts
+  cs_repo_fetch tools/private-update.sh /usr/local/lib/community-scripts/private-update.sh
+  chmod 755 /usr/local/lib/community-scripts/private-update.sh
+  cat >/etc/community-scripts-private.conf <<EOF_PRIVATE_UPDATE
+COMMUNITY_SCRIPTS_REPO=$CS_REPO
+COMMUNITY_SCRIPTS_REF=$CS_REF
+COMMUNITY_SCRIPTS_TARGET=$target
+EOF_PRIVATE_UPDATE
+  chmod 600 /etc/community-scripts-private.conf
+  ln -sf /usr/local/lib/community-scripts/private-update.sh /usr/bin/update
+}
+
 source /dev/stdin <<<"$FUNCTIONS_FILE_PATH"
 color
 verb_ip6
@@ -21,15 +57,14 @@ if ! id optolinkweb >/dev/null 2>&1; then
 fi
 msg_ok "Created service account"
 
-BASE_URL="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/apps/optolink-web"
 msg_info "Installing Optolink-Web"
 install -d -o optolinkweb -g optolinkweb /opt/optolink-web /opt/optolink-web/templates /opt/optolink-web/static
-curl -fsSL "$BASE_URL/app.py" -o /opt/optolink-web/app.py
-curl -fsSL "$BASE_URL/datapoints.json" -o /opt/optolink-web/datapoints.json
-curl -fsSL "$BASE_URL/requirements.txt" -o /opt/optolink-web/requirements.txt
-curl -fsSL "$BASE_URL/templates/index.html" -o /opt/optolink-web/templates/index.html
-curl -fsSL "$BASE_URL/static/app.js" -o /opt/optolink-web/static/app.js
-curl -fsSL "$BASE_URL/static/style.css" -o /opt/optolink-web/static/style.css
+cs_repo_fetch apps/optolink-web/app.py /opt/optolink-web/app.py
+cs_repo_fetch apps/optolink-web/datapoints.json /opt/optolink-web/datapoints.json
+cs_repo_fetch apps/optolink-web/requirements.txt /opt/optolink-web/requirements.txt
+cs_repo_fetch apps/optolink-web/templates/index.html /opt/optolink-web/templates/index.html
+cs_repo_fetch apps/optolink-web/static/app.js /opt/optolink-web/static/app.js
+cs_repo_fetch apps/optolink-web/static/style.css /opt/optolink-web/static/style.css
 python3 -m venv /opt/optolink-web/venv
 /opt/optolink-web/venv/bin/pip install --upgrade pip setuptools wheel
 /opt/optolink-web/venv/bin/pip install -r /opt/optolink-web/requirements.txt
@@ -108,3 +143,4 @@ msg_ok "Created configuration helper"
 motd_ssh
 customize
 cleanup_lxc
+install_private_update ct/optolink-web.sh
