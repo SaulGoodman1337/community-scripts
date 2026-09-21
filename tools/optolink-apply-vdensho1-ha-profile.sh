@@ -87,6 +87,7 @@ rm -f "$APP_DIR/poll_list.py"
 chown optolink:optolink   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"   "$APP_DIR/profiles/$PROFILE_NAME"
 chmod 640   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"   "$APP_DIR/profiles/$PROFILE_NAME"
 
+echo "Validating Home Assistant discovery configuration..."
 # Validate the generated HA discovery configuration before touching the service.
 if ! runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
   echo "Home Assistant discovery dry-run failed." >&2
@@ -95,9 +96,11 @@ if ! runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant
   exit 1
 fi
 
+echo "Discovery dry-run OK."
 systemctl daemon-reload
 
 if [[ -c /dev/ttyUSB0 ]]; then
+  echo "Restarting Optolink-Splitter with VDensHO1 profile..."
   systemctl restart optolink-splitter.service
   sleep 3
 
@@ -122,13 +125,20 @@ PY
 )"
 
 if [[ "$mqtt_enabled" == "1" && -c /dev/ttyUSB0 ]]; then
+  echo "Publishing Home Assistant MQTT discovery (timeout 45s)..."
   # Discovery publishing is intentionally non-fatal: the Optolink service
   # remains useful even if Home Assistant/MQTT is temporarily unavailable.
-  if runuser -u optolink --       "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py"; then
+  if timeout 45s runuser -u optolink --       "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py"; then
     echo "Home Assistant MQTT discovery published."
   else
-    echo "WARNING: HA discovery publish failed; see output above." >&2
-    echo "Retry later with: cd /opt/optolink && ./venv/bin/python homeassistant_publish.py" >&2
+    rc=$?
+    if [[ "$rc" == "124" ]]; then
+      echo "WARNING: HA discovery publish timed out after 45s." >&2
+    else
+      echo "WARNING: HA discovery publish failed (exit $rc)." >&2
+    fi
+    echo "Optolink remains active. Retry later with:" >&2
+    echo "  cd /opt/optolink && ./venv/bin/python homeassistant_publish.py" >&2
   fi
 else
   echo "MQTT is disabled; discovery was validated but not published."
