@@ -1,6 +1,11 @@
 '''
 DRAFT ONLY - NOT ACTIVE / NOT REFERENCED BY THE INSTALLER
 
+SUPERSEDED FOR THIS APPLIANCE:
+The real WB2A returned 0x00F8 = 20 C2 00 03 00 00 01 03, identifying it as
+VDensHO1/20C2 rather than VScotHO1/20CB. Keep this file only as comparative
+research. Use vdensho1-20c2-wb2a-service-draft-poll-list.py for further work.
+
 Service-manual-oriented poll profile for:
   Viessmann Vitodens 200, type WB2A
   controller/device: VScotHO1 / 20CB, P300
