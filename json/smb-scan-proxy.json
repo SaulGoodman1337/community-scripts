@@ -1,0 +1,43 @@
+{
+  "name": "SMB-Scan-Proxy",
+  "slug": "smb-scan-proxy",
+  "categories": [12],
+  "date_created": "2026-09-21",
+  "type": "ct",
+  "updateable": true,
+  "privileged": false,
+  "config_path": "/etc/smb-scan-proxy.env",
+  "documentation": "https://github.com/SaulGoodman1337/community-scripts/blob/main/docs/smb-scan-proxy.md",
+  "website": "https://github.com/SaulGoodman1337/community-scripts",
+  "repository": "https://github.com/SaulGoodman1337/community-scripts",
+  "architectures": ["amd64", "arm64"],
+  "platforms": ["pve"],
+  "description": "Isolated SMB1 scan-to-folder bridge that forwards completed files to a modern SMB2/SMB3 backend.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/smb-scan-proxy.sh",
+      "resources": {
+        "cpu": 1,
+        "ram": 512,
+        "hdd": 4,
+        "os": "debian",
+        "version": "13"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": "scanner",
+    "password": null
+  },
+  "notes": [
+    {
+      "text": "The legacy SMB listener is disabled after installation until ENABLED=true and PRINTER_IP are configured.",
+      "type": "warning"
+    },
+    {
+      "text": "Generated frontend credentials are stored in /root/smb-scan-proxy.creds. The backend remains SMB2/SMB3 and uses separate credentials.",
+      "type": "info"
+    }
+  ]
+}
