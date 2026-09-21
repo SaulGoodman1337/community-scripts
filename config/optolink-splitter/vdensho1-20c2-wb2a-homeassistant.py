@@ -332,7 +332,8 @@ poll_list = {
                     "step": 0.1,
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_heizkennlinie_neigung_d3",
+                            "name": "heizkreis_m1_heizkennlinie_neigung_d3_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_heizkennlinie_neigung_d3",
                             "command_topic": "{mqtt_base}/heizkreis_m1_heizkennlinie_neigung_d3/set",
                         },
                     ],
@@ -344,7 +345,8 @@ poll_list = {
                     "unit_of_measurement": "K",
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_heizkennlinie_niveau_d4",
+                            "name": "heizkreis_m1_heizkennlinie_niveau_d4_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_heizkennlinie_niveau_d4",
                             "command_topic": "{mqtt_base}/heizkreis_m1_heizkennlinie_niveau_d4/set",
                         },
                     ],
@@ -356,7 +358,8 @@ poll_list = {
                     "unit_of_measurement": "°C",
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_frostgrenze_a3",
+                            "name": "heizkreis_m1_frostgrenze_a3_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_frostgrenze_a3",
                             "command_topic": "{mqtt_base}/heizkreis_m1_frostgrenze_a3/set",
                         },
                     ],
@@ -367,7 +370,8 @@ poll_list = {
                     "step": 1,
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_sommerspar_schaltschwelle_a5",
+                            "name": "heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_sommerspar_schaltschwelle_a5",
                             "command_topic": "{mqtt_base}/heizkreis_m1_sommerspar_schaltschwelle_a5/set",
                         },
                     ],
@@ -379,7 +383,8 @@ poll_list = {
                     "unit_of_measurement": "°C",
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_sommersparabschaltung_a6",
+                            "name": "heizkreis_m1_sommersparabschaltung_a6_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_sommersparabschaltung_a6",
                             "command_topic": "{mqtt_base}/heizkreis_m1_sommersparabschaltung_a6/set",
                         },
                     ],
@@ -391,7 +396,8 @@ poll_list = {
                     "unit_of_measurement": "°C",
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_vorlauf_min_c5",
+                            "name": "heizkreis_m1_vorlauf_min_c5_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_vorlauf_min_c5",
                             "command_topic": "{mqtt_base}/heizkreis_m1_vorlauf_min_c5/set",
                         },
                     ],
@@ -403,7 +409,8 @@ poll_list = {
                     "unit_of_measurement": "°C",
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_vorlauf_max_c6",
+                            "name": "heizkreis_m1_vorlauf_max_c6_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_vorlauf_max_c6",
                             "command_topic": "{mqtt_base}/heizkreis_m1_vorlauf_max_c6/set",
                         },
                     ],
@@ -415,19 +422,23 @@ poll_list = {
                     "unit_of_measurement": "%",
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_pumpe_max_drehzahl_e6",
+                            "name": "heizkreis_m1_pumpe_max_drehzahl_e6_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_pumpe_max_drehzahl_e6",
                             "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_max_drehzahl_e6/set",
                         },
                         {
-                            "name": "heizkreis_m1_pumpe_min_drehzahl_e7",
+                            "name": "heizkreis_m1_pumpe_min_drehzahl_e7_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_pumpe_min_drehzahl_e7",
                             "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_min_drehzahl_e7/set",
                         },
                         {
-                            "name": "heizkreis_m1_pumpe_reduziert_e9",
+                            "name": "heizkreis_m1_pumpe_reduziert_e9_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_pumpe_reduziert_e9",
                             "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_reduziert_e9/set",
                         },
                         {
-                            "name": "interne_pumpe_solldrehzahl_31",
+                            "name": "interne_pumpe_solldrehzahl_31_einstellung",
+                            "state_topic": "{mqtt_base}/interne_pumpe_solldrehzahl_31",
                             "command_topic": "{mqtt_base}/interne_pumpe_solldrehzahl_31/set",
                         },
                     ],
@@ -439,11 +450,13 @@ poll_list = {
                     "unit_of_measurement": "min",
                     "nopoll": [
                         {
-                            "name": "heizkreis_m1_pumpe_reduziert_a9",
+                            "name": "heizkreis_m1_pumpe_reduziert_a9_einstellung",
+                            "state_topic": "{mqtt_base}/heizkreis_m1_pumpe_reduziert_a9",
                             "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_reduziert_a9/set",
                         },
                         {
-                            "name": "warmwasser_pumpennachlauf_62",
+                            "name": "warmwasser_pumpennachlauf_62_einstellung",
+                            "state_topic": "{mqtt_base}/warmwasser_pumpennachlauf_62",
                             "command_topic": "{mqtt_base}/warmwasser_pumpennachlauf_62/set",
                         },
                     ],
@@ -455,7 +468,8 @@ poll_list = {
                     "unit_of_measurement": "K",
                     "nopoll": [
                         {
-                            "name": "warmwasser_einschalt_offset_59",
+                            "name": "warmwasser_einschalt_offset_59_einstellung",
+                            "state_topic": "{mqtt_base}/warmwasser_einschalt_offset_59",
                             "command_topic": "{mqtt_base}/warmwasser_einschalt_offset_59/set",
                         },
                     ],
@@ -467,7 +481,8 @@ poll_list = {
                     "unit_of_measurement": "K",
                     "nopoll": [
                         {
-                            "name": "warmwasser_kessel_offset_60",
+                            "name": "warmwasser_kessel_offset_60_einstellung",
+                            "state_topic": "{mqtt_base}/warmwasser_kessel_offset_60",
                             "command_topic": "{mqtt_base}/warmwasser_kessel_offset_60/set",
                         },
                     ],
@@ -485,7 +500,8 @@ poll_list = {
             "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Minimum nach E7{% elif v == 1 %}Reduziert nach E9{% else %}Unbekannt ({{ v }}){% endif %}",
             "nopoll": [
                 {
-                    "name": "heizkreis_m1_pumpe_nebenbetrieb_e8",
+                    "name": "heizkreis_m1_pumpe_nebenbetrieb_e8_einstellung",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_pumpe_nebenbetrieb_e8",
                     "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_nebenbetrieb_e8/set",
                 },
             ],
@@ -502,11 +518,13 @@ poll_list = {
             "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Nach Zeitprogramm{% elif v == 1 %}Aus bei WW-Ladung{% elif v == 2 %}Ein bei WW-Ladung{% else %}Unbekannt ({{ v }}){% endif %}",
             "nopoll": [
                 {
-                    "name": "zirkulation_bei_ww_soll1_71",
+                    "name": "zirkulation_bei_ww_soll1_71_einstellung",
+                    "state_topic": "{mqtt_base}/zirkulation_bei_ww_soll1_71",
                     "command_topic": "{mqtt_base}/zirkulation_bei_ww_soll1_71/set",
                 },
                 {
-                    "name": "zirkulation_bei_ww_soll2_72",
+                    "name": "zirkulation_bei_ww_soll2_72_einstellung",
+                    "state_topic": "{mqtt_base}/zirkulation_bei_ww_soll2_72",
                     "command_topic": "{mqtt_base}/zirkulation_bei_ww_soll2_72/set",
                 },
             ],
