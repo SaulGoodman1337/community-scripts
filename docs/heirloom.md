@@ -1,5 +1,8 @@
 # Heirloom LXC
 
+> **Private repository:** define the authenticated `csrun` helper first; see [Private repository access](private-access.md). The required fine-grained PAT only needs `Contents: Read-only` on this repository.
+
+
 [Heirloom](https://heirloom-app.com/) is an open-source, self-hosted family tree application. The product consists of a React frontend, a NestJS API and PostgreSQL. This helper creates a dedicated Debian LXC and runs the official production images with Docker Compose.
 
 ## Install
@@ -7,7 +10,7 @@
 Run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/heirloom.sh)"
+csrun ct/heirloom.sh
 ```
 
 Default resources:
