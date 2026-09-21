@@ -163,6 +163,25 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     programmed switch-off edge does not cause an immediate schedule
     reevaluation on this controller. Test the edge by setting the clock just
     before 21:00 and letting it cross 21:00 naturally.
+
+  Read-only validation sample:
+    0x2900 = 37.3 C (A1/M1 flow temperature)
+    0x0810 = 37.3 C (filtered boiler temperature)
+    0x0816 = 33.0 C (filtered flue-gas temperature)
+    0x5525 = 14.4 C (filtered outdoor temperature)
+    0x555A = 5.0 C (effective boiler target)
+    0x7660 len2 = 00 00 (internal pump output OFF, speed 0 percent)
+    0x7663 len2 = 00 00 (A1 pump output OFF, speed 0 percent)
+    0x088A len4 = 61 6F 07 00 = 487265 burner starts, unsigned LE
+    0x08A7 len4 = 80 03 CE 03 = 63832960 s = 17731.4 h
+    0x0886 len4 = 7E 03 CE 03 = 63832958 s = 17731.4 h
+    0xA305 = 0x00 -> 0.0 percent with catalog div2 scaling
+    0x55D3 byte5 = 0x01 -> flame false, lockout false
+    0x55DD = 0x01 -> flame bit false
+    Result: 0x2900, 0x555A, 0x7660, 0x7663 and the burner counters are
+    hardware-readable on this exact appliance. 0x088A must be treated as
+    unsigned. 0xA305 still needs a firing-state sample before calling it
+    hardware-verified burner modulation.
 '''
 
 poll_interval = 2
@@ -220,9 +239,9 @@ poll_items = [
 
     # One two-byte read can feed both state and speed.
     ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),
-    ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),
+    ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),  # HW verified block: 0000
 
-    ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),
+    ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),  # HW verified block: 0000
     ('FAST', 'heizkreis_m1_pumpe_status', 0x2906, 1, 1, False),  # HW verified: ON
     ('FAST', 'speicherladepumpe_status', 0x6513, 1, 1, False),
     ('FAST', 'warmwasser_ladestatus', 0x650A, 1, 1, False),  # HW verified: 0 = inactive
@@ -311,9 +330,9 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Counters / system time / errors
     # ---------------------------------------------------------------------
-    ('RARE', 'brenner_starts', 0x088A, 4, 1, True),
-    ('RARE', 'brenner_betriebsstunden', 0x08A7, 4, 0.0002777777777777778, False),
-    ('RARE', 'brenner_betriebsstunden_stufe1', 0x0886, 4, 0.0002777777777777778, False),
+    ('RARE', 'brenner_starts', 0x088A, 4, 1, False),  # HW verified unsigned: 487265
+    ('RARE', 'brenner_betriebsstunden', 0x08A7, 4, 0.0002777777777777778, False),  # HW verified: 17731.4 h
+    ('RARE', 'brenner_betriebsstunden_stufe1', 0x0886, 4, 0.0002777777777777778, False),  # HW verified: 17731.4 h
     ('RARE', 'systemzeit', 0x088E, 8, 'vdatetime', False),  # HW verified R/W DateTimeBCD
 
     ('RARE', 'fehlerhistorie_01', 0x7507, 9, 'b:0:0', 'f:02X', False),
