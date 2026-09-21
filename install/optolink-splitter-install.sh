@@ -74,8 +74,9 @@ msg_ok "Installed Optolink-Splitter"
 msg_info "Preparing configuration"
 cp /opt/optolink/settings_ini.py.example /opt/optolink/settings_ini.py
 
-cs_repo_fetch config/optolink-splitter/vscotho1-20cb-poll-list.py /opt/optolink/poll_list.py
-python3 -m py_compile /opt/optolink/poll_list.py
+cs_repo_fetch config/optolink-splitter/vdensho1-20c2-wb2a-homeassistant.py /opt/optolink/homeassistant_poll_list.py
+python3 -m py_compile /opt/optolink/homeassistant_poll_list.py
+rm -f /opt/optolink/poll_list.py
 
 sed -i \
   -e "s|^port_vitoconnect = .*|port_vitoconnect = None             # Optional second serial adapter, e.g. '/dev/ttyUSB1'|" \
@@ -86,14 +87,18 @@ sed -i \
   -e 's|^mqtt_fstr = .*|mqtt_fstr = "{dpname}"|' \
   /opt/optolink/settings_ini.py
 
+cs_repo_fetch tools/optolink-apply-vdensho1-ha-profile.sh /usr/local/bin/optolink-apply-vdensho1-ha-profile
+chmod 755 /usr/local/bin/optolink-apply-vdensho1-ha-profile
+
+# Keep the previous profile helper as an explicit rollback option.
 cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
 chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
 
 cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
 
-chown optolink:optolink /opt/optolink/settings_ini.py /opt/optolink/poll_list.py
-chmod 640 /opt/optolink/settings_ini.py /opt/optolink/poll_list.py
-msg_ok "Prepared VScotHO1/20CB configuration"
+chown optolink:optolink /opt/optolink/settings_ini.py /opt/optolink/homeassistant_poll_list.py
+chmod 640 /opt/optolink/settings_ini.py /opt/optolink/homeassistant_poll_list.py
+msg_ok "Prepared VDensHO1/20C2 Home Assistant configuration"
 
 msg_info "Creating systemd service"
 cat <<'EOF_SERVICE' >/etc/systemd/system/optolink-splitter.service
