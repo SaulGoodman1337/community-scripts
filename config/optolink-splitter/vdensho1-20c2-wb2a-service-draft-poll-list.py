@@ -63,6 +63,17 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       0x2500 switches to normal operation and 21.0 C effective room setpoint
     Result: 0x2303 is hardware-verified READ/WRITE for party mode on this
     exact 20C2 / software-index 0x03 controller.
+
+  Party room setpoint P300 write test on the real appliance:
+    initial 0x2308 = 0x15 = 21 C
+    write 0x2308 len1 value 22 -> ACK
+    read-back 0x16 = 22 C
+    0x2500 bytes 12..13 and 20..21 -> 0x00DC = 22.0 C
+    restore write value 21 -> ACK
+    read-back 0x15 = 21 C
+    0x2500 bytes 12..13 and 20..21 -> 0x00D2 = 21.0 C
+    Result: 0x2308 is hardware-verified READ/WRITE for the party room
+    setpoint on this exact controller.
 '''
 
 poll_interval = 2
@@ -148,7 +159,7 @@ poll_items = [
 
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),
-    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, True),  # HW verified: raw 0x15 = 21 C
+    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, True),  # HW verified R/W: 21->22->21 C
 
     ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW verified: 20.0 C
 
@@ -305,6 +316,13 @@ poll_items = [
 #   for this appliance and can be exposed as a Home Assistant switch.
 #   Later generations also use 0x2330, but the exact VDensHO1 Vitosoft-derived
 #   catalog contains no 0x2330 datapoint, so do not substitute 0x2330 here.
+#
+#
+# Party room setpoint:
+#   0x2308 len1 is hardware-verified READ/WRITE on this exact appliance.
+#   Tested 21 C -> 22 C -> 21 C with matching read-back and 0x2500 effective
+#   room-setpoint changes. Safe HA number range should follow the controller
+#   limits rather than an arbitrary wider range.
 #
 # Circulation pump:
 #   0x6515 is status. 0x0842 is relay K12 status. Time programs and coding
