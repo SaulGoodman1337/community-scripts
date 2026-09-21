@@ -46,9 +46,10 @@ poll_groups = {
     # WB2A service display or still need appliance-specific validation.
     "EXPERIMENTAL": -1,
 
-    # Vitosoft-derived points found specifically in the VScotHO1_20 catalog.
-    # Keep disabled until 0x00F8/0x00F0 identifies the real controller variant.
-    "CANDIDATE_VSCOTHO1_20": -1,
+    # Vitosoft-derived points cross-checked in VScotHO1 / VScotHO1_4 and,
+    # where available, VScotHO1_20. Keep disabled until 0x00F8/0x00F0
+    # identifies the real controller variant.
+    "CANDIDATE_VSCOTHO1_FAMILY": -1,
 }
 
 
@@ -248,31 +249,32 @@ poll_items = [
     ('OPTIONAL_COMBI', 'warmwasser_auslauftemperatur', 0x0814, 2, 0.1, True),
 
     # -------------------------------------------------------------------------
-    # VScotHO1_20 candidates from a Vitosoft-derived datapoint catalogue.
-    # These are deliberately disabled until the full F8/F0 identification says
-    # the controller actually belongs to that software family.
+    # VScotHO1-family candidates from Vitosoft-derived datapoint catalogues.
+    # The key coding points below are present in the old VScotHO1 and
+    # VScotHO1_4 catalogues as well as later family variants. They remain
+    # disabled until full F8/F0 identification and a read-only hardware test.
     # -------------------------------------------------------------------------
-    ('CANDIDATE_VSCOTHO1_20', 'kessel_maximaltemperatur_06', 0x5706, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'kennung_interne_pumpe_30', 0x5730, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'interne_pumpe_solldrehzahl_31', 0x5731, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_pumpentyp_e5', 0x27E5, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'kessel_maximaltemperatur_06', 0x5706, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'kennung_interne_pumpe_30', 0x5730, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'interne_pumpe_solldrehzahl_31', 0x5731, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'heizkreis_m1_pumpentyp_e5', 0x27E5, 1, 1, False),
 
-    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_estrichfunktion_f1', 0x27F1, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_reduziert_anhebung_start_f8', 0x27F8, 1, 1, True),
-    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_reduziert_anhebung_ende_f9', 0x27F9, 1, 1, True),
-    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_vorlauf_ueberhoehung_fa', 0x27FA, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_vorlauf_ueberhoehung_dauer_fb', 0x27FB, 1, 2, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'heizkreis_m1_estrichfunktion_f1', 0x27F1, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'heizkreis_m1_reduziert_anhebung_start_f8', 0x27F8, 1, 1, True),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'heizkreis_m1_reduziert_anhebung_ende_f9', 0x27F9, 1, 1, True),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'heizkreis_m1_vorlauf_ueberhoehung_fa', 0x27FA, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'heizkreis_m1_vorlauf_ueberhoehung_dauer_fb', 0x27FB, 1, 2, False),
 
-    ('CANDIDATE_VSCOTHO1_20', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'zirkulation_intervall_73', 0x6773, 1, 1, False),
-    ('CANDIDATE_VSCOTHO1_20', 'relais_k12_funktion_53', 0x7753, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'zirkulation_intervall_73', 0x6773, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'relais_k12_funktion_53', 0x7753, 1, 1, False),
 
     # VScotHO1_20 exposes flame/lockout flags in a larger block beginning at
     # 0x55D3. The active legacy profile intentionally still uses its verified
     # one-byte modulation read instead; these flags need hardware verification.
-    ('CANDIDATE_VSCOTHO1_20', 'brenner_flamme_block_candidate', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),
-    ('CANDIDATE_VSCOTHO1_20', 'feuerungsautomat_verriegelt_candidate', 0x55D3, 9, 'b:5:5:0x40', 'bool', False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'brenner_flamme_block_candidate', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),
+    ('CANDIDATE_VSCOTHO1_FAMILY', 'feuerungsautomat_verriegelt_candidate', 0x55D3, 9, 'b:5:5:0x40', 'bool', False),
 
     # -------------------------------------------------------------------------
     # Experimental diagnostics - useful raw datapoints but not yet promoted.
@@ -318,13 +320,14 @@ poll_items = [
 #   catalogue marks it as status; no equally strong source proves a direct
 #   immediate ON/OFF write for this WB2A. Scheduling remains the safe control
 #   path to investigate first.
-# - VScotHO1_20 contains burner-controller process values P06/P09/P10 at
+# - A VScotHO1_20 catalogue contains burner-controller process values P06/P09/P10 at
 #   0x4006/0x4009/0x400A (fan actual/setpoint/PWM), but the generated standard
 #   Optolink catalogue omits them, consistent with a non-Virtual_READ access
 #   method. They are therefore not poll_items.
 # - Community configs also use 0x0B1C/0x0B1E for fan setpoint/actual RPM on
 #   other Optolink systems; they remain disabled EXPERIMENTAL candidates here.
-# - A readable lockout state exists in VScotHO1_20 (block 0x55D3), but no
+# - A readable lockout state exists across the located VScotHO1 family catalogues
+#   (block 0x55D3), but no
 #   defensible WB2A Optolink command for burner fault unlocking/reset has been
 #   located. Do not invent or automate such a write.
 #
