@@ -149,8 +149,20 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     A follow-up after 21:00 still showed 0x6515 = 1 and 0x0842 = 1 while
     0x6773 remained 0. A 0->7->0 probe again verified 0x6773 read/write,
     but still could not prove the physical forcing effect because the pump
-    never reached an OFF baseline. Check controller clock 0x088E before
-    attributing this to timer/run-on logic.
+    never reached an OFF baseline.
+
+  Controller clock / schedule-edge test:
+    0x088E len8 is readable and writable as DateTimeBCD.
+    Original appliance clock: 2026-09-21 20:55:48.
+    Write 20:59:00 -> ACK/read-back 20:59:03.
+    Write 21:01:00 -> ACK/read-back 21:01:02.
+    During 40 s after the direct jump across 21:00, 0x6515 and 0x0842
+    remained 1 while 0x6773 remained 0.
+    The original clock was restored with elapsed test time added.
+    Result: 0x088E R/W is hardware-verified. A direct clock jump over the
+    programmed switch-off edge does not cause an immediate schedule
+    reevaluation on this controller. Test the edge by setting the clock just
+    before 21:00 and letting it cross 21:00 naturally.
 '''
 
 poll_interval = 2
@@ -302,7 +314,7 @@ poll_items = [
     ('RARE', 'brenner_starts', 0x088A, 4, 1, True),
     ('RARE', 'brenner_betriebsstunden', 0x08A7, 4, 0.0002777777777777778, False),
     ('RARE', 'brenner_betriebsstunden_stufe1', 0x0886, 4, 0.0002777777777777778, False),
-    ('RARE', 'systemzeit', 0x088E, 8, 'vdatetime', False),
+    ('RARE', 'systemzeit', 0x088E, 8, 'vdatetime', False),  # HW verified R/W DateTimeBCD
 
     ('RARE', 'fehlerhistorie_01', 0x7507, 9, 'b:0:0', 'f:02X', False),
     ('RARE', 'fehlerhistorie_02', 0x7510, 9, 'b:0:0', 'f:02X', False),
