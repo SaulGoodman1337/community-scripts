@@ -1,5 +1,8 @@
 # Optolink-Splitter LXC
 
+> **Private repository:** define the authenticated `csrun` helper first; see [Private repository access](private-access.md). The required fine-grained PAT only needs `Contents: Read-only` on this repository.
+
+
 [Optolink-Splitter](https://github.com/philippoo66/optolink-splitter) makes a Viessmann heating system available locally over MQTT and TCP/IP while optionally retaining Vitoconnect / ViCare connectivity.
 
 This helper creates a dedicated Debian LXC, installs the Python application in `/opt/optolink`, creates an isolated virtual environment and runs the splitter as a systemd service.
@@ -25,7 +28,7 @@ A privileged container has a weaker isolation boundary than an unprivileged cont
 Connect the Optolink USB adapter to the Proxmox host, then run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/optolink-splitter.sh)"
+csrun ct/optolink-splitter.sh
 ```
 
 Default resources:
