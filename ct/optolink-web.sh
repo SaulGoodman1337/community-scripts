@@ -2,6 +2,29 @@
 _CS_DEFAULT_URL="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main"
 _cs_boot="${COMMUNITY_SCRIPTS_CORE_DIR:-$(dirname "${BASH_SOURCE[0]}")/../../core}/core/build.func"
 source "$_cs_boot" 2>/dev/null || source <(curl -fsSL "${COMMUNITY_SCRIPTS_CORE_URL:-https://raw.githubusercontent.com/community-scripts/core/main}/core/build.func")
+
+CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
+CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+
+cs_repo_fetch() {
+  local rel="${1:?repo-relative path}"
+  local dest="${2:?destination}"
+  if [[ -n "${COMMUNITY_SCRIPTS_ROOT:-}" && -f "${COMMUNITY_SCRIPTS_ROOT}/$rel" ]]; then
+    cp "${COMMUNITY_SCRIPTS_ROOT}/$rel" "$dest"
+    return 0
+  fi
+  if [[ -z "${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}" ]]; then
+    echo "Missing COMMUNITY_SCRIPTS_GITHUB_TOKEN for private repository access." >&2
+    return 1
+  fi
+  curl -fsSL \
+    -H "Authorization: Bearer $COMMUNITY_SCRIPTS_GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.raw+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+    -o "$dest"
+}
+
 # Copyright (c) 2026
 # License: MIT
 
@@ -36,14 +59,13 @@ function update_script() {
   $STD apt-get upgrade -y
   msg_ok "Updated base system"
 
-  BASE_URL="https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/apps/optolink-web"
   msg_info "Updating Optolink-Web application"
-  $STD curl -fsSL "$BASE_URL/app.py" -o /opt/optolink-web/app.py
-  $STD curl -fsSL "$BASE_URL/datapoints.json" -o /opt/optolink-web/datapoints.json
-  $STD curl -fsSL "$BASE_URL/requirements.txt" -o /opt/optolink-web/requirements.txt
-  $STD curl -fsSL "$BASE_URL/templates/index.html" -o /opt/optolink-web/templates/index.html
-  $STD curl -fsSL "$BASE_URL/static/app.js" -o /opt/optolink-web/static/app.js
-  $STD curl -fsSL "$BASE_URL/static/style.css" -o /opt/optolink-web/static/style.css
+  $STD cs_repo_fetch apps/optolink-web/app.py /opt/optolink-web/app.py
+  $STD cs_repo_fetch apps/optolink-web/datapoints.json /opt/optolink-web/datapoints.json
+  $STD cs_repo_fetch apps/optolink-web/requirements.txt /opt/optolink-web/requirements.txt
+  $STD cs_repo_fetch apps/optolink-web/templates/index.html /opt/optolink-web/templates/index.html
+  $STD cs_repo_fetch apps/optolink-web/static/app.js /opt/optolink-web/static/app.js
+  $STD cs_repo_fetch apps/optolink-web/static/style.css /opt/optolink-web/static/style.css
   /opt/optolink-web/venv/bin/python -m py_compile /opt/optolink-web/app.py
   chown -R optolinkweb:optolinkweb /opt/optolink-web
   msg_ok "Updated Optolink-Web application"
