@@ -1,6 +1,9 @@
 # SMB-Scan-Proxy LXC
 
-SMB-Scan-Proxy is a small compatibility bridge for legacy printers/scanners that can only write to SMB1/NT1 shares while the real file server is kept on SMB2/SMB3.
+> **Private repository:** define the authenticated `csrun` helper first; see [Private repository access](private-access.md). The required fine-grained PAT only needs `Contents: Read-only` on this repository.
+
+
+SMB-Scan-Proxy is a small compatibility bridge for legacy printers/scanners that can only write to legacy SMB shares while the real file server is kept on SMB2/SMB3.
 
 It is inspired by projects such as [Andreetje/smb1-proxy](https://github.com/Andreetje/smb1-proxy), but this implementation is intentionally native and minimal for Proxmox LXC.
 
@@ -9,7 +12,7 @@ The bridge is **not** a general transparent filesystem proxy. It is a spool-and-
 ```text
 Legacy printer/scanner
         |
-        | SMB1 / NT1
+        | SMB2_02 / NT1
         v
 +----------------------------+
 | SMB-Scan-Proxy LXC         |
@@ -28,14 +31,14 @@ Legacy printer/scanner
 Modern Samba/NAS share
 ```
 
-This keeps SMB1 isolated to a dedicated container instead of lowering the protocol floor on the real file server.
+This keeps SMB2_02 isolated to a dedicated container instead of lowering the protocol floor on the real file server.
 
 ## Install
 
 Run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/smb-scan-proxy.sh)"
+csrun ct/smb-scan-proxy.sh
 ```
 
 Defaults:
@@ -165,7 +168,7 @@ The worker waits until the file size/mtime is stable, then moves it into:
 
 The queued file is uploaded with `smbclient` to the configured backend. If the NAS is unavailable, the file remains in the queue and the worker retries later.
 
-This means the printer can finish its SMB1 upload even during a temporary backend outage.
+This means the printer can finish its SMB2_02 upload even during a temporary backend outage.
 
 ## Status and troubleshooting
 
@@ -221,4 +224,4 @@ The update routine refreshes the worker and configuration helper and then re-app
 
 ## Scope
 
-This helper is intended for scan-to-folder and similar **write-only legacy appliance workflows**. It is deliberately not a full bidirectional SMB gateway and should not be used to expose arbitrary modern shares back to SMB1 clients.
+This helper is intended for scan-to-folder and similar **write-only legacy appliance workflows**. It is deliberately not a full bidirectional SMB gateway and should not be used to expose arbitrary modern shares back to SMB2_02 clients.
