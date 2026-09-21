@@ -18,7 +18,7 @@ Policy used here:
     the resulting controller state has been verified;
   * keep absent hardware (M2, solar, hydraulic separator, invalid sensor
     inputs) out of productive polling;
-  * keep diagnostics/service values enabled for use in dashboards/automations,\n    but hidden by default from generated UI where possible;
+  * keep diagnostics/service values enabled for use in dashboards/automations, but hidden by default from generated UI where possible;
   * do not expose burner unlock/reset;
   * do not expose economy mode as a switch: 0x2302 write ACKs but is ignored.
 
@@ -679,6 +679,213 @@ poll_list = {
                         ("ONCE", "hydraulische_weiche_vorhanden", 0x7752, 1, 1, False),
                         ("ONCE", "solar_typ",                      0x7754, 1, 1, False),
                     ],
+                },
+            ],
+        },
+
+        # -----------------------------------------------------------------
+        # Dashboard aliases for diagnostics.
+        #
+        # These entities deliberately use fresh unique_ids. Older revisions
+        # published the original diagnostic entities disabled-by-default, and
+        # Home Assistant keeps that entity-registry state even after discovery
+        # changes. The aliases subscribe to the already published MQTT topics,
+        # so they add no additional Optolink reads.
+        # -----------------------------------------------------------------
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "nopoll": [
+                {
+                    "name": "geraete_id_anzeige",
+                    "state_topic": "{mqtt_base}/geraete_id",
+                },
+                {
+                    "name": "codierstecker_sachnummer_anzeige",
+                    "state_topic": "{mqtt_base}/codierstecker_sachnummer",
+                },
+                {
+                    "name": "codierstecker_kennung_anzeige",
+                    "state_topic": "{mqtt_base}/codierstecker_kennung",
+                },
+                {
+                    "name": "bedienteil_sw_index_anzeige",
+                    "state_topic": "{mqtt_base}/bedienteil_sw_index",
+                },
+                {
+                    "name": "gfa_kennung_anzeige",
+                    "state_topic": "{mqtt_base}/gfa_kennung",
+                },
+                {
+                    "name": "anlagenschema_anzeige",
+                    "state_topic": "{mqtt_base}/anlagenschema",
+                },
+                {
+                    "name": "anlagentyp_anzeige",
+                    "state_topic": "{mqtt_base}/anlagentyp",
+                },
+                {
+                    "name": "bauart_warmwasser_anzeige",
+                    "state_topic": "{mqtt_base}/bauart_warmwasser",
+                },
+                {
+                    "name": "systemzeit_anzeige",
+                    "state_topic": "{mqtt_base}/systemzeit",
+                },
+                {
+                    "name": "fehlerhistorie_01_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_01",
+                },
+                {
+                    "name": "fehlerhistorie_02_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_02",
+                },
+                {
+                    "name": "fehlerhistorie_03_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_03",
+                },
+                {
+                    "name": "fehlerhistorie_04_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_04",
+                },
+                {
+                    "name": "fehlerhistorie_05_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_05",
+                },
+                {
+                    "name": "fehlerhistorie_06_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_06",
+                },
+                {
+                    "name": "fehlerhistorie_07_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_07",
+                },
+                {
+                    "name": "fehlerhistorie_08_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_08",
+                },
+                {
+                    "name": "fehlerhistorie_09_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_09",
+                },
+                {
+                    "name": "fehlerhistorie_10_anzeige",
+                    "state_topic": "{mqtt_base}/fehlerhistorie_10",
+                },
+                {
+                    "name": "heizkreis_m1_zeitprogramm_montag_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_zeitprogramm_montag",
+                },
+                {
+                    "name": "warmwasser_zeitprogramm_montag_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_zeitprogramm_montag",
+                },
+                {
+                    "name": "zirkulation_zeitprogramm_montag_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_zeitprogramm_montag",
+                },
+                {
+                    "name": "heizkreis_m1_zeitprogramm_dienstag_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_zeitprogramm_dienstag",
+                },
+                {
+                    "name": "warmwasser_zeitprogramm_dienstag_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_zeitprogramm_dienstag",
+                },
+                {
+                    "name": "zirkulation_zeitprogramm_dienstag_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_zeitprogramm_dienstag",
+                },
+                {
+                    "name": "heizkreis_m1_zeitprogramm_mittwoch_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_zeitprogramm_mittwoch",
+                },
+                {
+                    "name": "warmwasser_zeitprogramm_mittwoch_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_zeitprogramm_mittwoch",
+                },
+                {
+                    "name": "zirkulation_zeitprogramm_mittwoch_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_zeitprogramm_mittwoch",
+                },
+                {
+                    "name": "heizkreis_m1_zeitprogramm_donnerstag_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_zeitprogramm_donnerstag",
+                },
+                {
+                    "name": "warmwasser_zeitprogramm_donnerstag_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_zeitprogramm_donnerstag",
+                },
+                {
+                    "name": "zirkulation_zeitprogramm_donnerstag_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_zeitprogramm_donnerstag",
+                },
+                {
+                    "name": "heizkreis_m1_zeitprogramm_freitag_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_zeitprogramm_freitag",
+                },
+                {
+                    "name": "warmwasser_zeitprogramm_freitag_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_zeitprogramm_freitag",
+                },
+                {
+                    "name": "zirkulation_zeitprogramm_freitag_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_zeitprogramm_freitag",
+                },
+                {
+                    "name": "heizkreis_m1_zeitprogramm_samstag_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_zeitprogramm_samstag",
+                },
+                {
+                    "name": "warmwasser_zeitprogramm_samstag_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_zeitprogramm_samstag",
+                },
+                {
+                    "name": "zirkulation_zeitprogramm_samstag_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_zeitprogramm_samstag",
+                },
+                {
+                    "name": "heizkreis_m1_zeitprogramm_sonntag_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_zeitprogramm_sonntag",
+                },
+                {
+                    "name": "warmwasser_zeitprogramm_sonntag_anzeige",
+                    "state_topic": "{mqtt_base}/warmwasser_zeitprogramm_sonntag",
+                },
+                {
+                    "name": "zirkulation_zeitprogramm_sonntag_anzeige",
+                    "state_topic": "{mqtt_base}/zirkulation_zeitprogramm_sonntag",
+                },
+                {
+                    "name": "sensorstatus_aussentemperatur_anzeige",
+                    "state_topic": "{mqtt_base}/sensorstatus_aussentemperatur",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% elif v == 1 %}Kurzschluss{% elif v == 2 %}Unterbrechung{% elif v == 3 %}Referenzfehler{% elif v == 4 %}Referenzfehler 0x04{% elif v == 5 %}Sensorstatus 5{% elif v == 6 %}Nicht vorhanden{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "sensorstatus_kesseltemperatur_anzeige",
+                    "state_topic": "{mqtt_base}/sensorstatus_kesseltemperatur",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% elif v == 1 %}Kurzschluss{% elif v == 2 %}Unterbrechung{% elif v == 3 %}Referenzfehler{% elif v == 4 %}Referenzfehler 0x04{% elif v == 5 %}Sensorstatus 5{% elif v == 6 %}Nicht vorhanden{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "sensorstatus_sts2_anzeige",
+                    "state_topic": "{mqtt_base}/sensorstatus_sts2",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% elif v == 1 %}Kurzschluss{% elif v == 2 %}Unterbrechung{% elif v == 3 %}Referenzfehler{% elif v == 4 %}Referenzfehler 0x04{% elif v == 5 %}Sensorstatus 5{% elif v == 6 %}Nicht vorhanden{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "sensorstatus_vlts_anzeige",
+                    "state_topic": "{mqtt_base}/sensorstatus_vlts",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% elif v == 1 %}Kurzschluss{% elif v == 2 %}Unterbrechung{% elif v == 3 %}Referenzfehler{% elif v == 4 %}Referenzfehler 0x04{% elif v == 5 %}Sensorstatus 5{% elif v == 6 %}Nicht vorhanden{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "sensorstatus_raum_m1_anzeige",
+                    "state_topic": "{mqtt_base}/sensorstatus_raum_m1",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% elif v == 1 %}Kurzschluss{% elif v == 2 %}Unterbrechung{% elif v == 3 %}Referenzfehler{% elif v == 4 %}Referenzfehler 0x04{% elif v == 5 %}Sensorstatus 5{% elif v == 6 %}Nicht vorhanden{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
+                    "name": "heizkreis_m1_reglervariante_anzeige",
+                    "state_topic": "{mqtt_base}/heizkreis_m1_reglervariante",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Konstantregelung{% elif v == 1 %}VT-Soll über LON{% elif v == 2 %}Witterungsgeführt{% elif v == 3 %}Raumregelung{% elif v == 4 %}Estrichprogramm{% elif v == 5 %}Heizkreis nicht vorhanden{% else %}Wert {{ v }}{% endif %}",
                 },
             ],
         },
