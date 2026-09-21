@@ -180,8 +180,34 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     0x55DD = 0x01 -> flame bit false
     Result: 0x2900, 0x555A, 0x7660, 0x7663 and the burner counters are
     hardware-readable on this exact appliance. 0x088A must be treated as
-    unsigned. 0xA305 still needs a firing-state sample before calling it
-    hardware-verified burner modulation.
+    unsigned.
+
+  Dynamic burner firing test:
+    Flame transition observed in 0x55D3:
+      ...000001... -> ...0021... at ignition
+    Both flame indicators agreed throughout:
+      0x55D3 byte5 mask 0x20 and 0x55DD mask 0x20
+    Lockout bit 0x55D3 byte5 mask 0x40 remained false.
+    During flame, 0xA305/div2 tracked:
+      66.0, 53.0, 36.0, 33.0, 33.0, 33.0, 33.0 percent
+    After flame-off, 0xA305 returned immediately to 0.0 percent.
+    Result: 0xA305/div2 is hardware-verified burner modulation/load in percent
+    on this exact 20C2 / VDensHO1 SW03 appliance.
+
+    Pump behavior during the same firing cycle:
+      0x7660 internal pump = status 1, speed 100 percent during firing;
+      after flame-off it remained status 1 at 50 percent (pump overrun).
+      0x7663 A1 pump = status 1, speed 100 percent during firing;
+      after flame-off it changed to status 0, speed 0 percent.
+      0x2906 remained 1 in the post-flame samples while 0x7663 was already
+      0/0, so 0x2906 should be treated as a logical/requested HC pump state,
+      not blindly equated with the physical 0x7663 output.
+
+    Temperature/target evolution during the firing cycle:
+      0x0810 boiler temp rose into roughly 41-50 C
+      0x555A effective boiler target varied 30.0 -> 19.0 -> 20.9 -> 22.7 C,
+      then returned to 5.0 C after flame-off.
+      0x0816 filtered flue-gas temperature stayed near 32 C in these samples.
 '''
 
 poll_interval = 2
@@ -239,9 +265,9 @@ poll_items = [
 
     # One two-byte read can feed both state and speed.
     ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),
-    ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),  # HW verified block: 0000
+    ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),  # HW verified: 100% firing, 50% post-run
 
-    ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),  # HW verified block: 0000
+    ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),  # HW verified: 100% firing, 0% after flame-off
     ('FAST', 'heizkreis_m1_pumpe_status', 0x2906, 1, 1, False),  # HW verified: ON
     ('FAST', 'speicherladepumpe_status', 0x6513, 1, 1, False),
     ('FAST', 'warmwasser_ladestatus', 0x650A, 1, 1, False),  # HW verified: 0 = inactive
@@ -252,11 +278,11 @@ poll_items = [
 
     # The VDensHO1 catalog exposes flame and lockout as bit fields in the
     # 9-byte block beginning at 0x55D3.
-    ('FAST', 'brenner_flamme', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),  # HW verified block readable
+    ('FAST', 'brenner_flamme', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),  # HW verified dynamically against firing cycle
     ('FAST', 'feuerungsautomat_verriegelt', 0x55D3, 9, 'b:5:5:0x40', 'bool', False),  # HW verified block readable
 
     # Alternative direct flame flag from the fire-control diagnostic block.
-    ('NORMAL', 'brenner_flamme_gfa', 0x55DD, 1, 'b:0:0:0x20', 'bool', False),  # HW read raw=0x01, flame bit clear
+    ('NORMAL', 'brenner_flamme_gfa', 0x55DD, 1, 'b:0:0:0x20', 'bool', False),  # HW verified dynamically; matches 0x55D3 flame
 
     # ---------------------------------------------------------------------
     # Heating circuit A1/M1 - operating state
