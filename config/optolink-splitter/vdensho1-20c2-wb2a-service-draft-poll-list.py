@@ -303,7 +303,7 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Burner / pumps / valves
     # ---------------------------------------------------------------------
-    ('FAST', 'brenner_modulationsgrad', 0xA305, 1, 0.5, False),  # HW verified: 0.0 % while burner off
+    ('FAST', 'brenner_modulationsgrad', 0xA305, 1, 0.5, False),  # HW verified dynamically: 66->53->36->33%, then 0% at flame-off
 
     # One two-byte read can feed both state and speed.
     ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),
@@ -336,7 +336,7 @@ poll_items = [
 
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),  # HW verified R/W: 21->22->21 C
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),  # HW verified R/W: 18->19->18 C
-    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, True),  # HW verified R/W: 21->22->21 C
+    ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, False),  # HW verified R/W: 21->22->21 C  # HW verified R/W: 21->22->21 C
 
     ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW verified: 20.0 C
 
@@ -374,10 +374,10 @@ poll_items = [
 
     ('SLOW', 'heizkreis_m1_temperaturprogramm_f1', 0x27F1, 1, 1, False),  # HW verified: 0=Passiv
     ('SLOW', 'heizkreis_m1_party_zeitbegrenzung_f2', 0x27F2, 1, 1, False),  # HW verified: 8 h
-    ('EXPERIMENTAL', 'heizkreis_m1_reduziert_anhebung_start_f8', 0x27F8, 1, 1, True),
-    ('EXPERIMENTAL', 'heizkreis_m1_reduziert_anhebung_ende_f9', 0x27F9, 1, 1, True),
-    ('EXPERIMENTAL', 'heizkreis_m1_vorlauf_ueberhoehung_fa', 0x27FA, 1, 1, False),
-    ('EXPERIMENTAL', 'heizkreis_m1_vorlauf_ueberhoehung_dauer_fb', 0x27FB, 1, 2, False),
+    ('EXPERIMENTAL', 'heizkreis_m1_reduziert_anhebung_start_f8', 0x27F8, 1, 1, True),  # HW P300 error on SW03
+    ('EXPERIMENTAL', 'heizkreis_m1_reduziert_anhebung_ende_f9', 0x27F9, 1, 1, True),  # HW P300 error on SW03
+    ('EXPERIMENTAL', 'heizkreis_m1_vorlauf_ueberhoehung_fa', 0x27FA, 1, 1, False),  # HW P300 error on SW03
+    ('EXPERIMENTAL', 'heizkreis_m1_vorlauf_ueberhoehung_dauer_fb', 0x27FB, 1, 2, False),  # HW P300 error on SW03
 
     # ---------------------------------------------------------------------
     # Boiler / DHW service coding
