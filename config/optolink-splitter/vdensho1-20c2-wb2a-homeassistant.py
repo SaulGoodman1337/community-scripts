@@ -313,6 +313,206 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
+        # Service/config controls used by the Home Assistant dashboard.
+        #
+        # These controls reuse already-polled datapoints via MQTT /set topics,
+        # so they add no duplicate Optolink reads. The ranges below follow the
+        # VDensHO1/Viessmann coding documentation. They are source-documented
+        # R/W controls, but (unless noted above) have not all been hardware-
+        # write-tested on this exact appliance.
+        # -----------------------------------------------------------------
+        {
+            "domain": "number",
+            "entity_category": "config",
+            "mode": "box",
+            "units": [
+                {
+                    "min": 0.2,
+                    "max": 3.5,
+                    "step": 0.1,
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_heizkennlinie_neigung_d3",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_heizkennlinie_neigung_d3/set",
+                        },
+                    ],
+                },
+                {
+                    "min": -13,
+                    "max": 40,
+                    "step": 1,
+                    "unit_of_measurement": "K",
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_heizkennlinie_niveau_d4",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_heizkennlinie_niveau_d4/set",
+                        },
+                    ],
+                },
+                {
+                    "min": -9,
+                    "max": 15,
+                    "step": 1,
+                    "unit_of_measurement": "°C",
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_frostgrenze_a3",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_frostgrenze_a3/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 0,
+                    "max": 15,
+                    "step": 1,
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_sommerspar_schaltschwelle_a5",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_sommerspar_schaltschwelle_a5/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 5,
+                    "max": 36,
+                    "step": 1,
+                    "unit_of_measurement": "°C",
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_sommersparabschaltung_a6",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_sommersparabschaltung_a6/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 1,
+                    "max": 127,
+                    "step": 1,
+                    "unit_of_measurement": "°C",
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_vorlauf_min_c5",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_vorlauf_min_c5/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 10,
+                    "max": 127,
+                    "step": 1,
+                    "unit_of_measurement": "°C",
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_vorlauf_max_c6",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_vorlauf_max_c6/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 0,
+                    "max": 100,
+                    "step": 1,
+                    "unit_of_measurement": "%",
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_pumpe_max_drehzahl_e6",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_max_drehzahl_e6/set",
+                        },
+                        {
+                            "name": "heizkreis_m1_pumpe_min_drehzahl_e7",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_min_drehzahl_e7/set",
+                        },
+                        {
+                            "name": "heizkreis_m1_pumpe_reduziert_e9",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_reduziert_e9/set",
+                        },
+                        {
+                            "name": "interne_pumpe_solldrehzahl_31",
+                            "command_topic": "{mqtt_base}/interne_pumpe_solldrehzahl_31/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 0,
+                    "max": 15,
+                    "step": 1,
+                    "unit_of_measurement": "min",
+                    "nopoll": [
+                        {
+                            "name": "heizkreis_m1_pumpe_reduziert_a9",
+                            "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_reduziert_a9/set",
+                        },
+                        {
+                            "name": "warmwasser_pumpennachlauf_62",
+                            "command_topic": "{mqtt_base}/warmwasser_pumpennachlauf_62/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 0,
+                    "max": 10,
+                    "step": 1,
+                    "unit_of_measurement": "K",
+                    "nopoll": [
+                        {
+                            "name": "warmwasser_einschalt_offset_59",
+                            "command_topic": "{mqtt_base}/warmwasser_einschalt_offset_59/set",
+                        },
+                    ],
+                },
+                {
+                    "min": 5,
+                    "max": 25,
+                    "step": 1,
+                    "unit_of_measurement": "K",
+                    "nopoll": [
+                        {
+                            "name": "warmwasser_kessel_offset_60",
+                            "command_topic": "{mqtt_base}/warmwasser_kessel_offset_60/set",
+                        },
+                    ],
+                },
+            ],
+        },
+        {
+            "domain": "select",
+            "entity_category": "config",
+            "options": [
+                "Minimum nach E7",
+                "Reduziert nach E9",
+            ],
+            "command_template": "{% if value == 'Minimum nach E7' %}0{% elif value == 'Reduziert nach E9' %}1{% endif %}",
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Minimum nach E7{% elif v == 1 %}Reduziert nach E9{% else %}Unbekannt ({{ v }}){% endif %}",
+            "nopoll": [
+                {
+                    "name": "heizkreis_m1_pumpe_nebenbetrieb_e8",
+                    "command_topic": "{mqtt_base}/heizkreis_m1_pumpe_nebenbetrieb_e8/set",
+                },
+            ],
+        },
+        {
+            "domain": "select",
+            "entity_category": "config",
+            "options": [
+                "Nach Zeitprogramm",
+                "Aus bei WW-Ladung",
+                "Ein bei WW-Ladung",
+            ],
+            "command_template": "{% if value == 'Nach Zeitprogramm' %}0{% elif value == 'Aus bei WW-Ladung' %}1{% elif value == 'Ein bei WW-Ladung' %}2{% endif %}",
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Nach Zeitprogramm{% elif v == 1 %}Aus bei WW-Ladung{% elif v == 2 %}Ein bei WW-Ladung{% else %}Unbekannt ({{ v }}){% endif %}",
+            "nopoll": [
+                {
+                    "name": "zirkulation_bei_ww_soll1_71",
+                    "command_topic": "{mqtt_base}/zirkulation_bei_ww_soll1_71/set",
+                },
+                {
+                    "name": "zirkulation_bei_ww_soll2_72",
+                    "command_topic": "{mqtt_base}/zirkulation_bei_ww_soll2_72/set",
+                },
+            ],
+        },
+
+        # -----------------------------------------------------------------
         # Enumerated operating/status sensors
         # -----------------------------------------------------------------
         {
