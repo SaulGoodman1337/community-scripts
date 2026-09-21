@@ -47,6 +47,8 @@ PRINTER_IP=
 FRONTEND_SHARE=scan
 FRONTEND_USER=scanner
 FRONTEND_PASSWORD=$FRONTEND_PASSWORD
+FRONTEND_MIN_PROTOCOL=SMB2_02
+FRONTEND_MAX_PROTOCOL=SMB2_02
 
 # Modern backend Samba/NAS target.
 BACKEND_HOST=
@@ -119,7 +121,7 @@ cat >/usr/local/bin/smb-scan-proxy-status <<'EOF_STATUS'
 #!/usr/bin/env bash
 set -e
 echo "== config =="
-grep -E '^(ENABLED|PRINTER_IP|FRONTEND_SHARE|FRONTEND_USER|BACKEND_HOST|BACKEND_SHARE|BACKEND_SUBDIR|BACKEND_PROTOCOL)=' /etc/smb-scan-proxy.env || true
+grep -E '^(ENABLED|PRINTER_IP|FRONTEND_SHARE|FRONTEND_USER|FRONTEND_MIN_PROTOCOL|FRONTEND_MAX_PROTOCOL|BACKEND_HOST|BACKEND_SHARE|BACKEND_SUBDIR|BACKEND_PROTOCOL)=' /etc/smb-scan-proxy.env || true
 echo
 echo "== services =="
 systemctl --no-pager --full status smbd.service smb-scan-proxy-worker.service || true
