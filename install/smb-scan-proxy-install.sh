@@ -99,7 +99,7 @@ PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
 ReadWritePaths=/srv/smb-scan-proxy /var/lib/smb-scan-proxy
-ReadOnlyPaths=/etc/smb-scan-proxy.backend
+ReadOnlyPaths=-/etc/smb-scan-proxy.backend
 
 [Install]
 WantedBy=multi-user.target
