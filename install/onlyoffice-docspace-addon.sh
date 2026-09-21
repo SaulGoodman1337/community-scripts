@@ -31,6 +31,28 @@ ok() { printf '%b[ OK ]%b %s\n' "$GREEN" "$NC" "$*"; }
 warn() { printf '%b[WARN]%b %s\n' "$YELLOW" "$NC" "$*"; }
 die() { printf '%b[FAIL]%b %s\n' "$RED" "$NC" "$*" >&2; exit 1; }
 
+CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
+CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+
+cs_repo_fetch() {
+  local rel="${1:?repo-relative path}"
+  local dest="${2:?destination}"
+  if [[ -n "${COMMUNITY_SCRIPTS_ROOT:-}" && -f "${COMMUNITY_SCRIPTS_ROOT}/$rel" ]]; then
+    cp "${COMMUNITY_SCRIPTS_ROOT}/$rel" "$dest"
+    return 0
+  fi
+  if [[ -z "${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}" ]]; then
+    die "Missing COMMUNITY_SCRIPTS_GITHUB_TOKEN for private repository access."
+  fi
+  curl -fsSL \
+    -H "Authorization: Bearer $COMMUNITY_SCRIPTS_GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.raw+json" \
+    -H "X-GitHub-Api-Version: 2022-11-28" \
+    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+    -o "$dest"
+}
+
+
 is_true() {
   case "${1,,}" in
     1|true|yes|y) return 0 ;;
@@ -427,7 +449,9 @@ if is_true "$DOCSPACE_LEAN_MODE"; then
   DOCSPACE_LEAN_IDENTITY_HEAP="$DOCSPACE_LEAN_IDENTITY_HEAP" \
   DOCSPACE_LEAN_SINGLETON_MODE="$DOCSPACE_LEAN_SINGLETON_MODE" \
   DOCSPACE_LEAN_PERSIST="$DOCSPACE_LEAN_PERSIST" \
-    bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-lean-mode.sh)" -- install
+    lean_helper="$TMP_DIR/docspace-lean-mode.sh"
+    cs_repo_fetch tools/docspace-lean-mode.sh "$lean_helper"
+    bash "$lean_helper" install
 fi
 
 sleep 2
@@ -479,9 +503,9 @@ esac
 
 if [[ "$AUTO_ACTIVATE_ARG" == "true" ]]; then
   info "Installing automatic activation for active local DocSpace users."
-  curl -fsSL \
-    "https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/tools/docspace-auto-activate-users.sh" \
-    | bash -s -- install
+  auto_helper="$TMP_DIR/docspace-auto-activate-users.sh"
+  cs_repo_fetch tools/docspace-auto-activate-users.sh "$auto_helper"
+  bash "$auto_helper" install
 fi
 
 if is_true "$DOCSPACE_LEAN_MODE"; then
