@@ -125,8 +125,12 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     0x6771 = 0 (circulation at DHW setpoint 1: control function)
     0x6772 = 0 (circulation at DHW setpoint 2: control function)
     0x6773 = 0 (circulation interval mode: timer program)
-    This is consistent with K12 currently driving the circulation pump, but
-    the snapshot alone does not prove that K12 is exclusively assigned to it.
+    0x7753 = 1 (K12 assignment = circulation pump)
+    0x0846 len1 -> P300 error retcode 3 / payload 0x01
+    Result: on this exact controller K12 is explicitly assigned to the
+    circulation pump, and 0x6515 + 0x0842 report the same live ON state.
+    The generic/older 0x0846 circulation address is not available as an
+    ordinary datapoint on this firmware.
 '''
 
 poll_interval = 2
@@ -270,7 +274,7 @@ poll_items = [
     ('SLOW', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),  # HW verified read: 0=Regelfunktion
     ('SLOW', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),  # HW verified read: 0=Regelfunktion
     ('SLOW', 'zirkulation_intervall_73', 0x6773, 1, 1, False),  # HW verified read: 0=Schaltuhr
-    ('SLOW', 'relais_k12_funktion_53', 0x7753, 1, 1, False),
+    ('SLOW', 'relais_k12_funktion_53', 0x7753, 1, 1, False),  # HW verified: 1=Zirkulationspumpe
 
     # ---------------------------------------------------------------------
     # Counters / system time / errors
