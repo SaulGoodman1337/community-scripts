@@ -279,8 +279,19 @@ poll_items = [
 # -----------------------------------------------------------------------------
 #
 # Party / economy:
-#   VDensHO1 clearly exposes read state at 0x2303 / 0x2302. The exact safe
-#   write path for this old firmware is still to be hardware-verified.
+#   VDensHO1 clearly exposes read state at 0x2303 / 0x2302.
+#   Strong write candidate for THIS exact generation: 0x2303 len1 values 0/1.
+#   Evidence:
+#     - a historical FHEM field report from a Vitodens 200 HO1 reporting
+#       device ID 20C2 shows P300/KW writes to 0x2303 being ACKed;
+#     - after party mode had once been manually enabled/confirmed at the
+#       boiler, the same user could subsequently switch party mode on/off
+#       remotely via 0x2303;
+#     - our real appliance has now been manually put into party mode and
+#       reports 0x2303=1 plus the expected 21 C effective room setpoint.
+#   Still hardware-test OFF->ON here before exposing it to Home Assistant.
+#   Later generations also use 0x2330, but the exact VDensHO1 Vitosoft-derived
+#   catalog contains no 0x2330 datapoint, so 0x2303 is the preferred candidate.
 #
 # Circulation pump:
 #   0x6515 is status. 0x0842 is relay K12 status. Time programs and coding
