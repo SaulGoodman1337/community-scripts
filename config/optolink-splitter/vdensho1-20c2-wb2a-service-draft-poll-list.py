@@ -107,6 +107,26 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     0x2301 returned to 0x03 and 0x2500 byte 1 returned to 0x01
     Result: 0x2323 is hardware-verified READ/WRITE. 0x2301 is a
     hardware-verified read-only operating-mode/status datapoint.
+
+  DHW setpoint P300 write test:
+    initial 0x6300 = 0x2D = 45 C
+    0x6500 effective DHW setpoint = 45.0 C
+    actual DHW temperature 0x0812 = 43.5 C
+    write 0x6300 len1 value 44 -> ACK
+    read-back 0x2C = 44 C
+    0x6500 followed to 44.0 C, DHW charging stayed inactive
+    restore write value 45 -> ACK/read-back 0x2D
+    0x6500 returned to 45.0 C
+    Result: 0x6300 is hardware-verified READ/WRITE.
+
+  Circulation configuration/status snapshot:
+    0x6515 = 1 (circulation pump ON)
+    0x0842 = 1 (relay K12 ON)
+    0x6771 = 0 (circulation at DHW setpoint 1: control function)
+    0x6772 = 0 (circulation at DHW setpoint 2: control function)
+    0x6773 = 0 (circulation interval mode: timer program)
+    This is consistent with K12 currently driving the circulation pump, but
+    the snapshot alone does not prove that K12 is exclusively assigned to it.
 '''
 
 poll_interval = 2
@@ -151,7 +171,7 @@ poll_items = [
     ('NORMAL', 'abgastemperatur', 0x0816, 2, 0.1, True),  # HW verified: 31.6 C
 
     ('FAST', 'warmwasser_temperatur', 0x0812, 2, 0.1, True),
-    ('NORMAL', 'warmwasser_solltemperatur', 0x6300, 1, 1, False),
+    ('NORMAL', 'warmwasser_solltemperatur', 0x6300, 1, 1, False),  # HW verified R/W: 45->44->45 C
     ('NORMAL', 'warmwasser_solltemperatur_aktuell', 0x6500, 2, 0.1, True),  # HW verified: 45.0 C
 
     ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),  # HW readable: 20.0 C; sensor presence TBD
@@ -247,9 +267,9 @@ poll_items = [
     ('SLOW', 'warmwasser_pumpennachlauf_62', 0x6762, 2, 1, False),
     ('SLOW', 'umschaltventil_bauart_65', 0x6765, 1, 1, False),
 
-    ('SLOW', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),
-    ('SLOW', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),
-    ('SLOW', 'zirkulation_intervall_73', 0x6773, 1, 1, False),
+    ('SLOW', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),  # HW verified read: 0=Regelfunktion
+    ('SLOW', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),  # HW verified read: 0=Regelfunktion
+    ('SLOW', 'zirkulation_intervall_73', 0x6773, 1, 1, False),  # HW verified read: 0=Schaltuhr
     ('SLOW', 'relais_k12_funktion_53', 0x7753, 1, 1, False),
 
     # ---------------------------------------------------------------------
@@ -371,6 +391,10 @@ poll_items = [
 #   0x2301 and 0x2500 state changes. Values 0/1 were deliberately not tested.
 #   0x2301 is read-only status: observed 3 for Heizen+WW according to timer and
 #   2 for continuous normal heating.
+##
+# DHW setpoint:
+#   0x6300 len1 is hardware-verified READ/WRITE on this exact appliance.
+#   Verified 45 C -> 44 C -> 45 C with matching 0x6500 effective setpoint.
 #
 # Circulation pump:
 #   0x6515 is status. 0x0842 is relay K12 status. Time programs and coding
