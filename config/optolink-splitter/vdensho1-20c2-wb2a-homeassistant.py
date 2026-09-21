@@ -503,6 +503,11 @@ poll_list = {
             "entity_category": "diagnostic",
             "nopoll": [
                 {
+                    "name": "interne_pumpe_kennung_30_anzeige",
+                    "state_topic": "{mqtt_base}/interne_pumpe_kennung_30",
+                    "value_template": "{% set v = value | int(-1) %}{% if v == 1 %}Drehzahlgeregelt{% elif v == 0 %}Stufig{% else %}Wert {{ v }}{% endif %}",
+                },
+                {
                     "name": "warmwasser_sollbereich_56_anzeige",
                     "state_topic": "{mqtt_base}/warmwasser_sollbereich_56",
                     "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}10–60 °C{% else %}Wert {{ v }}{% endif %}",
