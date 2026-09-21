@@ -17,19 +17,19 @@ cs_repo_fetch() {
   fi
 
   local token="${COMMUNITY_SCRIPTS_GITHUB_TOKEN:-}"
-  if [[ -z "$token" ]]; then
-    printf 'GitHub token: ' >/dev/tty
-    read -rs token </dev/tty
-    printf '\n' >/dev/tty
+  if [[ -n "$token" ]]; then
+    curl -fsSL \
+      -H "Authorization: Bearer $token" \
+      -H "Accept: application/vnd.github.raw+json" \
+      -H "X-GitHub-Api-Version: 2022-11-28" \
+      "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
+      -o "$dest"
+    return 0
   fi
-  [[ -n "$token" ]] || { echo "A GitHub token is required." >&2; return 1; }
 
-  curl -fsSL \
-    -H "Authorization: Bearer $token" \
-    -H "Accept: application/vnd.github.raw+json" \
-    -H "X-GitHub-Api-Version: 2022-11-28" \
-    "https://api.github.com/repos/$CS_REPO/contents/$rel?ref=$CS_REF" \
-    -o "$dest"
+  # Public-repository fallback. Do not block non-interactive image updates
+  # waiting for a token on /dev/tty.
+  curl -fsSL "https://raw.githubusercontent.com/$CS_REPO/$CS_REF/$rel" -o "$dest"
 }
 
 if [[ ! -d "$APP_DIR" || ! -f "$APP_DIR/settings_ini.py" ]]; then
