@@ -147,6 +147,8 @@ Home Assistant users should also review the upstream Home Assistant integration 
 
 The installer creates `/opt/optolink/poll_list.py` from the custom VScotHO1 / 20CB profile. The profile currently covers the datapoints used by the migrated Home Assistant MQTT configuration.
 
+The current profile uses a 2-second base polling interval for `FAST` runtime values, while preserving the previous effective cadence for slower groups: `NORMAL` about 30 seconds, `SLOW` about 5 minutes and `RARE` about 30 minutes. Adjacent byte-filter datapoints at `0x7660` are derived from one shared 2-byte Optolink read to avoid a redundant request.
+
 Useful upstream references:
 
 - Optolink-Splitter Wiki: parameter addresses
