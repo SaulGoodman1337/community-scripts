@@ -316,6 +316,15 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     10..60 C even though the coding plug advertises an absolute 10..63 C
     capability. Use 10..60 C for the Home Assistant number entity unless the
     controller coding is intentionally changed.
+
+  Outdoor-temperature comparison:
+    0x0800 = 13.6 C, 0x5525 = 13.8 C, 0x5527 = 14.4 C, with 0x083A=0 (sensor OK).
+    0x0800 is hardware-readable on this exact SW03 controller even though it is
+    absent from the Vitosoft-derived VDensHO1 catalog; community vcontrold and
+    SmartHomeNG definitions identify it as the direct outdoor temperature.
+    0x5525 is the low-pass outdoor temperature and 0x5527 the damped/mixed
+    outdoor temperature used by the controller. Keep all three as distinct
+    read-only values; do not alias them.
 '''
 
 poll_interval = 2
@@ -341,7 +350,7 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Identification / topology
     # ---------------------------------------------------------------------
-    ('ONCE', 'device_ident_raw', 0x00F8, 8),
+    ('ONCE', 'device_ident_raw', 0x00F8, 8),  # HW verified: 20c2000300000103
     ('ONCE', 'anlagenschema', 0x7700, 1, 1, False),  # HW verified: 2=A1+WW
     ('ONCE', 'anlagentyp', 0x7701, 1, 1, False),  # HW observed via 0x7700 len2: 1=Einkessel
     ('ONCE', 'codierstecker_sachnummer_raw', 0x1010, 7),  # HW verified ASCII: 7833971
@@ -363,15 +372,15 @@ poll_items = [
     # Core temperatures
     # VDensHO1 catalog uses the filtered sensor values for diagnosis.
     # ---------------------------------------------------------------------
-    ('FAST', 'aussentemperatur', 0x0800, 2, 0.1, True),
-    ('NORMAL', 'aussentemperatur_tiefpass', 0x5525, 2, 0.1, True),
-    ('NORMAL', 'aussentemperatur_gedaempft', 0x5527, 2, 0.1, True),
+    ('FAST', 'aussentemperatur', 0x0800, 2, 0.1, True),  # HW verified: 13.6 C; direct outdoor temperature
+    ('NORMAL', 'aussentemperatur_tiefpass', 0x5525, 2, 0.1, True),  # HW verified: 13.8 C
+    ('NORMAL', 'aussentemperatur_gedaempft', 0x5527, 2, 0.1, True),  # HW verified: 14.4 C
 
     ('FAST', 'kesseltemperatur', 0x0810, 2, 0.1, True),  # HW verified: 31.0 C
-    ('FAST', 'kessel_solltemperatur', 0x555A, 2, 0.1, True),
+    ('FAST', 'kessel_solltemperatur', 0x555A, 2, 0.1, True),  # HW verified dynamically: 30.0->19.0->20.9->22.7->5.0 C
     ('NORMAL', 'abgastemperatur', 0x0816, 2, 0.1, True),  # HW verified: 31.6 C
 
-    ('FAST', 'warmwasser_temperatur', 0x0812, 2, 0.1, True),
+    ('FAST', 'warmwasser_temperatur', 0x0812, 2, 0.1, True),  # HW verified: 43.3 C
     ('NORMAL', 'warmwasser_solltemperatur', 0x6300, 1, 1, False),  # HW verified R/W: 45->44->45 C
     ('NORMAL', 'warmwasser_solltemperatur_aktuell', 0x6500, 2, 0.1, True),  # HW verified: 45.0 C
 
@@ -395,7 +404,7 @@ poll_items = [
     ('FAST', 'brenner_modulationsgrad', 0xA305, 1, 0.5, False),  # HW verified dynamically: 66->53->36->33%, then 0% at flame-off
 
     # One two-byte read can feed both state and speed.
-    ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),
+    ('FAST', 'interne_pumpe_status', 0x7660, 2, 'b:0:0', 1, False),  # HW verified dynamically: 1 during firing/post-run, 0 while idle
     ('FAST', 'interne_pumpe_drehzahl', 0x7660, 2, 'b:1:1', 1, False),  # HW verified: 100% firing, 50% post-run
 
     ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),  # HW verified: 100% firing, 0% after flame-off
