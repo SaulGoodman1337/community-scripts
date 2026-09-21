@@ -4,6 +4,37 @@ Personal Proxmox VE helper scripts and add-ons for services that are not covered
 
 The repository follows the general layout of [community-scripts/ProxmoxVE](https://github.com/community-scripts/ProxmoxVE) and uses the shared [community-scripts/core](https://github.com/community-scripts/core) framework where appropriate. It is an independent repository and is not part of the official community-scripts project.
 
+## Private repository access
+
+Installers are run through an authenticated bootstrap. Create a GitHub fine-grained PAT restricted to this repository with **Contents: Read-only**, then define `csrun` once in the current shell:
+
+```bash
+csrun() {
+  local target="${1:?repo-relative script path}"
+  shift || true
+  local token bootstrap
+
+  printf 'GitHub token: ' >/dev/tty
+  read -rs token </dev/tty
+  printf '\n' >/dev/tty
+
+  bootstrap="$(
+    curl -fsSL \
+      -H "Authorization: Bearer $token" \
+      -H "Accept: application/vnd.github.raw+json" \
+      -H "X-GitHub-Api-Version: 2022-11-28" \
+      "https://api.github.com/repos/SaulGoodman1337/community-scripts/contents/tools/private-run.sh?ref=main"
+  )"
+
+  COMMUNITY_SCRIPTS_GITHUB_TOKEN="$token" bash -c "$bootstrap" -- "$target" "$@"
+  unset token bootstrap
+}
+```
+
+The token is requested per run and is not stored by the bootstrap. Existing LXCs should run their old `update` once **before** the repository is switched from public to private so their update entrypoint is migrated. See [docs/private-access.md](docs/private-access.md).
+
+---
+
 ## Included projects
 
 | Project | Purpose | Install location | Default ports |
@@ -12,7 +43,7 @@ The repository follows the general layout of [community-scripts/ProxmoxVE](https
 | **Heirloom** | Creates a dedicated Debian LXC and runs the Heirloom family-tree app with PostgreSQL using the upstream Docker Compose stack. | Run on the **Proxmox host** | Web: `8081` |
 | **Optolink-Splitter** | Creates a privileged Debian LXC for local Viessmann Optolink access via serial, MQTT and TCP/IP. | Run on the **Proxmox host** | TCP: `65234` |
 | **Optolink-Web** | Creates an unprivileged Debian LXC with a lightweight browser UI for an existing Optolink-Splitter. | Run on the **Proxmox host** | Web: `8080` |
-| **SMB-Scan-Proxy** | Creates an isolated SMB1 scan-to-folder bridge and forwards completed files to a modern SMB2/SMB3 backend. | Run on the **Proxmox host** | SMB: `445`, `139` |
+| **SMB-Scan-Proxy** | Creates an isolated legacy scan-to-folder compatibility bridge and forwards completed files to a modern SMB3 backend. | Run on the **Proxmox host** | SMB: `445`, `139` |
 | **ONLYOFFICE DocSpace add-on** | Adds DocSpace Community to an **existing native ONLYOFFICE Docs LXC** and reuses the installed Document Server. | Run **inside the existing ONLYOFFICE LXC** | Docs: `80`, DocSpace: `8088` |
 
 ---
@@ -26,7 +57,7 @@ The repository follows the general layout of [community-scripts/ProxmoxVE](https
 Run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/mindwtr.sh)"
+csrun ct/mindwtr.sh
 ```
 
 Default container resources:
@@ -72,7 +103,7 @@ More details: [docs/mindwtr.md](docs/mindwtr.md)
 Run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/heirloom.sh)"
+csrun ct/heirloom.sh
 ```
 
 Defaults: 2 CPU cores, 4096 MiB RAM, 12 GiB disk, Debian 13, unprivileged LXC with nesting enabled. The web interface is exposed at `http://LXC-IP:8081`.
@@ -90,7 +121,7 @@ More details: [docs/heirloom.md](docs/heirloom.md)
 Run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/optolink-splitter.sh)"
+csrun ct/optolink-splitter.sh
 ```
 
 Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, with nesting enabled. The container is deliberately **privileged** so the shared community-scripts core can bind common USB serial devices such as `/dev/ttyUSB0`, `/dev/ttyUSB1` and `/dev/serial/by-id` into the LXC.
@@ -108,7 +139,7 @@ Optolink-Web is a lightweight web UI for an existing Optolink-Splitter. It keeps
 Run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/optolink-web.sh)"
+csrun ct/optolink-web.sh
 ```
 
 Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, unprivileged LXC. The web UI listens on `http://LXC-IP:8080`. Configure the existing splitter and MQTT broker in `/etc/optolink-web.env`.
@@ -121,17 +152,17 @@ More details: [docs/optolink-web.md](docs/optolink-web.md)
 
 ## SMB-Scan-Proxy
 
-SMB-Scan-Proxy is for legacy printers/scanners that can only write to SMB1/NT1 shares while the real NAS or Samba server stays on modern SMB2/SMB3.
+SMB-Scan-Proxy is for legacy printers/scanners with older SMB dialect requirements while the real NAS or Samba server stays on modern SMB3.
 
 Run on the **Proxmox VE host**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/smb-scan-proxy.sh)"
+csrun ct/smb-scan-proxy.sh
 ```
 
 Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, unprivileged LXC. The legacy Samba listener is deliberately disabled after installation until a printer IP and `ENABLED=true` are configured in `/etc/smb-scan-proxy.env`.
 
-The frontend accepts SMB1 only from the configured printer IP. Completed files are queued locally and forwarded with `smbclient` using SMB3 to the actual backend share. No CIFS kernel mount, Docker or privileged container is required.
+The frontend is restricted to the configured printer IP and defaults to SMB2_02 for the HP compatibility case. Completed files are queued locally and forwarded with `smbclient` using SMB3 to the actual backend share. No CIFS kernel mount, Docker or privileged container is required.
 
 Generated frontend credentials are stored in `/root/smb-scan-proxy.creds`.
 
@@ -189,21 +220,21 @@ pct set <CTID> -memory 8192 -swap 4096
 Run **inside the existing ONLYOFFICE Docs LXC**:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 Optional automatic activation of active local DocSpace users for a trusted internal deployment:
 
 ```bash
 DOCSPACE_AUTO_ACTIVATE_USERS=true \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 For a small installation (for example 1–2 users), enable the conservative RAM-saving profile:
 
 ```bash
 DOCSPACE_LEAN_MODE=true \
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/install/onlyoffice-docspace-addon.sh)"
+csrun install/onlyoffice-docspace-addon.sh
 ```
 
 Lean mode uses a 512 MiB OpenSearch heap, enables DocSpace single-instance hosting mode and disables only `docspace-ai-worker`, `docspace-mcp` and `docspace-telegram`. Single-instance mode removes the per-second MySQL worker-registration heartbeat that is unnecessary in a single-LXC deployment. The browser-facing `docspace-ai` service and backup services remain enabled to avoid 502 responses from normal UI/API routes.
