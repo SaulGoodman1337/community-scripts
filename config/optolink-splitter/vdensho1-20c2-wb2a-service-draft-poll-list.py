@@ -249,6 +249,24 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     This VDensHO1 encodes weekday as ISO-style Monday=1 .. Sunday=7 in the
     observed history records (and 0x088E Monday=1), unlike the Sunday=0
     convention observed on some other controller families.
+
+  Heating / DHW schedule and state readout:
+    A1/M1 heating schedule 0x2000..0x2030:
+      Monday through Sunday all 28 A0 FF FF FF FF FF FF = 05:00-20:00.
+    DHW schedule 0x2100..0x2130:
+      Monday through Sunday all 2B A8 FF FF FF FF FF FF = 05:30-21:00.
+    0x2544 = 0.0 C (A1/M1 flow target at sample time, outside heating window)
+    0x2900 = 37.6 C (A1/M1 flow actual)
+    0x0810 = 37.6 C (filtered boiler temperature)
+    0x6513 = 0 (storage loading pump OFF)
+    0x650A = 0 (DHW loading inactive)
+    0x0A10 = 1 (diverter valve direction heating)
+    0x081A = 20.0 C (VTS filtered temperature)
+    0x080C = 20.0 C (hydraulic separator temperature)
+    Result: schedules, 0x2544, 0x6513, 0x650A and 0x0A10 are hardware-readable
+    on this appliance. 0x081A and 0x080C remain optional-sensor candidates:
+    both reading exactly 20.0 C is not sufficient evidence that physical
+    sensors are installed.
 '''
 
 poll_interval = 2
@@ -298,7 +316,7 @@ poll_items = [
     ('NORMAL', 'warmwasser_solltemperatur_aktuell', 0x6500, 2, 0.1, True),  # HW verified: 45.0 C
 
     ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),  # HW readable: 20.0 C; sensor presence TBD
-    ('OPTIONAL_EXT', 'vorlaufsensor_vts_temperatur', 0x081A, 2, 0.1, True),
+    ('OPTIONAL_EXT', 'vorlaufsensor_vts_temperatur', 0x081A, 2, 0.1, True),  # HW readable: 20.0 C; physical sensor presence TBD
 
     # ---------------------------------------------------------------------
     # Burner / pumps / valves
@@ -311,10 +329,10 @@ poll_items = [
 
     ('FAST', 'heizkreis_m1_pumpe_drehzahl', 0x7663, 2, 'b:1:1', 1, False),  # HW verified: 100% firing, 0% after flame-off
     ('FAST', 'heizkreis_m1_pumpe_status', 0x2906, 1, 1, False),  # HW verified: ON
-    ('FAST', 'speicherladepumpe_status', 0x6513, 1, 1, False),
-    ('FAST', 'warmwasser_ladestatus', 0x650A, 1, 1, False),  # HW verified: 0 = inactive
+    ('FAST', 'speicherladepumpe_status', 0x6513, 1, 1, False),  # HW verified: 0=OFF
+    ('FAST', 'warmwasser_ladestatus', 0x650A, 1, 1, False),  # HW verified: 0=Ladung inaktiv
     ('FAST', 'zirkulationspumpe_status', 0x6515, 1, 1, False),  # HW verified: 1
-    ('FAST', 'umschaltventil_stellung', 0x0A10, 1, 1, False),  # HW verified: 3 = Richtung Warmwasser
+    ('FAST', 'umschaltventil_stellung', 0x0A10, 1, 1, False),  # HW verified dynamically: 3=WW earlier, 1=Heizen now
     ('FAST', 'relais_k12_status', 0x0842, 1, 1, False),  # HW verified: 1
     ('NORMAL', 'warmwasser_flowswitch', 0x0883, 1, 1, False),  # HW verified: OFF
 
@@ -347,7 +365,7 @@ poll_items = [
     ('NORMAL', 'heizkreis_m1_frostgefahr', 0x2500, 22, 'b:16:16:0x01', 'bool', False),  # HW verified: false
     ('NORMAL', 'heizkreis_m1_ferienbetrieb', 0x2535, 1, 'b:0:0:0x01', 'bool', False),  # HW verified: false
 
-    ('FAST', 'heizkreis_m1_vorlaufsolltemperatur', 0x2544, 2, 0.1, True),
+    ('FAST', 'heizkreis_m1_vorlaufsolltemperatur', 0x2544, 2, 0.1, True),  # HW verified readable: 0.0 C outside heating window
 
     # ---------------------------------------------------------------------
     # Heating circuit A1/M1 - service coding
@@ -417,21 +435,21 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Time programs
     # ---------------------------------------------------------------------
-    ('RARE', 'heizkreis_m1_zeitprogramm_montag', 0x2000, 8, 'schedvdens', False),
-    ('RARE', 'heizkreis_m1_zeitprogramm_dienstag', 0x2008, 8, 'schedvdens', False),
-    ('RARE', 'heizkreis_m1_zeitprogramm_mittwoch', 0x2010, 8, 'schedvdens', False),
-    ('RARE', 'heizkreis_m1_zeitprogramm_donnerstag', 0x2018, 8, 'schedvdens', False),
-    ('RARE', 'heizkreis_m1_zeitprogramm_freitag', 0x2020, 8, 'schedvdens', False),
-    ('RARE', 'heizkreis_m1_zeitprogramm_samstag', 0x2028, 8, 'schedvdens', False),
-    ('RARE', 'heizkreis_m1_zeitprogramm_sonntag', 0x2030, 8, 'schedvdens', False),
+    ('RARE', 'heizkreis_m1_zeitprogramm_montag', 0x2000, 8, 'schedvdens', False),  # HW verified: 05:00-20:00
+    ('RARE', 'heizkreis_m1_zeitprogramm_dienstag', 0x2008, 8, 'schedvdens', False),  # HW verified: 05:00-20:00
+    ('RARE', 'heizkreis_m1_zeitprogramm_mittwoch', 0x2010, 8, 'schedvdens', False),  # HW verified: 05:00-20:00
+    ('RARE', 'heizkreis_m1_zeitprogramm_donnerstag', 0x2018, 8, 'schedvdens', False),  # HW verified: 05:00-20:00
+    ('RARE', 'heizkreis_m1_zeitprogramm_freitag', 0x2020, 8, 'schedvdens', False),  # HW verified: 05:00-20:00
+    ('RARE', 'heizkreis_m1_zeitprogramm_samstag', 0x2028, 8, 'schedvdens', False),  # HW verified: 05:00-20:00
+    ('RARE', 'heizkreis_m1_zeitprogramm_sonntag', 0x2030, 8, 'schedvdens', False),  # HW verified: 05:00-20:00
 
-    ('RARE', 'warmwasser_zeitprogramm_montag', 0x2100, 8, 'schedvdens', False),
-    ('RARE', 'warmwasser_zeitprogramm_dienstag', 0x2108, 8, 'schedvdens', False),
-    ('RARE', 'warmwasser_zeitprogramm_mittwoch', 0x2110, 8, 'schedvdens', False),
-    ('RARE', 'warmwasser_zeitprogramm_donnerstag', 0x2118, 8, 'schedvdens', False),
-    ('RARE', 'warmwasser_zeitprogramm_freitag', 0x2120, 8, 'schedvdens', False),
-    ('RARE', 'warmwasser_zeitprogramm_samstag', 0x2128, 8, 'schedvdens', False),
-    ('RARE', 'warmwasser_zeitprogramm_sonntag', 0x2130, 8, 'schedvdens', False),
+    ('RARE', 'warmwasser_zeitprogramm_montag', 0x2100, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'warmwasser_zeitprogramm_dienstag', 0x2108, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'warmwasser_zeitprogramm_mittwoch', 0x2110, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'warmwasser_zeitprogramm_donnerstag', 0x2118, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'warmwasser_zeitprogramm_freitag', 0x2120, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'warmwasser_zeitprogramm_samstag', 0x2128, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
+    ('RARE', 'warmwasser_zeitprogramm_sonntag', 0x2130, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
 
     ('RARE', 'zirkulation_zeitprogramm_montag', 0x2200, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
     ('RARE', 'zirkulation_zeitprogramm_dienstag', 0x2208, 8, 'schedvdens', False),  # HW verified: 05:30-21:00
