@@ -279,8 +279,18 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     System schema 0x7700 = 2 already identifies A1 + DHW with no M2 circuit.
       M2 probes additionally returned 0x3900=0.0 C, 0x3544=0.0 C,
       0x0898=20.0 C and 0x7665=0000: inactive/default values, not a live M2.
-    0x081A = 20.0 C remains unresolved until the exact VLTS sensor-status
-    datapoint 0x0840 is checked.
+    Sensor-status follow-up:
+      0x083A = 0 -> outdoor-temperature sensor OK
+      0x083B = 0 -> boiler-temperature sensor OK
+      0x083D = 2 -> STS2 open circuit
+      0x0840 = 2 -> VLTS/VTS open circuit
+      0x089C = 3 -> M1 room-temperature sensor reference error
+      0x089D = 3 -> M2 room-temperature sensor reference error
+      0x2521 = 2 -> A1/M1 weather-compensated control
+      0x3521 = 5 -> M2 heating circuit not present
+    Therefore 0x081A=20.0 C is not a physical VTS/VLTS value on this system.
+    Likewise 0x0896=20.0 C must not be exposed as a valid room temperature
+    while 0x089C reports reference error.
 '''
 
 poll_interval = 2
@@ -292,8 +302,8 @@ poll_groups = {
     "SLOW": 150,         # ~5 min
     "RARE": 900,         # ~30 min
 
-    # Optional hardware. M2, solar and hydraulic separator are confirmed absent
-    # on this appliance; VTS/VLTS sensor presence at 0x081A is still unresolved.
+    # Optional hardware. M2, solar and hydraulic separator are confirmed absent.
+    # VTS/VLTS and M1 room-sensor inputs are not valid on this installation.
     "OPTIONAL_M2": -1,
     "OPTIONAL_SOLAR": -1,
     "OPTIONAL_EXT": -1,
@@ -333,7 +343,17 @@ poll_items = [
     ('NORMAL', 'warmwasser_solltemperatur_aktuell', 0x6500, 2, 0.1, True),  # HW verified: 45.0 C
 
     ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),  # HW default 20.0 C; 0x7752=0 confirms no physical separator
-    ('OPTIONAL_EXT', 'vorlaufsensor_vts_temperatur', 0x081A, 2, 0.1, True),  # HW readable: 20.0 C; physical sensor presence TBD
+    ('OPTIONAL_EXT', 'vorlaufsensor_vts_temperatur', 0x081A, 2, 0.1, True),  # HW default 20.0 C; 0x0840=2 open circuit
+
+    # Sensor diagnostics
+    ('SLOW', 'sensorstatus_aussentemperatur', 0x083A, 1, 1, False),  # HW verified: 0=OK
+    ('SLOW', 'sensorstatus_kesseltemperatur', 0x083B, 1, 1, False),  # HW verified: 0=OK
+    ('SLOW', 'sensorstatus_sts2', 0x083D, 1, 1, False),  # HW verified: 2=Unterbrechung
+    ('SLOW', 'sensorstatus_vlts', 0x0840, 1, 1, False),  # HW verified: 2=Unterbrechung
+    ('SLOW', 'sensorstatus_raum_m1', 0x089C, 1, 1, False),  # HW verified: 3=Referenzfehler
+    ('OPTIONAL_M2', 'sensorstatus_raum_m2', 0x089D, 1, 1, False),  # HW verified: 3=Referenzfehler; M2 absent
+    ('ONCE', 'heizkreis_m1_reglervariante', 0x2521, 1, 1, False),  # HW verified: 2=witterungsgefuehrt
+    ('ONCE', 'heizkreis_m2_reglervariante', 0x3521, 1, 1, False),  # HW verified: 5=nicht vorhanden
 
     # ---------------------------------------------------------------------
     # Burner / pumps / valves
@@ -373,7 +393,7 @@ poll_items = [
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),  # HW verified R/W: 18->19->18 C
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_party', 0x2308, 1, 1, False),  # HW verified R/W: 21->22->21 C  # HW verified R/W: 21->22->21 C
 
-    ('NORMAL', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW verified: 20.0 C
+    ('OPTIONAL_EXT', 'heizkreis_m1_raumtemperatur', 0x0896, 2, 0.1, True),  # HW default 20.0 C; 0x089C=3 reference error
 
     # One 22-byte state block feeds multiple A1/M1 entities.
     # Hardware sample: 02 01 00 00 00 00 00 00 01 00 00 01 B4 00 00 00 00 00 00 00 B4 00
