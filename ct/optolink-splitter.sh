@@ -88,9 +88,9 @@ function update_script() {
   msg_ok "Updated Python dependencies"
 
   msg_info "Refreshing VScotHO1 profile helper"
-  $STD cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
+  cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
   chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
-  $STD cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
+  cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
   msg_ok "Refreshed VScotHO1 profile helper"
 
   chown -R optolink:optolink /opt/optolink
