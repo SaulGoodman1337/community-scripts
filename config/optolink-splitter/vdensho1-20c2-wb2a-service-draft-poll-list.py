@@ -291,6 +291,31 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     Therefore 0x081A=20.0 C is not a physical VTS/VLTS value on this system.
     Likewise 0x0896=20.0 C must not be exposed as a valid room temperature
     while 0x089C reports reference error.
+
+  DHW / coding-plug readout:
+    0x8851 = 0 -> DHW construction type "Speicher".
+    0x6756 = 0 -> configured DHW setpoint range is 10..60 C.
+    0x6759 = 0 -> DHW switch-on threshold is 2.5 K below setpoint.
+    0x675B = 0 -> storage tank connected "vor Weiche" (separator itself absent).
+    0x6760 = 20 K boiler offset; 0x6762 = 5 min pump overrun.
+    0x0812 = 43.3 C is a valid DHW temperature sample.
+    0x0814 = 20.0 C while 0x083D = 2 (open circuit), therefore STS2 is not a
+    physical temperature source on this installation.
+
+    Coding-plug block 0x1050 len16:
+      raw = 00 00 00 02 00 00 00 00 4A 14 3F 0A 41 41 00 00
+      byte 1 = 0 -> boiler-side DHW type "Umlaufwasserheizer"
+      byte 3 = 2 -> modulating burner
+      byte 8 = 74 C boiler-setpoint hardware maximum
+      byte 9 = 20 C boiler-setpoint hardware minimum
+      byte10 = 63 C DHW-setpoint coding-plug maximum
+      byte11 = 10 C DHW-setpoint coding-plug minimum
+      byte12 = 65 percent DHW maximum power
+      byte13 = 65 percent heating maximum power
+    Important: the currently configured 0x6756=0 restricts DHW operation to
+    10..60 C even though the coding plug advertises an absolute 10..63 C
+    capability. Use 10..60 C for the Home Assistant number entity unless the
+    controller coding is intentionally changed.
 '''
 
 poll_interval = 2
@@ -323,6 +348,14 @@ poll_items = [
     ('ONCE', 'codierstecker_kennung_raw', 0x1040, 2),  # HW verified raw: 0215; catalog rotatebytes
     ('ONCE', 'bedienteil_sw_index', 0x7330, 1, 1, False),  # HW verified: 1
     ('ONCE', 'gfa_kennung', 0x7650, 1, 1, False),  # HW verified: 0x20
+    ('ONCE', 'bauart_warmwasser', 0x8851, 1, 1, False),  # HW verified: 0=Speicher
+    ('ONCE', 'codierstecker_block_1050_raw', 0x1050, 16),  # HW verified raw block
+    ('ONCE', 'codierstecker_kesselsoll_max', 0x1050, 16, 'b:8:8', 1, False),  # HW: 74 C
+    ('ONCE', 'codierstecker_kesselsoll_min', 0x1050, 16, 'b:9:9', 1, False),  # HW: 20 C
+    ('ONCE', 'codierstecker_wwsoll_max', 0x1050, 16, 'b:10:10', 1, False),  # HW: 63 C absolute capability
+    ('ONCE', 'codierstecker_wwsoll_min', 0x1050, 16, 'b:11:11', 1, False),  # HW: 10 C
+    ('ONCE', 'codierstecker_ww_max_leistung', 0x1050, 16, 'b:12:12', 1, False),  # HW: 65%
+    ('ONCE', 'codierstecker_heizung_max_leistung', 0x1050, 16, 'b:13:13', 1, False),  # HW: 65%
     ('ONCE', 'hydraulische_weiche_vorhanden', 0x7752, 1, 1, False),  # HW verified: 0=nicht vorhanden
     ('ONCE', 'solar_typ', 0x7754, 1, 1, False),  # HW verified: 0=ohne
 
@@ -344,6 +377,7 @@ poll_items = [
 
     ('OPTIONAL_EXT', 'hydraulische_weiche_temperatur', 0x080C, 2, 0.1, True),  # HW default 20.0 C; 0x7752=0 confirms no physical separator
     ('OPTIONAL_EXT', 'vorlaufsensor_vts_temperatur', 0x081A, 2, 0.1, True),  # HW default 20.0 C; 0x0840=2 open circuit
+    ('OPTIONAL_EXT', 'sts2_temperatur', 0x0814, 2, 0.1, True),  # HW default 20.0 C; 0x083D=2 open circuit
 
     # Sensor diagnostics
     ('SLOW', 'sensorstatus_aussentemperatur', 0x083A, 1, 1, False),  # HW verified: 0=OK
@@ -441,6 +475,9 @@ poll_items = [
     ('SLOW', 'interne_pumpe_kennung_30', 0x5730, 1, 1, False),  # HW verified: 1=drehzahlgeregelt
     ('SLOW', 'interne_pumpe_solldrehzahl_31', 0x5731, 1, 1, False),  # HW verified: 100%
 
+    ('SLOW', 'warmwasser_sollbereich_56', 0x6756, 1, 1, False),  # HW verified: 0=10..60 C
+    ('SLOW', 'warmwasser_einschalt_offset_59', 0x6759, 1, 1, False),  # HW verified: 0=2.5 K below setpoint
+    ('SLOW', 'warmwasser_speicher_anbindung_5b', 0x675B, 1, 1, False),  # HW verified: 0=vor Weiche
     ('SLOW', 'warmwasser_kessel_offset_60', 0x6760, 1, 1, False),  # HW verified: 20 K
     ('SLOW', 'warmwasser_pumpennachlauf_62', 0x6762, 1, 1, False),  # HW verified byte0=5 min; exact length1
     ('SLOW', 'umschaltventil_bauart_65', 0x6765, 1, 1, False),  # HW verified: 3=Grundfos Ventil
@@ -573,6 +610,8 @@ poll_items = [
 # DHW setpoint:
 #   0x6300 len1 is hardware-verified READ/WRITE on this exact appliance.
 #   Verified 45 C -> 44 C -> 45 C with matching 0x6500 effective setpoint.
+#   Current coding 0x6756=0 restricts the operational range to 10..60 C.
+#   Coding-plug 0x1050 bytes10/11 advertise absolute capability 10..63 C.
 #
 # Circulation pump:
 #   0x6515 is status. 0x0842 is relay K12 status. Time programs and coding
