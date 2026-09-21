@@ -78,12 +78,12 @@ function update_script() {
   msg_ok "Updated base system"
 
   msg_info "Updating Optolink-Web application"
-  $STD cs_repo_fetch apps/optolink-web/app.py /opt/optolink-web/app.py
-  $STD cs_repo_fetch apps/optolink-web/datapoints.json /opt/optolink-web/datapoints.json
-  $STD cs_repo_fetch apps/optolink-web/requirements.txt /opt/optolink-web/requirements.txt
-  $STD cs_repo_fetch apps/optolink-web/templates/index.html /opt/optolink-web/templates/index.html
-  $STD cs_repo_fetch apps/optolink-web/static/app.js /opt/optolink-web/static/app.js
-  $STD cs_repo_fetch apps/optolink-web/static/style.css /opt/optolink-web/static/style.css
+  cs_repo_fetch apps/optolink-web/app.py /opt/optolink-web/app.py
+  cs_repo_fetch apps/optolink-web/datapoints.json /opt/optolink-web/datapoints.json
+  cs_repo_fetch apps/optolink-web/requirements.txt /opt/optolink-web/requirements.txt
+  cs_repo_fetch apps/optolink-web/templates/index.html /opt/optolink-web/templates/index.html
+  cs_repo_fetch apps/optolink-web/static/app.js /opt/optolink-web/static/app.js
+  cs_repo_fetch apps/optolink-web/static/style.css /opt/optolink-web/static/style.css
   /opt/optolink-web/venv/bin/python -m py_compile /opt/optolink-web/app.py
   chown -R optolinkweb:optolinkweb /opt/optolink-web
   msg_ok "Updated Optolink-Web application"
