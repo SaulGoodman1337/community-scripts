@@ -42,6 +42,9 @@ function update_script() {
   $STD curl -fsSL "$BASE_URL/apps/smb-scan-proxy/worker.py" -o /opt/smb-scan-proxy/worker.py
   $STD curl -fsSL "$BASE_URL/tools/smb-scan-proxy-apply.sh" -o /usr/local/sbin/smb-scan-proxy-apply
   chmod 755 /opt/smb-scan-proxy/worker.py /usr/local/sbin/smb-scan-proxy-apply
+  ln -sf /usr/local/sbin/smb-scan-proxy-apply /usr/bin/smb-scan-proxy-apply
+  [[ -x /usr/local/bin/smb-scan-proxy-config ]] && ln -sf /usr/local/bin/smb-scan-proxy-config /usr/bin/smb-scan-proxy-config
+  [[ -x /usr/local/bin/smb-scan-proxy-status ]] && ln -sf /usr/local/bin/smb-scan-proxy-status /usr/bin/smb-scan-proxy-status
   python3 -m py_compile /opt/smb-scan-proxy/worker.py
   msg_ok "Updated SMB scan proxy"
 
