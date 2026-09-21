@@ -130,7 +130,8 @@ username = $BACKEND_USER
 password = $BACKEND_PASSWORD
 domain = $BACKEND_DOMAIN
 EOF
-  chmod 600 "$BACKEND_AUTH"
+  chown root:scanproxy "$BACKEND_AUTH"
+  chmod 640 "$BACKEND_AUTH"
 else
   rm -f "$BACKEND_AUTH"
 fi
