@@ -131,6 +131,15 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     circulation pump, and 0x6515 + 0x0842 report the same live ON state.
     The generic/older 0x0846 circulation address is not available as an
     ordinary datapoint on this firmware.
+
+  Circulation interval/config write test:
+    initial 0x6773 = 0 (timer program)
+    write 0x6773 len1 value 7 -> ACK
+    read-back 0x07 = continuous ON
+    0x6515 and 0x0842 remained 1 because the pump was already ON at test time
+    restore write 0 -> ACK/read-back 0x00
+    Result: 0x6773 is hardware-verified READ/WRITE. Physical forcing effect
+    of value 7 still needs one test while the pump is initially OFF.
 '''
 
 poll_interval = 2
@@ -273,7 +282,7 @@ poll_items = [
 
     ('SLOW', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),  # HW verified read: 0=Regelfunktion
     ('SLOW', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),  # HW verified read: 0=Regelfunktion
-    ('SLOW', 'zirkulation_intervall_73', 0x6773, 1, 1, False),  # HW verified read: 0=Schaltuhr
+    ('SLOW', 'zirkulation_intervall_73', 0x6773, 1, 1, False),  # HW verified R/W: 0=Schaltuhr, 7=Dauernd EIN
     ('SLOW', 'relais_k12_funktion_53', 0x7753, 1, 1, False),  # HW verified: 1=Zirkulationspumpe
 
     # ---------------------------------------------------------------------
