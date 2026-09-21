@@ -450,19 +450,19 @@ views:
             title: Kennlinie
             icon: mdi:tune
             entities:
-              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3
+              - entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung
                 name: Neigung D3
-              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4
+              - entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung
                 name: Niveau D4
-              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5
+              - entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung
                 name: Vorlauf Minimum C5
-              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6
+              - entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung
                 name: Vorlauf Maximum C6
-              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3
+              - entity: number.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3_einstellung
                 name: Frostgrenze A3
-              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5
+              - entity: number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung
                 name: Pumpenlogik A5
-              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6
+              - entity: number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung
                 name: Sommerspar A6
       - type: grid
         column_span: 2
@@ -542,12 +542,12 @@ views:
             title: Pumpenparameter
             icon: mdi:cog-outline
             entities:
-              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_max_drehzahl_e6
-              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_min_drehzahl_e7
-              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_nebenbetrieb_e8
-              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9
-              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9
-              - sensor.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31
+              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_max_drehzahl_e6_einstellung
+              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_min_drehzahl_e7_einstellung
+              - select.vitodens_200_wb2a_heizkreis_m1_pumpe_nebenbetrieb_e8_einstellung
+              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9_einstellung
+              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9_einstellung
+              - number.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31_einstellung
               - sensor.vitodens_200_wb2a_interne_pumpe_kennung_30
       - type: grid
         column_span: 2
@@ -581,12 +581,12 @@ views:
             icon: mdi:tune-variant
             entities:
               - sensor.vitodens_200_wb2a_warmwasser_sollbereich_56
-              - sensor.vitodens_200_wb2a_warmwasser_einschalt_offset_59
-              - sensor.vitodens_200_wb2a_warmwasser_kessel_offset_60
-              - sensor.vitodens_200_wb2a_warmwasser_pumpennachlauf_62
+              - number.vitodens_200_wb2a_warmwasser_einschalt_offset_59_einstellung
+              - number.vitodens_200_wb2a_warmwasser_kessel_offset_60_einstellung
+              - number.vitodens_200_wb2a_warmwasser_pumpennachlauf_62_einstellung
               - sensor.vitodens_200_wb2a_umschaltventil_bauart_65
-              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll1_71
-              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll2_72
+              - select.vitodens_200_wb2a_zirkulation_bei_ww_soll1_71_einstellung
+              - select.vitodens_200_wb2a_zirkulation_bei_ww_soll2_72_einstellung
     cards: []
 
   - title: Nachtabsenkung
