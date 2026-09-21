@@ -1,0 +1,944 @@
+views:
+  - title: Heizung
+    path: heizung
+    icon: mdi:water-boiler
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Vitodens 200-W WB2A
+            heading_style: title
+            icon: mdi:fire-circle
+            badges:
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_feuerungsautomat_verriegelt
+                name: Störung
+                icon: mdi:alert-circle
+                show_state: true
+                show_icon: true
+                visibility:
+                  - condition: state
+                    entity: binary_sensor.vitodens_200_wb2a_feuerungsautomat_verriegelt
+                    state: "on"
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_brenner_flamme
+                name: Brenner
+                icon: mdi:gas-burner
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_brenner_modulationsgrad
+                name: Leistung
+                icon: mdi:gauge
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_aussentemperatur
+                name: Außen
+                icon: mdi:thermometer
+                show_state: true
+                show_icon: true
+          - type: heading
+            heading: Temperaturen
+            heading_style: subtitle
+            icon: mdi:thermometer-lines
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_kesseltemperatur
+                name: Kessel
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur
+                name: Vorlauf
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur
+                name: VL Soll
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_warmwasser_temperatur
+                name: WW
+                show_state: true
+                show_icon: false
+          - type: heading
+            heading: Anlagenstatus
+            heading_style: subtitle
+            icon: mdi:state-machine
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_betriebsart_aktuell
+                name: Betrieb
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_betriebsprogramm_aktuell
+                name: Programm
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_umschaltventil_stellung
+                name: Ventil
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_warmwasser_ladestatus
+                name: WW-Ladung
+                show_state: true
+                show_icon: false
+          - type: heading
+            heading: Pumpen
+            heading_style: subtitle
+            icon: mdi:pump
+            badges:
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_ausgang
+                name: Heizkreis
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_drehzahl
+                name: HK %
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_interne_pumpe_status
+                name: Intern
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_interne_pumpe_drehzahl
+                name: Intern %
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_zirkulationspumpe_status
+                name: Zirkulation
+                show_state: true
+                show_icon: true
+          - type: heading
+            heading: Verbrauch & Zähler
+            heading_style: subtitle
+            icon: mdi:counter
+            badges:
+              - type: entity
+                entity: sensor.heizung_power
+                name: Strom
+                icon: mdi:lightning-bolt
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.heizung_power_durchschnitt
+                name: Ø Strom
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_brenner_starts
+                name: Starts
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_brenner_betriebsstunden
+                name: Stunden
+                show_state: true
+                show_icon: false
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Steuerung
+            heading_style: title
+            icon: mdi:remote
+          - type: custom:mushroom-select-card
+            entity: select.vitodens_200_wb2a_heizkreis_m1_betriebsart
+            name: Betriebsart
+            icon: mdi:home-modern
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: heading
+            heading: Raumtemperatur
+            heading_style: subtitle
+            icon: mdi:home-thermometer-outline
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal
+            name: Normal
+            icon: mdi:sun-thermometer
+            features:
+              - type: numeric-input
+                style: buttons
+            features_position: bottom
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
+            name: Reduziert
+            icon: mdi:weather-night
+            features:
+              - type: numeric-input
+                style: buttons
+            features_position: bottom
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: heading
+            heading: Warmwasser
+            heading_style: subtitle
+            icon: mdi:water-thermometer
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_warmwasser_temperatur
+                name: Ist
+                show_state: true
+                show_icon: false
+          - type: tile
+            entity: number.vitodens_200_wb2a_warmwasser_solltemperatur
+            name: Warmwasser Soll
+            icon: mdi:water-thermometer
+            features:
+              - type: numeric-input
+                style: buttons
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: heading
+            heading: Komfort
+            heading_style: subtitle
+            icon: mdi:party-popper
+          - type: tile
+            entity: switch.vitodens_200_wb2a_heizkreis_m1_partybetrieb
+            name: Partybetrieb
+            icon: mdi:party-popper
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_party
+            name: Party Soll
+            icon: mdi:thermometer-plus
+            features:
+              - type: numeric-input
+                style: buttons
+            features_position: bottom
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: custom:mushroom-select-card
+            entity: select.vitodens_200_wb2a_zirkulation_intervall
+            name: Zirkulation
+            icon: mdi:pump
+            grid_options:
+              columns: 12
+              rows: 2
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Thermostatventile
+            heading_style: title
+            icon: mdi:hvac
+            badges:
+              - type: entity
+                entity: sensor.thermostat_ventiloffnung
+                name: Durchschnitt
+                icon: mdi:percent
+                show_state: true
+                show_icon: true
+          - type: heading
+            heading: Büro
+            heading_style: subtitle
+            icon: mdi:briefcase
+            badges:
+              - type: entity
+                entity: sensor.buro_ventil_offnungsgrad
+                name: Ventil
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperaturzielburo
+                name: Soll
+                show_state: true
+                show_icon: false
+          - type: heading
+            heading: Dario
+            heading_style: subtitle
+            icon: mdi:baby-face-outline
+            badges:
+              - type: entity
+                entity: sensor.dario_ventil_offnungsgrad
+                name: Ventil
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperatur_wohnbereich_temperature
+                name: Ist
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperaturzieldario
+                name: Soll
+                show_state: true
+                show_icon: false
+          - type: heading
+            heading: Schlafzimmer
+            heading_style: subtitle
+            icon: mdi:bed
+            badges:
+              - type: entity
+                entity: sensor.schlafzimmer_ventil_offnungsgrad
+                name: Ventil
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperatur_schlafzimmer_temperature
+                name: Ist
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperaturzielschlafzimmer
+                name: Soll
+                show_state: true
+                show_icon: false
+          - type: heading
+            heading: Gäste-WC
+            heading_style: subtitle
+            icon: mdi:toilet
+            badges:
+              - type: entity
+                entity: sensor.gaste_wc_ventil_offnungsgrad
+                name: Ventil
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperaturzielgastewc
+                name: Soll
+                show_state: true
+                show_icon: false
+          - type: heading
+            heading: Badezimmer
+            heading_style: subtitle
+            icon: mdi:bathtub
+            badges:
+              - type: entity
+                entity: sensor.badezimmer_ventil_offnungsgrad
+                name: Ventil
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: climate.badezimmer
+                name: Klima
+                show_state: true
+                show_icon: true
+          - type: heading
+            heading: Wohnzimmer
+            heading_style: subtitle
+            icon: mdi:sofa
+            badges:
+              - type: entity
+                entity: sensor.wohnzimmer_links_ventil_offnungsgrad
+                name: Links
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.wohnzimmer_rechts_ventil_offnungsgrad
+                name: Rechts
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperatursensorwohnzimmer_temperatur
+                name: Ist
+                show_state: true
+                show_icon: false
+          - type: heading
+            heading: Flur
+            heading_style: subtitle
+            icon: mdi:door
+            badges:
+              - type: entity
+                entity: sensor.flur_ventil_offnungsgrad
+                name: Ventil
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.flurtemperatur_flur_temperature
+                name: Ist
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.temperaturzielflur
+                name: Soll
+                show_state: true
+                show_icon: false
+          - type: tile
+            entity: script.climateboost
+            name: Alle Ventile öffnen
+            icon: mdi:heating-coil
+            hide_state: true
+            tap_action:
+              action: perform-action
+              perform_action: script.climateboost
+              target: {}
+            grid_options:
+              columns: 12
+              rows: 1
+
+      - type: grid
+        column_span: 4
+        cards:
+          - type: heading
+            heading: Verlauf
+            heading_style: title
+            icon: mdi:chart-line
+          - type: history-graph
+            title: Heizung – 48 Stunden
+            hours_to_show: 48
+            entities:
+              - sensor.vitodens_200_wb2a_aussentemperatur_gedaempft
+              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur
+              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur
+              - sensor.vitodens_200_wb2a_kesseltemperatur
+              - binary_sensor.vitodens_200_wb2a_brenner_flamme
+              - sensor.vitodens_200_wb2a_brenner_modulationsgrad
+              - sensor.ventilstellung_durchschnitt
+            grid_options:
+              columns: full
+    cards: []
+    header:
+      layout: responsive
+      badges_position: bottom
+      badges_wrap: wrap
+
+  - title: Heizkurve
+    path: heizkurve
+    icon: mdi:chart-bell-curve
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Heizkurve & Vorlauf
+            heading_style: title
+            icon: mdi:chart-bell-curve
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_aussentemperatur_gedaempft
+                name: Außen
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur
+                name: Soll
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur
+                name: Ist
+                show_state: true
+                show_icon: false
+          - type: entities
+            title: Kennlinie
+            icon: mdi:tune
+            entities:
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3
+                name: Neigung D3
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4
+                name: Niveau D4
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5
+                name: Vorlauf Minimum C5
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6
+                name: Vorlauf Maximum C6
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3
+                name: Frostgrenze A3
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5
+                name: Pumpenlogik A5
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6
+                name: Sommerspar A6
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Temperaturniveau
+            heading_style: title
+            icon: mdi:thermostat
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal
+            name: Normaltemperatur
+            icon: mdi:sun-thermometer
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
+            name: Reduzierte Temperatur
+            icon: mdi:weather-night
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 6
+              rows: 2
+          - type: history-graph
+            title: Vorlaufregelung – 7 Tage
+            hours_to_show: 168
+            entities:
+              - sensor.vitodens_200_wb2a_aussentemperatur_gedaempft
+              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur
+              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur
+            grid_options:
+              columns: full
+    cards: []
+
+  - title: Pumpen
+    path: pumpen
+    icon: mdi:pump
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Heizkreis & interne Pumpe
+            heading_style: title
+            icon: mdi:pump
+            badges:
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_ausgang
+                name: HK Ausgang
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_drehzahl
+                name: HK %
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_interne_pumpe_status
+                name: Intern
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_interne_pumpe_drehzahl
+                name: Intern %
+                show_state: true
+                show_icon: false
+          - type: entities
+            title: Pumpenparameter
+            icon: mdi:cog-outline
+            entities:
+              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_max_drehzahl_e6
+              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_min_drehzahl_e7
+              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_nebenbetrieb_e8
+              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9
+              - sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9
+              - sensor.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31
+              - sensor.vitodens_200_wb2a_interne_pumpe_kennung_30
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Warmwasser & Zirkulation
+            heading_style: title
+            icon: mdi:water-pump
+            badges:
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_zirkulationspumpe_status
+                name: Zirkulation
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: binary_sensor.vitodens_200_wb2a_speicherladepumpe_status
+                name: Speicher
+                show_state: true
+                show_icon: true
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_warmwasser_ladestatus
+                name: Ladestatus
+                show_state: true
+                show_icon: false
+          - type: custom:mushroom-select-card
+            entity: select.vitodens_200_wb2a_zirkulation_intervall
+            name: Zirkulationsmodus
+            icon: mdi:clock-outline
+          - type: entities
+            title: Warmwasser-/Zirkulationsparameter
+            icon: mdi:tune-variant
+            entities:
+              - sensor.vitodens_200_wb2a_warmwasser_sollbereich_56
+              - sensor.vitodens_200_wb2a_warmwasser_einschalt_offset_59
+              - sensor.vitodens_200_wb2a_warmwasser_kessel_offset_60
+              - sensor.vitodens_200_wb2a_warmwasser_pumpennachlauf_62
+              - sensor.vitodens_200_wb2a_umschaltventil_bauart_65
+              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll1_71
+              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll2_72
+    cards: []
+
+  - title: Nachtabsenkung
+    path: nachtabsenkung
+    icon: mdi:weather-night
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Heizung
+            heading_style: title
+            icon: mdi:radiator
+            badges:
+              - type: entity
+                entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal
+                name: Normal
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
+                name: Reduziert
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.thermostat_ventiloffnung
+                name: Ventile Ø
+                show_state: true
+                show_icon: false
+          - type: tile
+            entity: automation.nachtabsenkungheizung
+            name: Automatisierung
+            icon: mdi:home-automation
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 12
+              rows: 1
+          - type: tile
+            entity: input_boolean.nachtabsenkunghventilstellungnachtautomatierung
+            name: Nächtliche Heizanforderung
+            icon: mdi:radiator
+            tap_action:
+              action: toggle
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungheizung
+                state: "on"
+          - type: custom:time-picker-card
+            entity: input_datetime.nachtabsenkunghstart
+            name: Start Normalbetrieb
+            hour_mode: 24
+            hour_step: 1
+            minute_step: 5
+            hide:
+              seconds: true
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungheizung
+                state: "on"
+          - type: custom:time-picker-card
+            entity: input_datetime.nachtabsenkunghende
+            name: Ende Normalbetrieb
+            hour_mode: 24
+            hour_step: 1
+            minute_step: 5
+            hide:
+              seconds: true
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungheizung
+                state: "on"
+          - type: tile
+            entity: input_number.nachtabsenkungtemperaturreduziert
+            name: Nacht
+            icon: mdi:weather-night
+            features:
+              - type: numeric-input
+                style: slider
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungheizung
+                state: "on"
+          - type: tile
+            entity: input_number.nachtabsenkungtemperaturnormal
+            name: Tag
+            icon: mdi:sun-thermometer
+            features:
+              - type: numeric-input
+                style: slider
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungheizung
+                state: "on"
+          - type: tile
+            entity: input_number.nachtabsenkunghventilstellung
+            name: Ventil-Grenzwert
+            icon: mdi:valve
+            features:
+              - type: numeric-input
+                style: slider
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungheizung
+                state: "on"
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Warmwasser
+            heading_style: title
+            icon: mdi:water-thermometer
+            badges:
+              - type: entity
+                entity: number.vitodens_200_wb2a_warmwasser_solltemperatur
+                name: Soll
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_warmwasser_temperatur
+                name: Ist
+                show_state: true
+                show_icon: false
+          - type: tile
+            entity: automation.nachtabsenkungwarmwasser
+            name: Automatisierung
+            icon: mdi:home-automation
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 12
+              rows: 1
+          - type: custom:time-picker-card
+            entity: input_datetime.nachtabsenkungwwstart
+            name: Start
+            hour_mode: 24
+            hour_step: 1
+            minute_step: 5
+            hide:
+              seconds: true
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungwarmwasser
+                state: "on"
+          - type: custom:time-picker-card
+            entity: input_datetime.nachtabsenkungwwende
+            name: Ende
+            hour_mode: 24
+            hour_step: 1
+            minute_step: 5
+            hide:
+              seconds: true
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungwarmwasser
+                state: "on"
+          - type: tile
+            entity: input_number.nachtabsenkungwwtemperaturreduziert
+            name: Nacht
+            icon: mdi:weather-night
+            features:
+              - type: numeric-input
+                style: slider
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungwarmwasser
+                state: "on"
+          - type: tile
+            entity: input_number.nachtabsenkungwwtemperaturnormal
+            name: Tag
+            icon: mdi:sun-thermometer
+            features:
+              - type: numeric-input
+                style: slider
+            visibility:
+              - condition: state
+                entity: automation.nachtabsenkungwarmwasser
+                state: "on"
+    cards: []
+
+  - title: Diagnose
+    path: diagnose
+    icon: mdi:stethoscope
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Gerät
+            heading_style: title
+            icon: mdi:information-outline
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_systemzeit
+                name: Systemzeit
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_anlagenschema
+                name: Schema
+                show_state: true
+                show_icon: false
+          - type: entities
+            title: Identifikation
+            entities:
+              - sensor.vitodens_200_wb2a_geraete_id
+              - sensor.vitodens_200_wb2a_codierstecker_sachnummer
+              - sensor.vitodens_200_wb2a_codierstecker_kennung
+              - sensor.vitodens_200_wb2a_bedienteil_sw_index
+              - sensor.vitodens_200_wb2a_gfa_kennung
+              - sensor.vitodens_200_wb2a_anlagenschema
+              - sensor.vitodens_200_wb2a_anlagentyp
+              - sensor.vitodens_200_wb2a_bauart_warmwasser
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Sensorstatus
+            heading_style: title
+            icon: mdi:thermometer-alert
+          - type: entities
+            title: Diagnose
+            entities:
+              - sensor.vitodens_200_wb2a_sensorstatus_aussentemperatur
+              - sensor.vitodens_200_wb2a_sensorstatus_kesseltemperatur
+              - sensor.vitodens_200_wb2a_sensorstatus_sts2
+              - sensor.vitodens_200_wb2a_sensorstatus_vlts
+              - sensor.vitodens_200_wb2a_sensorstatus_raum_m1
+              - sensor.vitodens_200_wb2a_heizkreis_m1_reglervariante
+              - binary_sensor.vitodens_200_wb2a_feuerungsautomat_verriegelt
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Fehlerhistorie
+            heading_style: title
+            icon: mdi:alert-circle-outline
+          - type: entities
+            title: Letzte 10 Fehlercodes
+            entities:
+              - sensor.vitodens_200_wb2a_fehlerhistorie_01
+              - sensor.vitodens_200_wb2a_fehlerhistorie_02
+              - sensor.vitodens_200_wb2a_fehlerhistorie_03
+              - sensor.vitodens_200_wb2a_fehlerhistorie_04
+              - sensor.vitodens_200_wb2a_fehlerhistorie_05
+              - sensor.vitodens_200_wb2a_fehlerhistorie_06
+              - sensor.vitodens_200_wb2a_fehlerhistorie_07
+              - sensor.vitodens_200_wb2a_fehlerhistorie_08
+              - sensor.vitodens_200_wb2a_fehlerhistorie_09
+              - sensor.vitodens_200_wb2a_fehlerhistorie_10
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Zeitprogramme
+            heading_style: title
+            icon: mdi:calendar-clock
+          - type: entities
+            title: Heizung
+            entities:
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_montag
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_dienstag
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_mittwoch
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_donnerstag
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_freitag
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_samstag
+              - sensor.vitodens_200_wb2a_heizkreis_m1_zeitprogramm_sonntag
+          - type: entities
+            title: Warmwasser
+            entities:
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_montag
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_dienstag
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_mittwoch
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_donnerstag
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_freitag
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_samstag
+              - sensor.vitodens_200_wb2a_warmwasser_zeitprogramm_sonntag
+          - type: entities
+            title: Zirkulation
+            entities:
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_montag
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_dienstag
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_mittwoch
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_donnerstag
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_freitag
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_samstag
+              - sensor.vitodens_200_wb2a_zirkulation_zeitprogramm_sonntag
+    cards: []
+
+  - title: Graphen
+    path: graphen
+    icon: mdi:chart-line
+    type: sections
+    max_columns: 4
+    sections:
+      - type: grid
+        column_span: 4
+        cards:
+          - type: heading
+            heading: Temperaturen – 48 h
+            heading_style: title
+            icon: mdi:thermometer-lines
+          - type: custom:apexcharts-card
+            graph_span: 48h
+            header:
+              show: true
+              title: Temperaturen
+              show_states: true
+              colorize_states: true
+            all_series_config:
+              stroke_width: 2
+              curve: smooth
+            series:
+              - entity: sensor.vitodens_200_wb2a_aussentemperatur_gedaempft
+                name: Außen gedämpft
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur
+                name: Vorlauf Soll
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur
+                name: Vorlauf Ist
+              - entity: sensor.vitodens_200_wb2a_kesseltemperatur
+                name: Kessel
+              - entity: sensor.vitodens_200_wb2a_warmwasser_temperatur
+                name: Warmwasser
+            grid_options:
+              columns: full
+          - type: heading
+            heading: Brenner & Pumpen – 24 h
+            heading_style: title
+            icon: mdi:gas-burner
+          - type: custom:apexcharts-card
+            graph_span: 24h
+            header:
+              show: true
+              title: Leistung / Pumpen
+              show_states: true
+              colorize_states: true
+            all_series_config:
+              stroke_width: 2
+              curve: stepline
+            series:
+              - entity: sensor.vitodens_200_wb2a_brenner_modulationsgrad
+                name: Brenner %
+              - entity: sensor.vitodens_200_wb2a_interne_pumpe_drehzahl
+                name: Interne Pumpe %
+              - entity: sensor.vitodens_200_wb2a_heizkreis_m1_pumpe_drehzahl
+                name: HK-Pumpe %
+              - entity: sensor.ventilstellung_durchschnitt
+                name: Ventile Ø %
+            grid_options:
+              columns: full
+    cards: []
