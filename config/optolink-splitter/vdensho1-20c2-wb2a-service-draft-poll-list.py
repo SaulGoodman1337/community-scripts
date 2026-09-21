@@ -93,6 +93,20 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     Probe of alternate command register 0x2331 len1 returned P300 error
     (retcode 3 / payload 0x01), so 0x2331 is not available as an ordinary
     datapoint on this firmware either.
+
+  Operating-mode P300 write test:
+    initial 0x2323 = 0x02 = heating + DHW
+    0x2301 = 0x03 = heating + DHW according to timer program
+    0x2500 byte 1 = 0x01 = reduced operation at that moment
+    write 0x2323 len1 value 4 -> ACK
+    read-back 0x2323 = 0x04 = continuous normal
+    0x2301 changed to 0x02 = continuous normal heating
+    0x2500 byte 1 changed to 0x03 = continuous normal
+    effective room setpoint changed to 21.0 C
+    restore write 0x2323 value 2 -> ACK/read-back 0x02
+    0x2301 returned to 0x03 and 0x2500 byte 1 returned to 0x01
+    Result: 0x2323 is hardware-verified READ/WRITE. 0x2301 is a
+    hardware-verified read-only operating-mode/status datapoint.
 '''
 
 poll_interval = 2
@@ -172,7 +186,8 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Heating circuit A1/M1 - operating state
     # ---------------------------------------------------------------------
-    ('NORMAL', 'heizkreis_m1_bedienteil_betriebsart', 0x2323, 1, 1, False),
+    ('NORMAL', 'heizkreis_m1_bedienteil_betriebsart', 0x2323, 1, 1, False),  # HW verified R/W: 2=Heizen+WW, 4=Dauernd Normal
+    ('NORMAL', 'heizkreis_m1_betriebsprogramm_aktuell', 0x2301, 1, 1, False),  # HW verified read: 3=Heizen+WW Schaltzeiten, 2=Normal dauernd
     ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),  # HW verified read; write ACKed but ignored
     ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),  # HW verified R/W: 0=off, 1=on
 
@@ -184,7 +199,7 @@ poll_items = [
 
     # One 22-byte state block feeds multiple A1/M1 entities.
     # Hardware sample: 02 01 00 00 00 00 00 00 01 00 00 01 B4 00 00 00 00 00 00 00 B4 00
-    ('NORMAL', 'heizkreis_m1_betriebsart_aktuell', 0x2500, 22, 'b:1:1', 1, False),  # HW verified: 1=Reduziert, 2=Normal during Party
+    ('NORMAL', 'heizkreis_m1_betriebsart_aktuell', 0x2500, 22, 'b:1:1', 1, False),  # HW verified: 1=Reduziert, 2=Normal, 3=Dauernd Normal
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_aktuell', 0x2500, 22, 'b:12:13', 0.1, True),  # HW verified: 18.0 C reduced, 21.0 C party
     ('NORMAL', 'heizkreis_m1_frostgefahr', 0x2500, 22, 'b:16:16:0x01', 'bool', False),  # HW verified: false
     ('NORMAL', 'heizkreis_m1_ferienbetrieb', 0x2535, 1, 'b:0:0:0x01', 'bool', False),  # HW verified: false
@@ -349,6 +364,13 @@ poll_items = [
 #   Tested 21 C -> 22 C -> 21 C with matching read-back and 0x2500 effective
 #   room-setpoint changes. Safe HA number range should follow the controller
 #   limits rather than an arbitrary wider range.
+##
+# Operating mode:
+#   0x2323 len1 is hardware-verified READ/WRITE on this exact appliance.
+#   Verified transition 2 (Heizen+WW) -> 4 (Dauernd Normal) -> 2, with matching
+#   0x2301 and 0x2500 state changes. Values 0/1 were deliberately not tested.
+#   0x2301 is read-only status: observed 3 for Heizen+WW according to timer and
+#   2 for continuous normal heating.
 #
 # Circulation pump:
 #   0x6515 is status. 0x0842 is relay K12 status. Time programs and coding
