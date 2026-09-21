@@ -45,7 +45,7 @@
       "type": "warning"
     },
     {
-      "text": "MQTT is disabled by default. Configure /opt/optolink/settings_ini.py and /opt/optolink/poll_list.py before enabling your desired datapoints and broker.",
+      "text": "MQTT is disabled by default. The image installs the hardware-verified VDensHO1/20C2 Home Assistant profile at /opt/optolink/homeassistant_poll_list.py. Configure the MQTT broker in /opt/optolink/settings_ini.py to publish Home Assistant discovery.",
       "type": "info"
     }
   ]
