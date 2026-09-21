@@ -45,6 +45,10 @@ poll_groups = {
     # Known addresses that are useful for diagnostics but are not part of the
     # WB2A service display or still need appliance-specific validation.
     "EXPERIMENTAL": -1,
+
+    # Vitosoft-derived points found specifically in the VScotHO1_20 catalog.
+    # Keep disabled until 0x00F8/0x00F0 identifies the real controller variant.
+    "CANDIDATE_VSCOTHO1_20": -1,
 }
 
 
@@ -52,7 +56,10 @@ poll_items = [
     # -------------------------------------------------------------------------
     # Identity / installation
     # -------------------------------------------------------------------------
-    ('ONCE', 'anlagentyp_raw', 0x00F8, 2),
+    # Full 8-byte identifier is needed because 20CB alone does not identify
+    # the VScotHO1 software/datapoint variant. F0 further splits later variants.
+    ('ONCE', 'device_ident_raw', 0x00F8, 8),
+    ('ONCE', 'device_ident_f0_raw', 0x00F0, 1),
     ('ONCE', 'anlagenschema', 0x7700, 2, 'b:0:0', 1, False),
     ('ONCE', 'sachnummer_raw', 0x08E0, 7),
     ('ONCE', 'codierstecker_sachnummer_raw', 0x1010, 7),
@@ -97,6 +104,10 @@ poll_items = [
     # Heating circuit A1/M1 - runtime and setpoints
     # -------------------------------------------------------------------------
     ('NORMAL', 'heizkreis_m1_betriebsart', 0x2323, 1, 1, False),
+    # Vitosoft/openv expose these as the live states for economy/party mode.
+    # Keep them as observations for now; write semantics are documented below.
+    ('NORMAL', 'heizkreis_m1_sparbetrieb', 0x2302, 1, 1, False),
+    ('NORMAL', 'heizkreis_m1_partybetrieb', 0x2303, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_normal', 0x2306, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_raumsolltemperatur_reduziert', 0x2307, 1, 1, False),
     ('NORMAL', 'heizkreis_m1_party_solltemperatur', 0x2308, 1, 1, True),
@@ -190,6 +201,8 @@ poll_items = [
     # Optional heating circuit M2 - disabled until the installed topology and
     # mixer extension have been confirmed.
     # -------------------------------------------------------------------------
+    ('OPTIONAL_M2', 'heizkreis_m2_sparbetrieb', 0x3302, 1, 1, False),
+    ('OPTIONAL_M2', 'heizkreis_m2_partybetrieb', 0x3303, 1, 1, False),
     ('OPTIONAL_M2', 'heizkreis_m2_vorlauftemperatur', 0x3900, 2, 0.1, True),
     ('OPTIONAL_M2', 'heizkreis_m2_vorlaufsolltemperatur', 0x3544, 2, 0.1, True),
     ('OPTIONAL_M2', 'heizkreis_m2_pumpe_status_raw', 0x3906, 1, 1, False),
@@ -235,10 +248,43 @@ poll_items = [
     ('OPTIONAL_COMBI', 'warmwasser_auslauftemperatur', 0x0814, 2, 0.1, True),
 
     # -------------------------------------------------------------------------
+    # VScotHO1_20 candidates from a Vitosoft-derived datapoint catalogue.
+    # These are deliberately disabled until the full F8/F0 identification says
+    # the controller actually belongs to that software family.
+    # -------------------------------------------------------------------------
+    ('CANDIDATE_VSCOTHO1_20', 'kessel_maximaltemperatur_06', 0x5706, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'kennung_interne_pumpe_30', 0x5730, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'interne_pumpe_solldrehzahl_31', 0x5731, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_pumpentyp_e5', 0x27E5, 1, 1, False),
+
+    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_estrichfunktion_f1', 0x27F1, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_reduziert_anhebung_start_f8', 0x27F8, 1, 1, True),
+    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_reduziert_anhebung_ende_f9', 0x27F9, 1, 1, True),
+    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_vorlauf_ueberhoehung_fa', 0x27FA, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'heizkreis_m1_vorlauf_ueberhoehung_dauer_fb', 0x27FB, 1, 2, False),
+
+    ('CANDIDATE_VSCOTHO1_20', 'zirkulation_bei_ww_soll1_71', 0x6771, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'zirkulation_bei_ww_soll2_72', 0x6772, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'zirkulation_intervall_73', 0x6773, 1, 1, False),
+    ('CANDIDATE_VSCOTHO1_20', 'relais_k12_funktion_53', 0x7753, 1, 1, False),
+
+    # VScotHO1_20 exposes flame/lockout flags in a larger block beginning at
+    # 0x55D3. The active legacy profile intentionally still uses its verified
+    # one-byte modulation read instead; these flags need hardware verification.
+    ('CANDIDATE_VSCOTHO1_20', 'brenner_flamme_block_candidate', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),
+    ('CANDIDATE_VSCOTHO1_20', 'feuerungsautomat_verriegelt_candidate', 0x55D3, 9, 'b:5:5:0x40', 'bool', False),
+
+    # -------------------------------------------------------------------------
     # Experimental diagnostics - useful raw datapoints but not yet promoted.
     # -------------------------------------------------------------------------
     ('EXPERIMENTAL', 'volumenstrom_raw', 0x0C24, 2, 1, False),
     ('EXPERIMENTAL', 'kesseltemperatur_tiefpass', 0x0810, 2, 0.1, True),
+
+    # Community configurations use these as fan-speed setpoint/actual RPM.
+    # They were NOT found as normal Virtual_READ points in the VScotHO1_20
+    # Vitosoft-derived catalogue; test read-only before considering promotion.
+    ('EXPERIMENTAL', 'geblaese_drehzahl_soll_candidate', 0x0B1C, 2, 1, False),
+    ('EXPERIMENTAL', 'geblaese_drehzahl_ist_candidate', 0x0B1E, 2, 1, False),
 ]
 
 
@@ -255,12 +301,32 @@ poll_items = [
 # - internal-extension output state
 # - mixer open/close relay state (position value above is not the same thing)
 # - WW outlet setpoint for combi appliance
-# - coding 06: maximum boiler-water temperature
 # - coding 1E: gas type
 # - coding 2F: venting/filling program
 # - coding 77: LON participant number
 # - coding E5: variable-speed external pump detected/type
-# - additional F1/F5/F6/F7/F8/F9/FA/FB heating-circuit functions
+# - F5/F6/F7 heating-circuit functions (not present in the located
+#   VScotHO1_20 standard Optolink catalogue)
+#
+# Control/write research notes:
+# - Party state is readable at 0x2303 and economy state at 0x2302.
+# - Some openv/community configurations write those same addresses.
+# - Later Vitogate/Vitosoft-derived variants expose command targets 0x2330
+#   (party) and 0x2331 (economy). Do not expose either write path until the
+#   exact F8/F0 variant and hardware behaviour have been verified.
+# - 0x6515 is a confirmed 20CB circulation-pump STATUS. The located VScotHO1_20
+#   catalogue marks it as status; no equally strong source proves a direct
+#   immediate ON/OFF write for this WB2A. Scheduling remains the safe control
+#   path to investigate first.
+# - VScotHO1_20 contains burner-controller process values P06/P09/P10 at
+#   0x4006/0x4009/0x400A (fan actual/setpoint/PWM), but the generated standard
+#   Optolink catalogue omits them, consistent with a non-Virtual_READ access
+#   method. They are therefore not poll_items.
+# - Community configs also use 0x0B1C/0x0B1E for fan setpoint/actual RPM on
+#   other Optolink systems; they remain disabled EXPERIMENTAL candidates here.
+# - A readable lockout state exists in VScotHO1_20 (block 0x55D3), but no
+#   defensible WB2A Optolink command for burner fault unlocking/reset has been
+#   located. Do not invent or automate such a write.
 #
 # Also note:
 # - 0x0808 appears in historical sources both as exhaust temperature and as a
