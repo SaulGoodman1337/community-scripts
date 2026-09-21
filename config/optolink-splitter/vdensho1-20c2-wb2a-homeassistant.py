@@ -529,7 +529,7 @@ poll_list = {
     ],
 }
 
-# Intentionally omitted from this HA draft:
+# Intentionally omitted from this live HA profile:
 #
 # * 0x2302 as writable economy switch:
 #     hardware write ACK is ignored by the controller.
