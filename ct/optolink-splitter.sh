@@ -87,26 +87,24 @@ function update_script() {
   $STD runuser -u optolink -- /opt/optolink/venv/bin/pip install --upgrade pip setuptools wheel pyserial paho-mqtt
   msg_ok "Updated Python dependencies"
 
-  msg_info "Refreshing VScotHO1 profile helper"
+  msg_info "Refreshing VDensHO1 Home Assistant profile"
+  cs_repo_fetch tools/optolink-apply-vdensho1-ha-profile.sh /usr/local/bin/optolink-apply-vdensho1-ha-profile
+  chmod 755 /usr/local/bin/optolink-apply-vdensho1-ha-profile
+
+  # Keep the previous VScotHO1 helper as an explicit rollback option.
   cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
   chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
+
   cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
-  msg_ok "Refreshed VScotHO1 profile helper"
-
   chown -R optolink:optolink /opt/optolink
-  systemctl daemon-reload
+  msg_ok "Refreshed profile helpers"
 
-  msg_info "Restarting Optolink-Splitter"
-  if [[ -c /dev/ttyUSB0 ]]; then
-    if systemctl restart optolink-splitter.service && sleep 2 && systemctl is-active --quiet optolink-splitter.service; then
-      msg_ok "Optolink-Splitter is running"
-    else
-      msg_warn "Optolink-Splitter did not stay active; check configuration and serial device"
-      journalctl -u optolink-splitter.service -n 20 --no-pager || true
-    fi
+  msg_info "Activating VDensHO1/20C2 Home Assistant profile"
+  if /usr/local/bin/optolink-apply-vdensho1-ha-profile; then
+    msg_ok "VDensHO1/20C2 Home Assistant profile is active"
   else
-    systemctl stop optolink-splitter.service 2>/dev/null || true
-    msg_warn "No real character device found at /dev/ttyUSB0; service remains stopped until the Optolink adapter is available"
+    msg_error "Could not activate VDensHO1 Home Assistant profile; rollback was attempted"
+    exit 1
   fi
 
   configure_private_update ct/optolink-splitter.sh
@@ -122,9 +120,10 @@ description
 msg_ok "Completed successfully!\n"
 echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"
 echo -e "${INFO}${YW}Configuration:${CL} ${GN}/opt/optolink/settings_ini.py${CL}"
-echo -e "${INFO}${YW}Poll list:${CL} ${GN}/opt/optolink/poll_list.py${CL}"
+echo -e "${INFO}${YW}Home Assistant poll list:${CL} ${GN}/opt/optolink/homeassistant_poll_list.py${CL}"
 echo -e "${INFO}${YW}TCP endpoint (when enabled):${CL} ${BGN}${IP}:65234${CL}"
 echo -e "${INFO}${YW}Service status:${CL} ${GN}systemctl status optolink-splitter${CL}"
 echo -e "${INFO}${YW}Serial devices:${CL} ${GN}optolink-ports${CL}"
-echo -e "${INFO}${YW}VScotHO1 profile:${CL} ${GN}optolink-apply-vscotho1-profile${CL}"
+echo -e "${INFO}${YW}VDensHO1 HA profile:${CL} ${GN}optolink-apply-vdensho1-ha-profile${CL}"
+echo -e "${INFO}${YW}Legacy rollback profile:${CL} ${GN}optolink-apply-vscotho1-profile${CL}"
 echo -e "${INFO}${YW}Inside the container, run '${GN}update${YW}' to update Optolink-Splitter.${CL}"
