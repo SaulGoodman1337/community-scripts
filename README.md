@@ -12,6 +12,7 @@ The repository follows the general layout of [community-scripts/ProxmoxVE](https
 | **Heirloom** | Creates a dedicated Debian LXC and runs the Heirloom family-tree app with PostgreSQL using the upstream Docker Compose stack. | Run on the **Proxmox host** | Web: `8081` |
 | **Optolink-Splitter** | Creates a privileged Debian LXC for local Viessmann Optolink access via serial, MQTT and TCP/IP. | Run on the **Proxmox host** | TCP: `65234` |
 | **Optolink-Web** | Creates an unprivileged Debian LXC with a lightweight browser UI for an existing Optolink-Splitter. | Run on the **Proxmox host** | Web: `8080` |
+| **SMB-Scan-Proxy** | Creates an isolated SMB1 scan-to-folder bridge and forwards completed files to a modern SMB2/SMB3 backend. | Run on the **Proxmox host** | SMB: `445`, `139` |
 | **ONLYOFFICE DocSpace add-on** | Adds DocSpace Community to an **existing native ONLYOFFICE Docs LXC** and reuses the installed Document Server. | Run **inside the existing ONLYOFFICE LXC** | Docs: `80`, DocSpace: `8088` |
 
 ---
@@ -115,6 +116,26 @@ Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, unprivileged LXC. The 
 Writes are disabled by default. The MVP also understands splitter TCP responses both with and without a trailing LF, so it can coexist with the ViessData 2.4.1.x compatibility patch used by this deployment.
 
 More details: [docs/optolink-web.md](docs/optolink-web.md)
+
+---
+
+## SMB-Scan-Proxy
+
+SMB-Scan-Proxy is for legacy printers/scanners that can only write to SMB1/NT1 shares while the real NAS or Samba server stays on modern SMB2/SMB3.
+
+Run on the **Proxmox VE host**:
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/smb-scan-proxy.sh)"
+```
+
+Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, unprivileged LXC. The legacy Samba listener is deliberately disabled after installation until a printer IP and `ENABLED=true` are configured in `/etc/smb-scan-proxy.env`.
+
+The frontend accepts SMB1 only from the configured printer IP. Completed files are queued locally and forwarded with `smbclient` using SMB3 to the actual backend share. No CIFS kernel mount, Docker or privileged container is required.
+
+Generated frontend credentials are stored in `/root/smb-scan-proxy.creds`.
+
+More details: [docs/smb-scan-proxy.md](docs/smb-scan-proxy.md)
 
 ---
 
@@ -253,12 +274,14 @@ ct/
   heirloom.sh                      Heirloom LXC definition and update routine
   optolink-splitter.sh             Optolink-Splitter LXC definition and update routine
   optolink-web.sh                  Optolink-Web LXC definition and update routine
+  smb-scan-proxy.sh                SMB scan proxy LXC definition and update routine
 
 install/
   mindwtr-install.sh               Mindwtr installation inside the new LXC
   heirloom-install.sh              Heirloom installation inside the new LXC
   optolink-splitter-install.sh     Optolink-Splitter installation inside the new LXC
   optolink-web-install.sh          Optolink-Web installation inside the new LXC
+  smb-scan-proxy-install.sh        SMB scan proxy installation inside the new LXC
   onlyoffice-docspace-addon.sh     DocSpace add-on for an existing Docs LXC
 
 docs/
@@ -266,9 +289,11 @@ docs/
   heirloom.md
   optolink-splitter.md
   optolink-web.md
+  smb-scan-proxy.md
   onlyoffice-docspace-addon.md
 
 tools/
+  smb-scan-proxy-apply.sh          Renders Samba config and applies proxy settings
   docspace-activate-user.sh
   docspace-auto-activate-users.sh
   docspace-lean-mode.sh
@@ -278,8 +303,10 @@ json/
   heirloom.json                    Heirloom script metadata
   optolink-splitter.json           Optolink-Splitter script metadata
   optolink-web.json                Optolink-Web script metadata
+  smb-scan-proxy.json              SMB scan proxy script metadata
 
 apps/optolink-web/                 FastAPI backend, datapoints and static web UI
+apps/smb-scan-proxy/               SMB scan spool/upload worker
 
 config/optolink-splitter/
   vscotho1-20cb-poll-list.py       VScotHO1/20CB poll profile
