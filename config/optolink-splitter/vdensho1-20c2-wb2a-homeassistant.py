@@ -18,7 +18,7 @@ Policy used here:
     the resulting controller state has been verified;
   * keep absent hardware (M2, solar, hydraulic separator, invalid sensor
     inputs) out of productive polling;
-  * keep diagnostics/service values disabled by default where possible;
+  * keep diagnostics/service values enabled for use in dashboards/automations,\n    but hidden by default from generated UI where possible;
   * do not expose burner unlock/reset;
   * do not expose economy mode as a switch: 0x2302 write ACKs but is ignored.
 
@@ -140,7 +140,7 @@ poll_list = {
                     ],
                 },
                 {
-                    "enabled_by_default": False,
+                    "enabled_by_default": True,\n                    "visible_by_default": False,
                     "poll": [
                         ("RARE", "brenner_betriebsstunden_stufe1", 0x0886, 4, 0.0002777777777777778, False),
                     ],
@@ -170,7 +170,7 @@ poll_list = {
             "payload_on": "1",
             "payload_off": "0",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "poll": [
                 ("FAST", "relais_k12_status", 0x0842, 1, 1, False),
             ],
@@ -204,7 +204,7 @@ poll_list = {
             "payload_on": "True",
             "payload_off": "False",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "poll": [
                 ("NORMAL", "brenner_flamme_gfa", 0x55DD, 1, "b:0:0:0x20", "bool", False),
             ],
@@ -349,7 +349,7 @@ poll_list = {
         {
             "domain": "sensor",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "units": [
                 {
                     "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% elif v == 1 %}Kurzschluss{% elif v == 2 %}Unterbrechung{% elif v == 3 %}Referenzfehler{% elif v == 4 %}Referenzfehler 0x04{% elif v == 5 %}Sensorstatus 5{% elif v == 6 %}Nicht vorhanden{% else %}Wert {{ v }}{% endif %}",
@@ -371,12 +371,12 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
-        # Service values - read only, diagnostic and disabled by default.
+        # Service values - read only, diagnostic, enabled but hidden by default.
         # -----------------------------------------------------------------
         {
             "domain": "sensor",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "units": [
                 {
                     "unit_of_measurement": "°C",
@@ -441,7 +441,7 @@ poll_list = {
         {
             "domain": "sensor",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "units": [
                 {
                     "poll": [
@@ -466,7 +466,7 @@ poll_list = {
         {
             "domain": "sensor",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "icon": "mdi:clock-outline",
             "poll": [
                 ("RARE", "systemzeit", 0x088E, 8, "vdatetime"),
@@ -480,7 +480,7 @@ poll_list = {
         {
             "domain": "sensor",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "icon": "mdi:alert-circle-outline",
             "poll": [
                 ("RARE", "fehlerhistorie_01", 0x7507, 9, "b:0:0", "f:02X", False),
@@ -503,7 +503,7 @@ poll_list = {
         {
             "domain": "sensor",
             "entity_category": "diagnostic",
-            "enabled_by_default": False,
+            "enabled_by_default": True,\n            "visible_by_default": False,
             "icon": "mdi:calendar-clock",
             "poll": [
                 ("RARE", "heizkreis_m1_zeitprogramm_montag",     0x2000, 8, "schedvdens"),
