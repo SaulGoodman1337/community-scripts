@@ -114,7 +114,7 @@ def upload(path: Path) -> bool:
     protocol = os.getenv("BACKEND_PROTOCOL", "SMB3").strip() or "SMB3"
 
     remote_name = safe_name(path.name)
-    temp_name = f".{remote_name}.partial"
+    temp_name = f"{remote_name}.partial"
 
     command = [
         "smbclient",
@@ -153,15 +153,16 @@ def upload(path: Path) -> bool:
     return False
 
 
-def process_queue() -> None:
+def process_queue() -> bool:
     if not backend_ready():
-        return
+        return True
 
     for path in sorted(QUEUE.iterdir(), key=lambda item: item.stat().st_mtime):
         if not path.is_file() or path.is_symlink():
             continue
         if not upload(path):
-            break
+            return False
+    return True
 
 
 def main() -> None:
@@ -176,8 +177,8 @@ def main() -> None:
 
             if backend_ready():
                 warned_backend = False
-                process_queue()
-                delay = POLL_SECONDS
+                upload_ok = process_queue()
+                delay = POLL_SECONDS if upload_ok else RETRY_SECONDS
             else:
                 if not warned_backend:
                     log.warning("Backend is not configured yet; received scans will remain queued")
