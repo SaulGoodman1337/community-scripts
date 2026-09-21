@@ -133,9 +133,6 @@ poll_list = {
             "device_class": "duration",
             "state_class": "total_increasing",
             "suggested_display_precision": 1,
-            "poll": [
-                ("RARE", "brenner_betriebsstunden",        0x08A7, 4, 0.0002777777777777778, False),
-            ],
             "units": [
                 {
                     "poll": [
