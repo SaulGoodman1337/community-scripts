@@ -54,3 +54,26 @@ This mapping was derived from the supplied vcontrold/vito configuration for devi
 
 - `getTempRL17A` resolves to `0x0808` for device `20CB`, the same address as `getTempAbgas` in the supplied source.
 - `getTempMaxVorlauf` uses `0x2306`, which is also used by `getTempRaumNorSollM1` with a different unit/scale in the supplied source.
+
+
+## VDensHO1 / 20C2 Party control
+
+The live Home Assistant Party switch does **not** use `0x2303=1` for activation.
+On VDensHO1 / device 20C2 / SW03, remote `0x2303=1` can be ACKed and then
+immediately discarded after Party has been switched off at the physical control
+panel. Remote `0x2303=0` remains useful for switching native Party off.
+
+Production therefore uses the persistent `optolink-party-emulator` service:
+
+- store the current operating mode `0x2323` and normal room setpoint `0x2306`;
+- mirror Party setpoint `0x2308` to `0x2306`;
+- set `0x2323=4` (Dauernd Normal);
+- restore the stored mode and normal setpoint on Party OFF;
+- apply the configured `0x27F2` Party time limit;
+- keep native physical Party detection through `0x2303`.
+
+MQTT interface:
+
+- command: `openv/party_emulation/set` with payload `1` / `0`;
+- state: `openv/party_emulation/state`;
+- diagnostics: `openv/party_emulation/status`.
