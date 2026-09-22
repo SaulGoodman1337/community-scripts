@@ -173,14 +173,34 @@ python3 -m py_compile "$mqtt_module"
 
 echo "Validating Home Assistant discovery configuration..."
 # Validate the generated HA discovery configuration before touching the service.
-if ! timeout 30s runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
+#
+# homeassistant_publish.py applies ha_device["mqtt_delay"] after every entity
+# even in console-only mode. With a large discovery profile that artificial
+# delay alone can exceed the validation timeout. Override it only for this
+# console dry-run; the real MQTT discovery publish keeps its configured delay.
+if (
+  cd "$APP_DIR"
+  timeout 30s runuser -u optolink -- "$APP_DIR/venv/bin/python" -c '
+import sys
+
+sys.argv = ["homeassistant_publish.py", "-c"]
+
+import homeassistant_publish
+
+homeassistant_publish.ha_device["mqtt_delay"] = 0
+homeassistant_publish.publish_ha_discovery()
+'
+) > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
+  :
+else
   rc=$?
   if [[ "$rc" == "124" ]]; then
     echo "Home Assistant discovery dry-run timed out after 30s." >&2
   else
     echo "Home Assistant discovery dry-run failed (exit $rc)." >&2
   fi
-  cat /root/optolink-ha-discovery-dry-run.txt >&2
+  echo "Last dry-run output:" >&2
+  tail -n 120 /root/optolink-ha-discovery-dry-run.txt >&2 || true
   rollback_profile
   exit 1
 fi
