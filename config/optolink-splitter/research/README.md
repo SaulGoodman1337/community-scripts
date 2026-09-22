@@ -15,3 +15,24 @@ Related implementation/reference files in the parent directory:
 - `wb2a-single-session-logger.py`
 
 All current reverse engineering is read-only unless a datapoint is explicitly documented elsewhere as hardware-verified READ/WRITE.
+
+
+## Logger installation
+
+Existing Optolink-Splitter LXCs install or refresh the single-session WB2A logger through the normal:
+
+```bash
+update
+```
+
+The helper is installed as:
+
+```text
+/usr/local/bin/wb2a-single-session-logger
+```
+
+and can be started simply with:
+
+```bash
+wb2a-single-session-logger
+```
