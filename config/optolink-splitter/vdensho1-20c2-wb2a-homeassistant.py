@@ -216,12 +216,11 @@ poll_list = {
         {
             "domain": "switch",
             "icon": "mdi:party-popper",
-            "command_topic": "%mqtt_listen%",
+            "command_topic": "{mqtt_base}/heizkreis_m1_partybetrieb/set",
             "payload_on": "1",
             "payload_off": "0",
             "state_on": "1",
             "state_off": "0",
-            "command_template": "{% if value == '1' %}w;%DpAddr%;%Length%;1{% else %}w;%DpAddr%;%Length%;0{% endif %}",
             "optimistic": False,
             "poll": [
                 ("NORMAL", "heizkreis_m1_partybetrieb", 0x2303, 1, 1, False),
