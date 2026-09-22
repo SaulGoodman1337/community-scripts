@@ -24,7 +24,7 @@ ADDR_PARTY_SETPOINT = 0x2308
 ADDR_PARTY_LIMIT = 0x27F2
 
 POLL_NATIVE_SECONDS = 3.0
-POLL_PARTY_SETPOINT_SECONDS = 2.0
+POLL_EMULATION_SYNC_SECONDS = 3.0
 REQUEST_TIMEOUT = 5.0
 
 
@@ -382,17 +382,58 @@ class PartyEmulator:
         self.save_state()
         log("active Party emulation recovered")
 
-    def sync_party_setpoint(self):
+    def sync_emulated_controls(self):
         if not self.state.get("active"):
             return
+
         target = self.read_int(ADDR_PARTY_SETPOINT)
-        known = int(self.state.get("party_setpoint", target))
-        if target == known:
-            return
-        self.verified_write(ADDR_NORMAL_SETPOINT, 1, target)
-        self.state["party_setpoint"] = target
-        self.save_state()
-        log(f"Party setpoint changed {known}->{target}; mirrored to 0x2306")
+        current_normal = self.read_int(ADDR_NORMAL_SETPOINT)
+        current_mode = self.read_int(ADDR_MODE)
+
+        old_party = int(self.state.get("party_setpoint", target))
+        changed = False
+
+        # If the normal setpoint is changed while synthetic Party is active,
+        # remember the new value as the post-Party target, then immediately
+        # re-apply the Party setpoint.  Do not mistake the old Party value for
+        # a user normal-setpoint change when 0x2308 itself has just changed.
+        if current_normal != target:
+            if current_normal != old_party:
+                old_normal = int(self.state["previous_normal_setpoint"])
+                self.state["previous_normal_setpoint"] = current_normal
+                changed = True
+                log(
+                    "normal setpoint changed during Party: "
+                    f"restore target {old_normal}->{current_normal}"
+                )
+            self.verified_write(ADDR_NORMAL_SETPOINT, 1, target)
+
+        if target != old_party:
+            self.state["party_setpoint"] = target
+            changed = True
+            log(f"Party setpoint changed {old_party}->{target}; mirrored to 0x2306")
+
+        # A mode change made while Party is active becomes the mode to restore
+        # afterwards. Keep Dauernd Normal active until Party is switched off.
+        if current_mode != 4:
+            old_mode = int(self.state["previous_mode"])
+            self.state["previous_mode"] = current_mode
+            changed = True
+            log(
+                "operating mode changed during Party: "
+                f"restore target {old_mode}->{current_mode}; re-applying mode 4"
+            )
+            self.verified_write(ADDR_MODE, 1, 4)
+
+        if changed:
+            self.save_state()
+
+        # Keep the HA Party-temperature entity responsive even though the
+        # splitter's complete poll cycle can take considerably longer.
+        self.client.publish(
+            f"{self.base_topic}/heizkreis_m1_raumsolltemperatur_party",
+            str(target),
+        )
 
     def check_timeout(self):
         if not self.state.get("active"):
@@ -467,7 +508,7 @@ class PartyEmulator:
 
                 if self.state.get("active") and now >= next_setpoint:
                     try:
-                        self.sync_party_setpoint()
+                        self.sync_emulated_controls()
                     except Exception as exc:
                         self.state["last_error"] = (
                             f"setpoint sync failed: {exc}"
@@ -475,9 +516,9 @@ class PartyEmulator:
                         self.save_state()
                         log(f"WARNING: Party setpoint sync failed: {exc}")
                         self.publish_status()
-                    next_setpoint = now + POLL_PARTY_SETPOINT_SECONDS
+                    next_setpoint = now + POLL_EMULATION_SYNC_SECONDS
                 elif not self.state.get("active"):
-                    next_setpoint = now + POLL_PARTY_SETPOINT_SECONDS
+                    next_setpoint = now + POLL_EMULATION_SYNC_SECONDS
         finally:
             if self.client is not None:
                 self.client.loop_stop()
