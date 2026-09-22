@@ -1181,7 +1181,37 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Neigung D3
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                      **Funktion:** Bestimmt die Steilheit der Heizkennlinie.
+                      
+                      **Bereich:** 0,2–3,5
+                      
+                      **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung') }}
+                      
+                      Je höher D3 ist, desto stärker steigt die benötigte Vorlauf-Solltemperatur bei fallender Außentemperatur.
+                      
+                      Ein zu hoher Wert führt vor allem bei kaltem Wetter zu unnötig hohen Vorlauftemperaturen. Ein zu niedriger Wert kann dazu führen, dass das Gebäude bei niedrigen Außentemperaturen nicht ausreichend warm wird.
+                      
+                      Datenpunkt: `0x27D3`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung
@@ -1194,7 +1224,37 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Niveau D4
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                      **Funktion:** Verschiebt die gesamte Heizkennlinie nach oben oder unten.
+                      
+                      **Bereich:** −13 bis +40 K
+                      
+                      **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung') }} K
+                      
+                      Ein höheres Niveau erhöht die berechnete Vorlauf-Solltemperatur über den gesamten Außentemperaturbereich annähernd parallel. Ein niedrigeres Niveau senkt sie entsprechend.
+                      
+                      D3 verändert primär die Steilheit; D4 verschiebt primär das Temperaturniveau.
+                      
+                      Datenpunkt: `0x27D4`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung
@@ -1207,7 +1267,39 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Vorlauf Minimum C5
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                      **Funktion:** Elektronische Mindestbegrenzung der Vorlauf-Solltemperatur des Heizkreises.
+                      
+                      **Bereich:** 1–127 °C
+                      
+                      **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung') }} °C
+                      
+                      Berechnet die Heizkennlinie einen niedrigeren Wert, wird das Vorlauf-Soll auf mindestens C5 begrenzt.
+                      
+                      Im Heizkurven-Diagramm wird diese Begrenzung direkt auf die dargestellte Kurve angewendet.
+                      
+                      Die tatsächlich wirksame Grenze kann zusätzlich durch den Kesselcodierstecker begrenzt sein.
+                      
+                      Datenpunkt: `0x27C5`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung
@@ -1220,7 +1312,39 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Vorlauf Maximum C6
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                      **Funktion:** Elektronische Maximalbegrenzung der Vorlauf-Solltemperatur des Heizkreises.
+                      
+                      **Bereich:** 10–127 °C
+                      
+                      **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung') }} °C
+                      
+                      Berechnet die Heizkennlinie einen höheren Wert, wird das Vorlauf-Soll auf maximal C6 begrenzt.
+                      
+                      Im Heizkurven-Diagramm wird diese Begrenzung direkt auf die dargestellte Kurve angewendet.
+                      
+                      Die tatsächlich wirksame Grenze kann zusätzlich durch den Kesselcodierstecker begrenzt sein.
+                      
+                      Datenpunkt: `0x27C6`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3_einstellung
@@ -1233,7 +1357,39 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Frostgrenze A3
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                      **Funktion:** Legt die Außentemperaturgrenze für den Frostschutz des Heizkreises fest.
+                      
+                      **Bereich:** −9 bis +15 °C
+                      
+                      **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3_einstellung') }} °C
+                      
+                      Bei niedrigen Außentemperaturen kann die Regelung die Heizkreispumpe zum Frostschutz dauerhaft laufen lassen. Maßgeblich ist dabei die aktuelle Außentemperatur.
+                      
+                      Der Frostschutz hat Vorrang vor Sparfunktionen wie A5 und A6.
+                      
+                      **Hinweis:** A3 ist eine Schutzfunktion. Sehr niedrige Einstellungen nur verwenden, wenn die Leitungsführung und Frostsicherheit der Anlage bekannt sind.
+                      
+                      Datenpunkt: `0x27A3`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung
@@ -1246,7 +1402,39 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Heizkreispumpenlogik A5
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                      **Funktion:** Außentemperaturabhängige Sparfunktion für die Heizkreispumpe.
+                      
+                      **Bereich:** 0–15
+                      
+                      **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung') }}
+                      
+                      {% set v = states('number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung') | int(-1) %}{% if v == 0 %}**Aktuelle Bedeutung:** Heizkreispumpenlogik deaktiviert.{% elif v >= 1 and v <= 15 %}**Aktuelle Bedeutung:** Pumpe AUS, wenn Außentemperatur > Raum-Soll {{ '%+d' | format(6 - v) }} K.{% endif %}
+                      
+                      A5 = 5 entspricht beispielsweise: Pumpe AUS, wenn die Außentemperatur mehr als 1 K über dem Raum-Soll liegt.
+                      
+                      A5 verwendet die aktuelle Außentemperatur. Frostschutz über A3 kann die Abschaltung übersteuern.
+                      
+                      Datenpunkt: `0x27A5`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung
@@ -1259,7 +1447,41 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Sommersparabschaltung A6
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                      **Funktion:** Erweiterte Sparschaltung beziehungsweise automatische Heizgrenze.
+                      
+                      **Bereich:** 5–36 °C
+                      
+                      **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung') }} °C
+                      
+                      Bei ausreichend hoher gedämpfter Außentemperatur beendet die Regelung den Heizbetrieb: Brenner und Heizkreispumpe werden abgeschaltet.
+                      
+                      A6 = 36 deaktiviert diese erweiterte Sparschaltung praktisch. Werte von 5–35 °C legen die Heizgrenze fest.
+                      
+                      A6 arbeitet mit der gedämpften Außentemperatur und reagiert daher träger als A5.
+                      
+                      Frostschutz über A3 kann die Sparabschaltung übersteuern.
+                      
+                      Datenpunkt: `0x27A6`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
       - type: grid
         column_span: 4
