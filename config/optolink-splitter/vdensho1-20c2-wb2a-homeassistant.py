@@ -762,6 +762,27 @@ poll_list = {
                 ("ONCE", "codierstecker_interne_pumpe_min_drehzahl",       0x1070, 16, "b:5:5",   1, False),
             ],
         },
+        # Additional appliance-type fields from the already verified
+        # coding-plug block 0x1050. These are read-only enumerations.
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Umlaufwasserheizer{% elif v == 1 %}Kombiwasserheizer ohne Komfortfunktion{% elif v == 2 %}Kombiwasserheizer mit Komfortfunktion{% elif v == 3 %}Kompaktgerät (Ladespeicher 80 l){% elif v == 4 %}Kompaktgerät mit Solar (Ladespeicher 260 l){% else %}Wert {{ v }}{% endif %}",
+            "poll": [
+                ("ONCE", "codierstecker_bauart_warmwasser", 0x1050, 16, "b:1:1", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}einstufiger Brenner{% elif v == 1 %}zweistufiger Brenner{% elif v == 2 %}modulierender Brenner{% else %}Wert {{ v }}{% endif %}",
+            "poll": [
+                ("ONCE", "codierstecker_brennertyp", 0x1050, 16, "b:3:3", 1, False),
+            ],
+        },
+
         # Configured appliance limits / diverter-valve type from 0x1030.
         # Hardware-verified raw block:
         # 41 BE 1D E2 03 FC 51 AE 64 9B 00 FF 00 FF 00 FF

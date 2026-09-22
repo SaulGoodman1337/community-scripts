@@ -2265,6 +2265,10 @@ views:
           - type: entities
             title: Geräteausführung
             entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_bauart_warmwasser
+                name: WW-Bauart laut Codierstecker
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennertyp
+                name: Brennertyp laut Codierstecker
               - entity: sensor.vitodens_200_wb2a_codierstecker_umschaltventil_bauart
                 name: Umschaltventil laut Codierstecker
           - type: entities

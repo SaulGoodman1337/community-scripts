@@ -351,8 +351,10 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
 
     Coding-plug block 0x1050 len16:
       raw = 00 00 00 02 00 00 00 00 4A 14 3F 0A 41 41 00 00
-      byte 1 = 0 -> boiler-side DHW type "Umlaufwasserheizer"
-      byte 3 = 2 -> modulating burner
+      byte 0 = 0 -> device-type numeric value GWG50; semantic mapping not
+               documented in the VDensHO1 source catalog, so keep it raw only
+      byte 1 = 0 -> GWG51 boiler-side DHW type "Umlaufwasserheizer"
+      byte 3 = 2 -> GWG53 modulating burner
       byte 8 = 74 C boiler-setpoint hardware maximum
       byte 9 = 20 C boiler-setpoint hardware minimum
       byte10 = 63 C DHW-setpoint coding-plug maximum
@@ -494,6 +496,8 @@ poll_items = [
     ('ONCE', 'gfa_kennung', 0x7650, 1, 1, False),  # HW verified: 0x20
     ('ONCE', 'bauart_warmwasser', 0x8851, 1, 1, False),  # HW verified: 0=Speicher
     ('ONCE', 'codierstecker_block_1050_raw', 0x1050, 16),  # HW verified raw block
+    ('ONCE', 'codierstecker_bauart_warmwasser', 0x1050, 16, 'b:1:1', 1, False),  # GWG51=0 Umlaufwasserheizer
+    ('ONCE', 'codierstecker_brennertyp', 0x1050, 16, 'b:3:3', 1, False),  # GWG53=2 modulierender Brenner
     ('ONCE', 'codierstecker_kesselsoll_max', 0x1050, 16, 'b:8:8', 1, False),  # HW: 74 C
     ('ONCE', 'codierstecker_kesselsoll_min', 0x1050, 16, 'b:9:9', 1, False),  # HW: 20 C
     ('ONCE', 'codierstecker_wwsoll_max', 0x1050, 16, 'b:10:10', 1, False),  # HW: 63 C absolute capability
