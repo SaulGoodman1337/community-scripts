@@ -33,21 +33,48 @@ def connect():
     return client, responses
 
 
+def _command_addr(command):
+    parts = command.split(";")
+    if len(parts) < 2:
+        return None
+    try:
+        return int(parts[1], 0)
+    except ValueError:
+        return None
+
+
+def _response_addr(response):
+    parts = response.split(";")
+    if len(parts) < 2:
+        return None
+    try:
+        return int(parts[1], 0)
+    except ValueError:
+        return None
+
+
 def request(client, responses, command, label=None, timeout=4.0):
     responses.clear()
     prefix = label or command
+    expected_addr = _command_addr(command)
     print(f"{prefix:<14} -> {settings.mqtt_listen}: {command}")
     client.publish(settings.mqtt_listen, command).wait_for_publish()
 
     deadline = time.time() + timeout
-    while time.time() < deadline and not responses:
-        time.sleep(0.05)
+    response = None
+    while time.time() < deadline and response is None:
+        while responses:
+            candidate = responses.pop(0)
+            if expected_addr is None or _response_addr(candidate) == expected_addr:
+                response = candidate
+                break
+        if response is None:
+            time.sleep(0.05)
 
-    if not responses:
+    if response is None:
         print(f"{prefix:<14} <- timeout")
         return None
 
-    response = responses[-1]
     print(f"{prefix:<14} <- {settings.mqtt_respond}: {response}")
     return response
 
