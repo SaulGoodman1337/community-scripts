@@ -29,14 +29,12 @@ from homeassistant_publish import connect_mqtt
 
 value = int(sys.argv[1])
 responses = []
-states = []
 
 client = connect_mqtt(retries=2, delay=1)
 if client is None:
     raise SystemExit("MQTT connection failed")
 
 respond_topic = settings.mqtt_respond
-state_topic = f"{settings.mqtt_topic}/heizkreis_m1_partybetrieb"
 
 if not settings.mqtt_listen:
     raise SystemExit("mqtt_listen is disabled")
@@ -44,53 +42,50 @@ if not respond_topic:
     raise SystemExit("mqtt_respond is disabled")
 
 def on_message(client, userdata, message):
-    payload = message.payload.decode(errors="replace")
     if message.topic == respond_topic:
-        responses.append(payload)
-    elif message.topic == state_topic:
-        states.append(payload)
+        responses.append(message.payload.decode(errors="replace"))
 
 client.on_message = on_message
-client.subscribe([(respond_topic, 0), (state_topic, 0)])
+client.subscribe(respond_topic)
 time.sleep(0.5)
 
-write_cmd = f"w;0x2303;1;{value}"
-print(f"WRITE  -> {settings.mqtt_listen}: {write_cmd}")
-client.publish(settings.mqtt_listen, write_cmd).wait_for_publish()
+def request(label, command, timeout=4):
+    responses.clear()
+    print(f"{label:<12} -> {settings.mqtt_listen}: {command}")
+    client.publish(settings.mqtt_listen, command).wait_for_publish()
+    deadline = time.time() + timeout
+    while time.time() < deadline and not responses:
+        time.sleep(0.05)
+    if responses:
+        print(f"{label:<12} <- {respond_topic}: {responses[-1]}")
+        return responses[-1]
+    print(f"{label:<12} <- timeout")
+    return None
 
-deadline = time.time() + 5
-while time.time() < deadline and not responses:
-    time.sleep(0.1)
+print("=== Context before write ===")
+request("MODE 2323", "r;0x2323;1;1;False")
+request("PROG 2301", "r;0x2301;1;1;False")
+request("PARTY 2303", "r;0x2303;1;1;False")
+request("SETPT 2308", "r;0x2308;1;1;False")
+request("HOLIDAY", "r;0x2535;1;1;False")
 
-if responses:
-    print(f"WRITE RESP <- {respond_topic}: {responses[-1]}")
-else:
-    print("WRITE RESP <- timeout")
+# Some Viessmann generations use 0x2330 as a separate party command/state
+# register. It is not present in the exact VDensHO1 source catalog, so this
+# helper probes it read-only. Do not write it unless a hardware read proves
+# that the datapoint exists and its semantics are established.
+request("ALT 2330", "r;0x2330;1;1;False")
 
-responses.clear()
-read_cmd = "r;0x2303;1;1;False"
-print(f"READ   -> {settings.mqtt_listen}: {read_cmd}")
-client.publish(settings.mqtt_listen, read_cmd).wait_for_publish()
+print("=== Party write ===")
+request("WRITE 2303", f"w;0x2303;1;{value}")
 
-deadline = time.time() + 5
-while time.time() < deadline and not responses:
-    time.sleep(0.1)
+for delay in (0.2, 1.0, 3.0):
+    time.sleep(delay)
+    request(f"READ +{delay:g}s", "r;0x2303;1;1;False")
 
-if responses:
-    print(f"READ RESP  <- {respond_topic}: {responses[-1]}")
-else:
-    print("READ RESP  <- timeout")
-
-deadline = time.time() + 3
-while time.time() < deadline:
-    if states and states[-1] == str(value):
-        break
-    time.sleep(0.1)
-
-if states:
-    print(f"STATE      <- {state_topic}: {states[-1]}")
-else:
-    print("STATE      <- no MQTT state observed")
+print("=== Context after write ===")
+request("MODE 2323", "r;0x2323;1;1;False")
+request("PROG 2301", "r;0x2301;1;1;False")
+request("SETPT 2308", "r;0x2308;1;1;False")
 
 client.loop_stop()
 client.disconnect()
