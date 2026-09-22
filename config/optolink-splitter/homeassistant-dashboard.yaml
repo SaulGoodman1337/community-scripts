@@ -2241,10 +2241,14 @@ views:
             entities:
               - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_min_leistung
                 name: Brennerleistung min
+              - entity: sensor.vitodens_200_wb2a_codierstecker_heizung_leistungsbegrenzung
+                name: Heizleistung Begrenzung GWG32
               - entity: sensor.vitodens_200_wb2a_codierstecker_heizung_max_leistung
-                name: Heizleistung max
+                name: Heizleistung absolute Grenze GWG5D
+              - entity: sensor.vitodens_200_wb2a_codierstecker_ww_leistungsbegrenzung
+                name: Warmwasserleistung Begrenzung GWG30
               - entity: sensor.vitodens_200_wb2a_codierstecker_ww_max_leistung
-                name: Warmwasserleistung max
+                name: Warmwasserleistung absolute Grenze GWG5C
               - entity: sensor.vitodens_200_wb2a_codierstecker_kesselsollleistung_speicherbetrieb
                 name: Kesselsollleistung Speicherbetrieb
               - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_offset
@@ -2258,6 +2262,32 @@ views:
                 name: Mindestdrehzahl
               - entity: sensor.vitodens_200_wb2a_codierstecker_interne_pumpe_nachlauf
                 name: Nachlaufzeit
+          - type: entities
+            title: Geräteausführung
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_umschaltventil_bauart
+                name: Umschaltventil laut Codierstecker
+          - type: entities
+            title: Warmwasser-Regelparameter
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_ausschaltdifferenz_start_stop
+                name: DLH Start/Stop Ausschaltdifferenz
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_einschaltdifferenz_start_stop
+                name: DLH Start/Stop Einschaltdifferenz
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_nachlaufzeit
+                name: DLH Nachlaufzeit
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_max_anstiegszeit
+                name: DLH maximale Anstiegszeit
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_reglerverstaerkung
+                name: DLH Reglerverstärkung
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_reglervorhaltezeit
+                name: DLH Reglervorhaltezeit
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_reglernachstellzeit
+                name: DLH Reglernachstellzeit
+              - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_ausschaltdifferenz
+                name: DLH Ausschaltdifferenz
+              - entity: sensor.vitodens_200_wb2a_codierstecker_zirkulationspumpe_bei_speicherladung
+                name: Zirkulationspumpe bei Speicherladung
           - type: entities
             title: Brennerregelung
             entities:

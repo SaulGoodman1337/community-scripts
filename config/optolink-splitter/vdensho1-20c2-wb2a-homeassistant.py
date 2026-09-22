@@ -762,6 +762,36 @@ poll_list = {
                 ("ONCE", "codierstecker_interne_pumpe_min_drehzahl",       0x1070, 16, "b:5:5",   1, False),
             ],
         },
+        # Configured appliance limits / diverter-valve type from 0x1030.
+        # Hardware-verified raw block:
+        # 41 BE 1D E2 03 FC 51 AE 64 9B 00 FF 00 FF 00 FF
+        # Known fields are stored with their bytewise complement following:
+        #   GWG30 byte 0 = 65 % max DHW power
+        #   GWG32 byte 2 = 29 % max heating power
+        #   GWG34 byte 4 = 3 = Grundfos diverter valve
+        # Only source-documented fields are exposed.
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "%",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_ww_leistungsbegrenzung",      0x1030, 16, "b:0:0", 1, False),
+                ("ONCE", "codierstecker_heizung_leistungsbegrenzung", 0x1030, 16, "b:2:2", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}ohne{% elif v == 1 %}Viessmann Umschaltventil{% elif v == 2 %}Wilo Umschaltventil{% elif v == 3 %}Grundfos Umschaltventil{% else %}Wert {{ v }}{% endif %}",
+            "poll": [
+                ("ONCE", "codierstecker_umschaltventil_bauart", 0x1030, 16, "b:4:4", 1, False),
+            ],
+        },
+
         # Boiler/burner regulator parameters from coding plug 0x1060.
         # Hardware-verified raw block:
         # 04 08 1E 04 05 04 1E 14 00 00 00 00 00 00 00 00
@@ -825,6 +855,61 @@ poll_list = {
             "suggested_display_precision": 0,
             "poll": [
                 ("ONCE", "codierstecker_brenner_pausenabbruch_temperatur", 0x1060, 16, "b:7:7", 1, False),
+            ],
+        },
+
+        # DHW / DLH regulator parameters from coding plug 0x1080.
+        # Hardware-verified raw block:
+        # 04 08 1E 28 37 00 03 08 00 00 00 00 00 00 00 00
+        # Source terminology uses "DLH". Depending on the DHW appliance type,
+        # not every parameter necessarily participates in active control.
+        # Keep all 0x1080 byte filters consecutive so one block read is reused.
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "K",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_dlh_ausschaltdifferenz_start_stop", 0x1080, 16, "b:0:0", 1, False),
+                ("ONCE", "codierstecker_dlh_einschaltdifferenz_start_stop", 0x1080, 16, "b:1:1", 1, False),
+                ("ONCE", "codierstecker_dlh_ausschaltdifferenz",            0x1080, 16, "b:7:7", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "s",
+            "device_class": "duration",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_dlh_nachlaufzeit",           0x1080, 16, "b:2:2", 1, False),
+                ("ONCE", "codierstecker_dlh_max_anstiegszeit",       0x1080, 16, "b:3:3", 1, False),
+                ("ONCE", "codierstecker_dlh_reglervorhaltezeit",     0x1080, 16, "b:5:5", 10, False),
+                ("ONCE", "codierstecker_dlh_reglernachstellzeit",    0x1080, 16, "b:6:6", 10, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "%/K",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 1,
+            "poll": [
+                ("ONCE", "codierstecker_dlh_reglerverstaerkung", 0x1080, 16, "b:4:4", 0.1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Regelfunktion{% elif v == 1 %}AUS{% elif v == 2 %}EIN{% else %}Wert {{ v }}{% endif %}",
+            "poll": [
+                ("ONCE", "codierstecker_zirkulationspumpe_bei_speicherladung", 0x1080, 16, "b:8:8", 1, False),
             ],
         },
 

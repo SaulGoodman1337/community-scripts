@@ -364,6 +364,22 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     capability. Use 10..60 C for the Home Assistant number entity unless the
     controller coding is intentionally changed.
 
+    Coding-plug commissioning-date block 0x1020 len16:
+      raw = 00 00 FF FF FF 00 00 00 00 00 00 00 00 00 00 00
+      byte 2 = day, byte 3 = month, byte 4 = year
+      all three are 0xFF on this appliance, so no valid commissioning date is
+      programmed in the coding-plug block. Do not expose 255/255/255 as a date.
+
+    Coding-plug configuration block 0x1030 len16:
+      raw = 41 BE 1D E2 03 FC 51 AE 64 9B 00 FF 00 FF 00 FF
+      byte 0 = 65 percent max DHW power limit (GWG30)
+      byte 2 = 29 percent max heating power limit (GWG32)
+      byte 4 = 3 = Grundfos diverter valve (GWG34)
+      each meaningful even byte in the observed block is followed by its
+      bytewise complement (e.g. 0x41/0xBE, 0x1D/0xE2, 0x03/0xFC).
+      Bytes 6, 8, 10, 12 and 14 are not exposed because no verified VDensHO1
+      semantic mapping for them is present in the source catalog used here.
+
     Coding-plug regulator block 0x1060 len16:
       raw = 04 08 1E 04 05 04 1E 14 00 00 00 00 00 00 00 00
       byte 0 = 4 K switch-on differential (GWG60)
@@ -388,6 +404,20 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     This block is read-only in the productive profile. The 29 percent GWG71
     value is the appliance coding-plug burner minimum; GWG75 is explicitly the
     minimum speed of the internal pump, not the burner blower.
+
+    Coding-plug DHW/DLH regulator block 0x1080 len16:
+      raw = 04 08 1E 28 37 00 03 08 00 00 00 00 00 00 00 00
+      GWG80 byte 0 = 4 K DLH switch-off differential start/stop
+      GWG81 byte 1 = 8 K DLH switch-on differential start/stop
+      GWG82 byte 2 = 30 s DLH overrun
+      GWG83 byte 3 = 40 s DLH maximum rise time
+      GWG84 byte 4 = 55 / 10 = 5.5 percent/K DLH controller gain
+      GWG85 byte 5 = 0 * 10 s = 0 s DLH derivative/lead time
+      GWG86 byte 6 = 3 * 10 s = 30 s DLH reset time
+      GWG87 byte 7 = 8 K DLH switch-off differential
+      GWG88 byte 8 = 0 = circulation pump during tank charging: control function
+    Source terminology calls GWG80..GWG87 "DLH"; depending on the installed
+    DHW design some of these coding-plug constants may be inactive.
 
     Coding-plug burner characteristic block 0x1090 len16:
       raw = 00 21 21 21 2F 37 3F 48 51 5A 64 00 00 00 00 00
@@ -453,6 +483,11 @@ poll_items = [
     ('ONCE', 'codierstecker_wwsoll_min', 0x1050, 16, 'b:11:11', 1, False),  # HW: 10 C
     ('ONCE', 'codierstecker_ww_max_leistung', 0x1050, 16, 'b:12:12', 1, False),  # HW: 65%
     ('ONCE', 'codierstecker_heizung_max_leistung', 0x1050, 16, 'b:13:13', 1, False),  # HW: 65%
+    ('ONCE', 'codierstecker_block_1020_raw', 0x1020, 16),  # HW: 0000ffffff0000000000000000000000; date bytes are FF/unset
+    ('ONCE', 'codierstecker_block_1030_raw', 0x1030, 16),  # HW: 41be1de203fc51ae649b00ff00ff00ff
+    ('ONCE', 'codierstecker_ww_leistungsbegrenzung', 0x1030, 16, 'b:0:0', 1, False),  # GWG30=65%
+    ('ONCE', 'codierstecker_heizung_leistungsbegrenzung', 0x1030, 16, 'b:2:2', 1, False),  # GWG32=29%
+    ('ONCE', 'codierstecker_umschaltventil_bauart', 0x1030, 16, 'b:4:4', 1, False),  # GWG34=3 Grundfos
     ('ONCE', 'codierstecker_block_1060_raw', 0x1060, 16),  # HW verified: 04081e0405041e140000000000000000
     ('ONCE', 'codierstecker_brenner_einschaltdifferenz', 0x1060, 16, 'b:0:0', 1, False),  # GWG60=4 K
     ('ONCE', 'codierstecker_brenner_ausschaltdifferenz', 0x1060, 16, 'b:1:1', 1, False),  # GWG61=8 K
@@ -470,6 +505,16 @@ poll_items = [
     ('ONCE', 'codierstecker_kesselsollleistung_speicherbetrieb', 0x1070, 16, 'b:4:4', 1, False),  # HW: GWG74=65%
     ('ONCE', 'codierstecker_interne_pumpe_min_drehzahl', 0x1070, 16, 'b:5:5', 1, False),  # HW: GWG75=50%
     ('ONCE', 'codierstecker_interne_pumpe_nachlauf', 0x1070, 16, 'b:6:6', 1, False),  # HW: GWG76=60 s
+    ('ONCE', 'codierstecker_block_1080_raw', 0x1080, 16),  # HW: 04081e28370003080000000000000000
+    ('ONCE', 'codierstecker_dlh_ausschaltdifferenz_start_stop', 0x1080, 16, 'b:0:0', 1, False),  # GWG80=4 K
+    ('ONCE', 'codierstecker_dlh_einschaltdifferenz_start_stop', 0x1080, 16, 'b:1:1', 1, False),  # GWG81=8 K
+    ('ONCE', 'codierstecker_dlh_nachlaufzeit', 0x1080, 16, 'b:2:2', 1, False),  # GWG82=30 s
+    ('ONCE', 'codierstecker_dlh_max_anstiegszeit', 0x1080, 16, 'b:3:3', 1, False),  # GWG83=40 s
+    ('ONCE', 'codierstecker_dlh_reglerverstaerkung', 0x1080, 16, 'b:4:4', 0.1, False),  # GWG84=5.5 %/K
+    ('ONCE', 'codierstecker_dlh_reglervorhaltezeit', 0x1080, 16, 'b:5:5', 10, False),  # GWG85=0 s
+    ('ONCE', 'codierstecker_dlh_reglernachstellzeit', 0x1080, 16, 'b:6:6', 10, False),  # GWG86=30 s
+    ('ONCE', 'codierstecker_dlh_ausschaltdifferenz', 0x1080, 16, 'b:7:7', 1, False),  # GWG87=8 K
+    ('ONCE', 'codierstecker_zirkulationspumpe_bei_speicherladung', 0x1080, 16, 'b:8:8', 1, False),  # GWG88=0 Regelfunktion
     ('ONCE', 'codierstecker_block_1090_raw', 0x1090, 16),  # HW verified: 002121212f373f48515a640000000000
     ('ONCE', 'codierstecker_brennerkennlinie_10', 0x1090, 16, 'b:1:1', 1, False),  # GWG91=33%
     ('ONCE', 'codierstecker_brennerkennlinie_20', 0x1090, 16, 'b:2:2', 1, False),  # GWG92=33%
