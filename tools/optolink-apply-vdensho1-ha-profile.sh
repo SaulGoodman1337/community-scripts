@@ -141,7 +141,9 @@ if [[ "$mqtt_enabled" == "1" && -c /dev/ttyUSB0 ]]; then
     # Clear the splitters MQTT publish cache and force one complete poll after
     # HA has subscribed to the newly created discovery entities.
     echo "Refreshing MQTT states after discovery..."
-    if timeout 20s runuser -u optolink -- "$APP_DIR/venv/bin/python" - <<'PY'
+    if (
+      cd "$APP_DIR"
+      timeout 20s runuser -u optolink -- ./venv/bin/python - <<'PY'
 import time
 from c_settings_adapter import settings
 from homeassistant_publish import connect_mqtt
@@ -161,6 +163,7 @@ finally:
     client.loop_stop()
     client.disconnect()
 PY
+    )
     then
       echo "MQTT state refresh triggered."
     else
