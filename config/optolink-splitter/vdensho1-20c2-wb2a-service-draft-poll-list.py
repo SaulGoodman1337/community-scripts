@@ -491,6 +491,38 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     The timestamp matched the live controller time at readout, so do not label
     it "last fault time". Only the current error-code byte is promoted.
 
+  Burner/control-chain live verification (2026-09-22, continuous firing):
+    A305 raw 0x42 -> 33.0 percent burner modulation.
+    A307 raw 9C18 -> little-endian 0x189C = 6300 /100 = 63.0 C.
+    A391 raw 9C18 -> little-endian 0x189C = 6300 /100 = 63.0 C.
+    0x55E0 len17:
+      01 76 02 00 00 22 01 00 05 51 76 02 00 00 43 01 02
+      bytes10..11 = 76 02 -> little-endian 0x0276 = 630 /10 = 63.0 C.
+    A38F raw 3F01 -> byte0 0x3F /2 = 31.5 percent, byte1=1 (EIN).
+    A38F briefly reached 4201 -> 33.0 percent, byte1=1.
+    55D3 while firing ended in 21 0B62 00:
+      byte5 flame bit set; bytes6..7 0x0B62 = 2914 rpm.
+    At the shutdown transition CFDM setpoint A391 changed to D80E:
+      little-endian 0x0ED8 = 3800 /100 = 38.0 C.
+    On the next sample A307 also read D80E and 55E0 bytes10..11 were 7C01:
+      little-endian 0x017C = 380 /10 = 38.0 C.
+    A38F then became 0000 and A305 00. Because the debug loop performs
+    sequential bus reads, the exact sub-second ordering inside a printed line
+    is not atomic; the value correspondence itself is hardware-confirmed.
+
+  GFA error/event archive hardware verification:
+    Slots 01..20 at 0x7590..0x763B all accept 9-byte reads.
+    Layout is code byte + 8-byte BCD DateTime (YYYY MM DD weekday HH MM SS).
+    Observed newest entries:
+      01: code 0x00 @ 2026-09-21 19:22:40
+      02: code 0x21 @ 2026-09-21 19:22:40
+      03: code 0x98 @ 2026-09-21 17:31:44
+      04: code 0x00 @ 2026-05-14 16:32:00
+      05: code 0x04 @ 2026-05-14 16:27:44
+    Older slots mostly alternate 0x00/0x21 around 2026-05-14 15:23..15:28.
+    The GFA code space is distinct from the Vitotronic display fault codes.
+    No verified public GFA-code map is available; do not map 0x00 to "OK".
+
   Outdoor-temperature comparison:
     0x0800 = 13.6 C, 0x5525 = 13.8 C, 0x5527 = 14.4 C, with 0x083A=0 (sensor OK).
     0x0800 is hardware-readable on this exact SW03 controller even though it is
@@ -746,6 +778,35 @@ poll_items = [
     ('RARE', 'brenner_betriebsstunden', 0x08A7, 4, 0.0002777777777777778, False),  # HW verified: 17731.4 h
     ('RARE', 'brenner_betriebsstunden_stufe1', 0x0886, 4, 0.0002777777777777778, False),  # HW verified: 17731.4 h
     ('RARE', 'systemzeit', 0x088E, 8, 'vdatetime', False),  # HW verified R/W DateTimeBCD
+
+    # Internal burner/controller chain, hardware verified live.
+    ('NORMAL', 'blr_kesselsolltemperatur_effektiv', 0xA307, 2, 0.01, False),  # 9c18=63.0 C, d80e=38.0 C
+    ('NORMAL', 'cfdm_kesselsolltemperatur_effektiv', 0xA391, 2, 0.01, False),  # same values as A307
+    ('NORMAL', 'rkr_kesselsolltemperatur', 0x55E0, 17, 'b:10:11', 0.1, False),  # 7602=63.0 C, 7c01=38.0 C
+    ('NORMAL', 'cfdm_leistungswert', 0xA38F, 2, 'b:0:0', 0.5, False),  # 3f=31.5%, 42=33%
+    ('NORMAL', 'cfdm_leistungsstatus', 0xA38F, 2, 'b:1:1:0x01', 'bool', False),  # 1 firing, 0 off
+
+    # Separate GFA error/event archive. Code byte + BCD timestamp; no code map.
+    ('RARE', 'gfa_fehlerhistorie_01_raw', 0x7590, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_02_raw', 0x7599, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_03_raw', 0x75A2, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_04_raw', 0x75AB, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_05_raw', 0x75B4, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_06_raw', 0x75BD, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_07_raw', 0x75C6, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_08_raw', 0x75CF, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_09_raw', 0x75D8, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_10_raw', 0x75E1, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_11_raw', 0x75EA, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_12_raw', 0x75F3, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_13_raw', 0x75FC, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_14_raw', 0x7605, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_15_raw', 0x760E, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_16_raw', 0x7617, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_17_raw', 0x7620, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_18_raw', 0x7629, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_19_raw', 0x7632, 9, 'raw', False),
+    ('RARE', 'gfa_fehlerhistorie_20_raw', 0x763B, 9, 'raw', False),
 
     ('RARE', 'fehlerhistorie_01', 0x7507, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable
     ('RARE', 'fehlerhistorie_02', 0x7510, 9, 'b:0:0', 'f:02X', False),  # HW verified 9-byte slot readable

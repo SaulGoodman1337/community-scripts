@@ -2380,6 +2380,21 @@ views:
                 name: Gebläsedrehzahl
                 icon: mdi:fan
               - binary_sensor.vitodens_200_wb2a_feuerungsautomat_verriegelt
+          - type: entities
+            title: Brennerregler intern
+            entities:
+              - entity: sensor.vitodens_200_wb2a_brenner_modulationsgrad
+                name: Brenner Modulationsgrad
+              - entity: sensor.vitodens_200_wb2a_cfdm_leistungswert
+                name: CFDM Leistungswert
+              - entity: binary_sensor.vitodens_200_wb2a_cfdm_leistungsstatus
+                name: CFDM Leistungsstatus
+              - entity: sensor.vitodens_200_wb2a_blr_kesselsolltemperatur_effektiv
+                name: BLR effektiver Kesselsollwert
+              - entity: sensor.vitodens_200_wb2a_cfdm_kesselsolltemperatur_effektiv
+                name: CFDM effektiver Kesselsollwert
+              - entity: sensor.vitodens_200_wb2a_rkr_kesselsolltemperatur
+                name: RKR Kesselsollwert
       - type: grid
         column_span: 2
         cards:
@@ -2436,6 +2451,55 @@ views:
               - sensor.vitodens_200_wb2a_fehlerhistorie_08_anzeige
               - sensor.vitodens_200_wb2a_fehlerhistorie_09_anzeige
               - sensor.vitodens_200_wb2a_fehlerhistorie_10_anzeige
+          - type: markdown
+            content: >-
+              Die GFA-Historie ist ein separates Archiv des Feuerungsautomaten.
+              Der Hex-Code wird bewusst nicht in einen Vitotronic-F-Code
+              übersetzt; für diesen Codebereich liegt keine belastbare
+              öffentliche Zuordnung vor.
+          - type: entities
+            title: GFA Fehler-/Ereignishistorie
+            entities:
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_01
+                name: GFA 01
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_02
+                name: GFA 02
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_03
+                name: GFA 03
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_04
+                name: GFA 04
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_05
+                name: GFA 05
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_06
+                name: GFA 06
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_07
+                name: GFA 07
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_08
+                name: GFA 08
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_09
+                name: GFA 09
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_10
+                name: GFA 10
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_11
+                name: GFA 11
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_12
+                name: GFA 12
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_13
+                name: GFA 13
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_14
+                name: GFA 14
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_15
+                name: GFA 15
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_16
+                name: GFA 16
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_17
+                name: GFA 17
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_18
+                name: GFA 18
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_19
+                name: GFA 19
+              - entity: sensor.vitodens_200_wb2a_gfa_fehlerhistorie_20
+                name: GFA 20
       - type: grid
         column_span: 2
         cards:

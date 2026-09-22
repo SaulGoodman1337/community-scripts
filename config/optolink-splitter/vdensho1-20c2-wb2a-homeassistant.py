@@ -66,7 +66,7 @@ poll_list = {
             "brenner", "pumpe", "zirkulation", "betriebsart", "solltemperatur",
             "temperatur", "gebläse", "über", "stör", "geräte"
         ],
-        "fixed": ["WW", "A1", "M1", "K12", "GFA", "SW"],
+        "fixed": ["WW", "A1", "M1", "K12", "GFA", "SW", "BLR", "CFDM", "RKR"],
     },
 
     "poll_interval": 2,
@@ -97,6 +97,13 @@ poll_list = {
                 ("NORMAL", "aussentemperatur_gedaempft",         0x5527, 2, 0.1, True),
                 ("FAST",   "kesseltemperatur",                   0x0810, 2, 0.1, True),
                 ("FAST",   "kessel_solltemperatur_effektiv",     0x555A, 2, 0.1, True),
+                # Internal control-chain setpoints, hardware-verified against a
+                # live burner run. All three showed 63.0 C while firing and
+                # 38.0 C after the demand dropped. A307/A391 are centi-degrees;
+                # 55E0 bytes 10..11 are little-endian deci-degrees.
+                ("NORMAL", "blr_kesselsolltemperatur_effektiv",  0xA307, 2, 0.01, False),
+                ("NORMAL", "cfdm_kesselsolltemperatur_effektiv", 0xA391, 2, 0.01, False),
+                ("NORMAL", "rkr_kesselsolltemperatur",            0x55E0, 17, "b:10:11", 0.1, False),
                 ("NORMAL", "abgastemperatur",                    0x0816, 2, 0.1, True),
                 ("FAST",   "warmwasser_temperatur",              0x0812, 2, 0.1, True),
                 ("FAST", "warmwasser_solltemperatur_aktuell",  0x6500, 2, 0.1, True),
@@ -117,6 +124,9 @@ poll_list = {
             "suggested_display_precision": 0,
             "poll": [
                 ("FAST", "brenner_modulationsgrad",         0xA305, 1, 0.5, False),
+                # A38F byte0: CFDM power value, hardware-verified at
+                # 31.5..33.0 % while A305 remained at 33.0 %.
+                ("NORMAL", "cfdm_leistungswert",             0xA38F, 2, "b:0:0", 0.5, False),
                 ("FAST", "interne_pumpe_drehzahl",          0x7660, 2, "b:1:1", 1, False),
                 ("FAST", "heizkreis_m1_pumpe_drehzahl",     0x7663, 2, "b:1:1", 1, False),
             ],
@@ -1076,8 +1086,11 @@ poll_list = {
             "entity_category": "diagnostic",
             "enabled_by_default": True,
             "poll": [
-                ("NORMAL", "cfdm_harte_sperre", 0xA395, 4, "b:2:2:0x01", "bool", False),
-                ("NORMAL", "cfdm_fehler",        0xA395, 4, "b:2:2:0x04", "bool", False),
+                ("NORMAL", "cfdm_harte_sperre",    0xA395, 4, "b:2:2:0x01", "bool", False),
+                ("NORMAL", "cfdm_fehler",           0xA395, 4, "b:2:2:0x04", "bool", False),
+                # A38F byte1 is the documented CFDM power-state enum:
+                # 0=AUS, 1=EIN. Live run: 3f01 while firing, 0000 when off.
+                ("NORMAL", "cfdm_leistungsstatus", 0xA38F, 2, "b:1:1:0x01", "bool", False),
             ],
         },
         {
@@ -1332,6 +1345,47 @@ poll_list = {
             "icon": "mdi:clock-outline",
             "poll": [
                 ("RARE", "systemzeit", 0x088E, 8, "vdatetime"),
+            ],
+        },
+
+        # -----------------------------------------------------------------
+        # Feuerungsautomat (GFA) fault/event history.
+        #
+        # This is a separate 20-slot archive from the Vitotronic system
+        # history at 0x7507. Each 9-byte slot is:
+        #   byte0       GFA code (separate code space; no public code map)
+        #   bytes1..8   BCD date/time: YYYY MM DD weekday HH MM SS
+        #
+        # All 20 slots were hardware-readable on this WB2A. Keep the GFA code
+        # as raw hex; in particular, do NOT interpret 0x00 as "no fault".
+        # -----------------------------------------------------------------
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "icon": "mdi:alert-octagon-outline",
+            "value_template": "{% set v = value | string | trim | lower %}{% if v | length == 18 and v[2:18] != 'ffffffffffffffff' %}0x{{ v[0:2] | upper }} @ {{ v[2:6] }}-{{ v[6:8] }}-{{ v[8:10] }} {{ v[12:14] }}:{{ v[14:16] }}:{{ v[16:18] }}{% else %}0x{{ v[0:2] | upper }}{% endif %}",
+            "poll": [
+                ("RARE", "gfa_fehlerhistorie_01", 0x7590, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_02", 0x7599, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_03", 0x75A2, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_04", 0x75AB, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_05", 0x75B4, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_06", 0x75BD, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_07", 0x75C6, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_08", 0x75CF, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_09", 0x75D8, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_10", 0x75E1, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_11", 0x75EA, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_12", 0x75F3, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_13", 0x75FC, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_14", 0x7605, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_15", 0x760E, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_16", 0x7617, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_17", 0x7620, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_18", 0x7629, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_19", 0x7632, 9, "raw", False),
+                ("RARE", "gfa_fehlerhistorie_20", 0x763B, 9, "raw", False),
             ],
         },
 
