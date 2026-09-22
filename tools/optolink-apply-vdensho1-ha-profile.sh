@@ -169,6 +169,52 @@ if marker not in src:
     path.write_text(src.replace(old, new, 1))
 PY
 
+# The Party switch intentionally publishes the exact hardware-verified raw
+# P300 command to mqtt_listen instead of using /set.  Raw mqtt_listen commands
+# normally get no forced state refresh, so the non-optimistic HA switch can
+# otherwise wait for the next full poll cycle before it sees 0x2303 change.
+# Add the same staged read-back behavior specifically for the verified Party
+# commands without changing generic raw-command semantics.
+python3 - "$mqtt_module" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+src = path.read_text()
+marker = '# community-scripts: raw Party write readback'
+
+if marker not in src:
+    old = '''        else:
+            cmnd_queue.append(rec) 
+'''
+    new = '''        else:
+            cmnd_queue.append(rec)
+            # community-scripts: raw Party write readback
+            # HA publishes the exact verified P300 Party command directly to
+            # mqtt_listen. Force quick authoritative reads of 0x2303 so the
+            # non-optimistic switch does not wait for the normal poll cycle.
+            if rec.lower() in (
+                "w;0x2303;1;0",
+                "w;0x2303;1;1",
+                "write;0x2303;1;0",
+                "write;0x2303;1;1",
+            ):
+                party_info = poll_list.find_datapoint_by_name(
+                    "heizkreis_m1_partybetrieb"
+                )
+                if party_info is not None:
+                    party_index = party_info["list_index"]
+                    for delay in (0.25, 1.0, 2.5, 5.0):
+                        force_delayed(party_index, delay)
+'''
+    if old not in src:
+        raise SystemExit(
+            "Unsupported upstream mqtt_util.py layout; refusing to patch "
+            "raw Party state read-back handling."
+        )
+    path.write_text(src.replace(old, new, 1))
+PY
+
 python3 -m py_compile "$mqtt_module"
 
 echo "Validating Home Assistant discovery configuration..."
