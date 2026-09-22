@@ -111,6 +111,9 @@ function update_script() {
   cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
   chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
 
+  cs_repo_fetch tools/optolink-party-test.sh /usr/local/bin/optolink-party-test
+  chmod 755 /usr/local/bin/optolink-party-test
+
   cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
   chown -R optolink:optolink /opt/optolink
   msg_ok "Refreshed profile helpers"
