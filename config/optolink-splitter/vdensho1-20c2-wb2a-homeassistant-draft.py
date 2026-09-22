@@ -23,7 +23,8 @@ Policy used here:
   * do not expose economy mode as a switch: 0x2302 write ACKs but is ignored.
 
 Write verification on this exact appliance:
-  0x2303 party mode: R/W 0/1
+  0x2303 native party state: readable; remote OFF is reliable, remote ON is
+    not reliable after Party is switched off at the physical control panel.
   0x2306 normal room target: R/W
   0x2307 reduced room target: R/W
   0x2308 party room target: R/W
@@ -66,10 +67,10 @@ poll_list = {
     "poll_interval": 2,
     "poll_groups": {
         "ONCE": 0,
-        "FAST": 1,       # ~2 s
-        "NORMAL": 15,    # ~30 s
-        "SLOW": 150,     # ~5 min
-        "RARE": 900,     # ~30 min
+        "FAST": 1,       # every completed poll cycle
+        "NORMAL": 15,    # every 15 poll cycles
+        "SLOW": 150,     # every 150 poll cycles
+        "RARE": 900,     # every 900 poll cycles
         "DISABLED": -1,
     },
 
@@ -211,24 +212,24 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
-        # Party mode: hardware-verified R/W
+        # Party mode: synthetic control. Native 0x2303=1 is not reliable as a
+        # remote activation path on this controller, so the companion service
+        # stores/restores 0x2323 and 0x2306 and uses 0x2323=4 while active.
         # -----------------------------------------------------------------
         {
             "domain": "switch",
             "icon": "mdi:party-popper",
-            # Exact raw commands verified on VDensHO1 / 20C2 / SW03.
-            # The controller may require one complete local Party activation
-            # after a controller/control-panel reset before remote ON sticks.
-            # Production also forces staged 0x2303 read-backs after these raw
-            # writes so HA does not wait for the next complete poll cycle.
-            "command_topic": "%mqtt_listen%",
-            "payload_on": "w;0x2303;1;1",
-            "payload_off": "w;0x2303;1;0",
+            "command_topic": "{mqtt_base}/party_emulation/set",
+            "state_topic": "{mqtt_base}/party_emulation/state",
+            "payload_on": "1",
+            "payload_off": "0",
             "state_on": "1",
             "state_off": "0",
             "optimistic": False,
-            "poll": [
-                ("NORMAL", "heizkreis_m1_partybetrieb", 0x2303, 1, 1, False),
+            "nopoll": [
+                {
+                    "name": "heizkreis_m1_partybetrieb",
+                },
             ],
         },
 
