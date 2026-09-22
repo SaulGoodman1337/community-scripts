@@ -2258,6 +2258,29 @@ views:
                 name: Mindestdrehzahl
               - entity: sensor.vitodens_200_wb2a_codierstecker_interne_pumpe_nachlauf
                 name: Nachlaufzeit
+          - type: entities
+            title: Brennerkennlinie
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_10
+                name: 10 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_20
+                name: 20 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_30
+                name: 30 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_40
+                name: 40 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_50
+                name: 50 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_60
+                name: 60 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_70
+                name: 70 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_80
+                name: 80 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_90
+                name: 90 % Leistung → Modulation
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_100
+                name: 100 % Leistung → Modulation
 
       - type: grid
         column_span: 2

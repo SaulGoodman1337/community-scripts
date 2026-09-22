@@ -377,6 +377,22 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     value is the appliance coding-plug burner minimum; GWG75 is explicitly the
     minimum speed of the internal pump, not the burner blower.
 
+    Coding-plug burner characteristic block 0x1090 len16:
+      raw = 00 21 21 21 2F 37 3F 48 51 5A 64 00 00 00 00 00
+      GWG91 / 10 percent requested output  -> 33 percent modulation
+      GWG92 / 20 percent requested output  -> 33 percent modulation
+      GWG93 / 30 percent requested output  -> 33 percent modulation
+      GWG94 / 40 percent requested output  -> 47 percent modulation
+      GWG95 / 50 percent requested output  -> 55 percent modulation
+      GWG96 / 60 percent requested output  -> 63 percent modulation
+      GWG97 / 70 percent requested output  -> 72 percent modulation
+      GWG98 / 80 percent requested output  -> 81 percent modulation
+      GWG99 / 90 percent requested output  -> 90 percent modulation
+      GWG9A / 100 percent requested output -> 100 percent modulation
+    The lower 10/20/30 percent points all map to 33 percent modulation. This is
+    the coding-plug characteristic curve; do not confuse the curve values with
+    the separate GWG71 burner-minimum parameter (29 percent).
+
   Outdoor-temperature comparison:
     0x0800 = 13.6 C, 0x5525 = 13.8 C, 0x5527 = 14.4 C, with 0x083A=0 (sensor OK).
     0x0800 is hardware-readable on this exact SW03 controller even though it is
@@ -433,6 +449,17 @@ poll_items = [
     ('ONCE', 'codierstecker_kesselsollleistung_speicherbetrieb', 0x1070, 16, 'b:4:4', 1, False),  # HW: GWG74=65%
     ('ONCE', 'codierstecker_interne_pumpe_min_drehzahl', 0x1070, 16, 'b:5:5', 1, False),  # HW: GWG75=50%
     ('ONCE', 'codierstecker_interne_pumpe_nachlauf', 0x1070, 16, 'b:6:6', 1, False),  # HW: GWG76=60 s
+    ('ONCE', 'codierstecker_block_1090_raw', 0x1090, 16),  # HW verified: 002121212f373f48515a640000000000
+    ('ONCE', 'codierstecker_brennerkennlinie_10', 0x1090, 16, 'b:1:1', 1, False),  # GWG91=33%
+    ('ONCE', 'codierstecker_brennerkennlinie_20', 0x1090, 16, 'b:2:2', 1, False),  # GWG92=33%
+    ('ONCE', 'codierstecker_brennerkennlinie_30', 0x1090, 16, 'b:3:3', 1, False),  # GWG93=33%
+    ('ONCE', 'codierstecker_brennerkennlinie_40', 0x1090, 16, 'b:4:4', 1, False),  # GWG94=47%
+    ('ONCE', 'codierstecker_brennerkennlinie_50', 0x1090, 16, 'b:5:5', 1, False),  # GWG95=55%
+    ('ONCE', 'codierstecker_brennerkennlinie_60', 0x1090, 16, 'b:6:6', 1, False),  # GWG96=63%
+    ('ONCE', 'codierstecker_brennerkennlinie_70', 0x1090, 16, 'b:7:7', 1, False),  # GWG97=72%
+    ('ONCE', 'codierstecker_brennerkennlinie_80', 0x1090, 16, 'b:8:8', 1, False),  # GWG98=81%
+    ('ONCE', 'codierstecker_brennerkennlinie_90', 0x1090, 16, 'b:9:9', 1, False),  # GWG99=90%
+    ('ONCE', 'codierstecker_brennerkennlinie_100', 0x1090, 16, 'b:10:10', 1, False),  # GWG9A=100%
     ('ONCE', 'hydraulische_weiche_vorhanden', 0x7752, 1, 1, False),  # HW verified: 0=nicht vorhanden
     ('ONCE', 'solar_typ', 0x7754, 1, 1, False),  # HW verified: 0=ohne
 

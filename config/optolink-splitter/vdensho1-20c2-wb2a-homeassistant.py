@@ -762,6 +762,32 @@ poll_list = {
                 ("ONCE", "codierstecker_interne_pumpe_min_drehzahl",       0x1070, 16, "b:5:5",   1, False),
             ],
         },
+        # Burner characteristic curve from coding plug 0x1090.
+        # GWG91..GWG9A map requested boiler output 10..100 % to the
+        # controller's burner modulation value. Hardware-verified raw block:
+        # 00 21 21 21 2F 37 3F 48 51 5A 64 00 00 00 00 00
+        # Keep these entries consecutive so optolink-splitter reuses one read.
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "%",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_brennerkennlinie_10",  0x1090, 16, "b:1:1",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_20",  0x1090, 16, "b:2:2",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_30",  0x1090, 16, "b:3:3",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_40",  0x1090, 16, "b:4:4",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_50",  0x1090, 16, "b:5:5",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_60",  0x1090, 16, "b:6:6",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_70",  0x1090, 16, "b:7:7",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_80",  0x1090, 16, "b:8:8",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_90",  0x1090, 16, "b:9:9",   1, False),
+                ("ONCE", "codierstecker_brennerkennlinie_100", 0x1090, 16, "b:10:10", 1, False),
+            ],
+        },
+
         {
             "domain": "sensor",
             "unit_of_measurement": "K",
