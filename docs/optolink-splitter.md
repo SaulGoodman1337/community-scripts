@@ -158,6 +158,10 @@ Useful upstream references:
 - ViessData21 datapoint lists
 - upstream poll-list samples
 
+Project-specific WB2A reverse-engineering notes:
+
+- [Vitodens 200-W WB2A / VDensHO1 Optolink reverse engineering](vitodens-wb2a-optolink-research.md)
+
 After changes:
 
 ```bash
