@@ -628,3 +628,41 @@ config/optolink-splitter/wb2a-rkr-cycle-logger.py
 It logs `0x5556`, `0x55E0`, `0xA395`, `0xA305`, `0x55D3`,
 `0x2544`, `0x0810` and `0xA307` in one persistent TCP session and
 marks flame, RKR-byte-0 and A395-byte-2 transitions.
+
+
+## 2026-09-22: 0x0083/LGM29 path rejected
+
+The GFA timing candidate `0x0083` was probed read-only with several object
+lengths:
+
+```text
+read;0x0083;1  -> retcode 3 / payload 01
+read;0x0083;2  -> retcode 3 / payload 01
+read;0x0083;4  -> retcode 3 / payload 01
+read;0x0083;8  -> retcode 3 / payload 01
+read;0x0083;16 -> retcode 3 / payload 01
+```
+
+This rules out the earlier theory that only the requested object length was
+wrong. The LGM29/GWG P300 timing map is not directly exposed on this WB2A.
+
+Public WB2A documentation and Viessmann community material identify the WB2A
+generation as using a **GG1 control**, and explicitly distinguish it from the
+older WB2/LGM29 generation. Therefore LGM29-specific addresses such as
+`GWG_FA_Takt_ReglerverzoegerungStart~0x0083` must not be treated as WB2A
+addresses.
+
+The device-specific VDensHO1 Vitosoft list exposes only these named
+fire-control datapoints:
+
+- `0x55D3` burner / lockout runtime data
+- `0x55DD` flame signal
+- `0x7650` GFA chip identification
+
+No named VDensHO1 datapoint for the approximately 12-second regulator delay is
+present in that list.
+
+Current conclusion: the ~12 s plateau is strongly consistent with a burner
+control "Reglerverzögerung nach Brennerstart" function, but its storage
+location is not exposed by the known VDensHO1 P300 map and may be an internal
+GG1/GFA firmware parameter.
