@@ -119,6 +119,16 @@ function update_script() {
   chmod 755 /usr/local/bin/optolink-debug
   ln -sf /usr/local/bin/optolink-debug /usr/bin/optolink-debug
 
+  cs_repo_fetch tools/optolink-party-emulator.py /usr/local/bin/optolink-party-emulator
+  chmod 755 /usr/local/bin/optolink-party-emulator
+  chown root:root /usr/local/bin/optolink-party-emulator
+
+  cs_repo_fetch config/optolink-splitter/optolink-party-emulator.service /etc/systemd/system/optolink-party-emulator.service
+  chmod 644 /etc/systemd/system/optolink-party-emulator.service
+  chown root:root /etc/systemd/system/optolink-party-emulator.service
+  systemctl daemon-reload
+  systemctl enable optolink-party-emulator.service
+
   cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
   chown -R optolink:optolink /opt/optolink
   msg_ok "Refreshed profile helpers"
@@ -147,6 +157,7 @@ echo -e "${INFO}${YW}Configuration:${CL} ${GN}/opt/optolink/settings_ini.py${CL}
 echo -e "${INFO}${YW}Home Assistant poll list:${CL} ${GN}/opt/optolink/homeassistant_poll_list.py${CL}"
 echo -e "${INFO}${YW}TCP endpoint (when enabled):${CL} ${BGN}${IP}:65234${CL}"
 echo -e "${INFO}${YW}Service status:${CL} ${GN}systemctl status optolink-splitter${CL}"
+echo -e "${INFO}${YW}Party emulation:${CL} ${GN}systemctl status optolink-party-emulator${CL}"
 echo -e "${INFO}${YW}Serial devices:${CL} ${GN}optolink-ports${CL}"
 echo -e "${INFO}${YW}VDensHO1 HA profile:${CL} ${GN}optolink-apply-vdensho1-ha-profile${CL}"
 echo -e "${INFO}${YW}Legacy rollback profile:${CL} ${GN}optolink-apply-vscotho1-profile${CL}"
