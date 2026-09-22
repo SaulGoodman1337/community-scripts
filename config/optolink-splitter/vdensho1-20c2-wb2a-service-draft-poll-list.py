@@ -34,16 +34,23 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     byte 5 mask 0x40 -> fire-control lockout false
   0x55DD len1 -> 0x01 (raw; mask 0x20 is false)
 
-  Dynamic burner-cycle verification of 0x55D3 bytes 6..7 (big-endian):
-    idle:       0x0000 -> 0 rpm, A305=0.0 %, flame=false
-    pre-purge:  0x0820 -> 2080 rpm, A305=0.0 %, flame=false
-    firing:     0x0B60 -> 2912 rpm, A305=66.0 %, flame=true
-    firing:     0x0B62 -> 2914 rpm, A305=61.0/55.0 %, flame=true
-    flame off:  0x0000 -> 0 rpm, A305=0.0 %, flame=false
-    Result: bytes 6..7 are hardware-verified as blower speed in rpm on this
-    WB2A/VDensHO1 controller. Direct reads at 0x55D9 and 0x55DA are rejected
-    with P300 retcode 3 / payload 0x01; the value must be extracted from the
-    9-byte 0x55D3 block.
+  Dynamic observation of 0x55D3 bytes 6..7 (big-endian):
+    idle:       0x0000
+    pre-purge:  0x0820 = 2080
+    ignition:   0x0F50 = 3920
+    firing:     0x0B60/0x0B62 = 2912/2914
+    flame off:  0x0000
+    Earlier testing interpreted this numerically plausible word as blower rpm.
+    High-resolution single-session logging on 2026-09-22 disproved that as a
+    hardware-verified conclusion: the word remains about 2914 while A305 and
+    0x55DC fall from 66 % to 33 %. Keep bytes 6..7 as an unresolved GFA runtime
+    word until an independent datapoint/physical measurement identifies it.
+    Direct reads at 0x55D9 and 0x55DA are rejected with P300 retcode 3 /
+    payload 0x01.
+  0x55DC live byte:
+    single-session logging shows 0x55DC follows scaled A305 Modulationsgrad
+    essentially 1:1 (66 -> 60 -> 50 -> 33 %). Small one/two-point transient
+    differences are explained by sequential reads roughly 0.12-0.30 s apart.
   0x0B1C len2 -> P300 error response (retcode 3, payload 0x01)
   0x0B1E len2 -> P300 error response (retcode 3, payload 0x01)
   0x2906 len1 -> 0x01 (A1/M1 heating-circuit pump ON)
