@@ -219,6 +219,8 @@ poll_list = {
             # Exact raw commands verified on VDensHO1 / 20C2 / SW03.
             # The controller may require one complete local Party activation
             # after a controller/control-panel reset before remote ON sticks.
+            # Production also forces staged 0x2303 read-backs after these raw
+            # writes so HA does not wait for the next complete poll cycle.
             "command_topic": "%mqtt_listen%",
             "payload_on": "w;0x2303;1;1",
             "payload_off": "w;0x2303;1;0",
