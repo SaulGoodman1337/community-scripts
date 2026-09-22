@@ -510,6 +510,33 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  HCC1/RKR local control-path verification (2026-09-22, active heating):
+    HCC1 external/input-side object:
+      0xA400 = FF -> nviHCC1 ApplicMode = HVAC_NUL.
+      0xA401 = D0 07 -> nviHCC1 SpaceSetpt = 20.00 C.
+      0xA403 = D0 07 -> nviHCC1 FlowSetpt = 20.00 C.
+    HCC1 local/output-side object:
+      0xA405 = 00 -> nvoHCC1 UnitState = HVAC_AUTO.
+      0xA406 = 34 08 -> nvoHCC1 EffRoomSetpt = 21.00 C.
+    Heating-circuit status block 0x2500 len22:
+      02 02 BB 51 01 00 F4 01 01 00 00 01 D2 00 00 00 00 F4 01 00 D2 00
+      byte1 = 0x02 -> Normalbetrieb.
+      bytes12..13 = D2 00 -> 21.0 C active room setpoint, matching A406.
+      bytes6..7 also contain F4 01 (=500 little-endian), which numerically
+      matches the 50.0 C heating-generator setpoint in this sample, but no
+      trusted VDensHO1 field definition was found for those bytes. Keep them
+      unnamed; do not promote them.
+
+    Local heat-generator setpoint chain in the same sample:
+      0x555A = F4 01 -> effective boiler setpoint = 50.0 C.
+      0x55E0 bytes10..11 = F4 01 -> RKR boiler setpoint = 50.0 C.
+      0xA391 = 88 13 -> CFDM effective setpoint = 50.0 C.
+      0xA307 = 88 13 -> BLR effective setpoint = 50.0 C.
+    This hardware-confirms a common 50.0 C setpoint propagated through
+    boiler/RKR -> CFDM -> BLR. The explicit A1 flow-setpoint datapoint
+    0x2544 (VT_SolltemperaturA1M1, div10) is already in the production
+    profile and is the next source-side value to compare against this chain.
+
   CFDM local-vs-external input verification (2026-09-22, burner firing):
     0xA380 len2 = 00 FF -> nviProdCmd CFDM: 0 percent, state AUTO.
     0xA383 len2 = 00 00 -> nviSetpoint CFDM: 0.00 C.
