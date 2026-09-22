@@ -229,3 +229,39 @@ Two parameter families deserve read-only probing:
 The VDensHO1-specific datapoint list does **not** expose those names directly,
 so any result from these addresses must be treated as an experimental
 read-only probe rather than an established VDensHO1 mapping.
+
+
+## Read-only candidate probe result (2026-09-22 20:10)
+
+The single-session logger probed several addresses whose semantics are known
+from other Viessmann controller/GFA families:
+
+```text
+0x5715 -> 3;0x5715;01
+0x571A -> 3;0x571a;01
+0x571B -> 3;0x571b;01
+0x571C -> 3;0x571c;01
+0x0083 -> 3;0x83;01
+0x1038 -> 3;0x1038;01
+```
+
+On this VDensHO1/20C2 all of these direct reads are rejected by P300
+(retcode 3, payload 01).
+
+Consequences:
+
+1. The conventional-controller addresses `0x5715/1A/1B/1C` cannot be reused
+   directly on this controller generation.
+2. The LGM29/GWG-family `0x0083` timing structure is likewise not exposed at
+   that direct address here.
+3. Most importantly, `0x1038` is rejected even though byte offset 8 of a
+   valid `read;0x1030;16` block is `0x64`. This proves that the coding-plug
+   blocks must not be treated as a flat independently addressable byte range.
+   A valid base object can return an internal structure whose member bytes are
+   not individually readable as P300 addresses.
+4. Therefore earlier notation such as "0x1073 = GWG73" should be understood as
+   **byte offset 3 inside the 0x1070 coding-plug object**, unless an independent
+   direct-address read proves otherwise.
+
+The measured ~12.1 s delay and ~1 %/s ramp correlations remain valid, but their
+storage locations are still unknown.
