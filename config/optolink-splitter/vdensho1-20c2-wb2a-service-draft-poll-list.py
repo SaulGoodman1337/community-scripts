@@ -510,6 +510,47 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  Fast burner-cycle hysteresis / 0x555A divergence capture (2026-09-22, 19:34:40..19:37:23):
+    User capture columns: VT_SOLL=0x2544, KESSEL_SOLL=0x555A,
+    KESSEL_IST=0x0810, A305, A38F and 0x55D3.
+
+    Start transition:
+      19:34:50  VT_SOLL=38.0 C, 0x555A=38.0 C, KTS=44.0 C, burner off.
+      19:35:01  VT_SOLL=50.0 C, 0x555A=30.0 C, KTS=44.0 C,
+                 55D3 fan=2080 rpm, flame still off (pre-purge).
+      19:35:12  KTS=43.5 C, A305=66%, A38F=65%/ON,
+                 flame on, fan=2912 rpm.
+    Because VT_SOLL was deliberately stepped from 38 to 50 C, this does not
+    locate the natural GWG60 on-threshold. It only shows that the start
+    condition was satisfied when KTS was roughly 6 K below the new 50 C
+    A1 flow setpoint.
+
+    Controlled modulation:
+      19:35:12  A305 66%, A38F 65%, 55D3 byte0 69.
+      19:35:23  A305 63%, A38F 60.5%, byte0 62.
+      19:35:34  A305 50%, A38F 46.5%, byte0 52.
+      19:35:45  A305 38%, A38F 36%, byte0 43.
+      19:35:56 onward A305 33%, A38F 31.5%, byte0 38.
+    This independently reconfirms the previously observed modulation mapping.
+
+    Shutdown:
+      19:37:01  VT_SOLL=50.0 C, KTS=57.5 C, flame still on.
+      19:37:12  VT_SOLL=50.0 C, KTS=58.5 C, A305=0, A38F=OFF,
+                 flame off, fan=0.
+    Therefore flame-off occurred between +7.5 K and +8.5 K relative to the
+    50.0 C A1 flow setpoint. This is strong hardware evidence consistent with
+    coding-plug GWG61=8 K "Ausschaltdifferenz". Sequential reads limit the
+    threshold resolution; do not claim an exact 58.0 C event temperature.
+
+    0x555A behavior during the same cycle:
+      it changed 38.0 -> 30.0 C at start, stayed at 30.0 C while firing,
+      then ramped 31.2, 32.4, 33.5, 34.8, 35.9 C before shutdown, and only
+      after flame-off returned to 50.0 C.
+    Thus the Vitosoft-named "Kesselsoll eff" 0x555A is a dynamic internal
+    value and is NOT a fixed copy of 0x2544 during burner operation. Its exact
+    control role is not yet established. Previous equal-value snapshots at
+    38/50 C must not be used to infer a rigid 0x2544 -> 0x555A chain.
+
   Heating-curve outdoor-temperature source verification (2026-09-22):
     Controlled test with d3=0.8, d4=+15 K, active room setpoint 21.0 C:
       0x0800 = A7 00 -> current outdoor temperature = 16.7 C.
@@ -556,10 +597,10 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       using 18.0 C ATS low-pass: 29.3 C
       using 16.4 C mixed AT: 30.9 C
     All candidates are below C5=38 C, so this sample cannot identify which
-    outdoor-temperature signal is used by the curve. It does, however,
-    hardware-confirm that C5 clamps the calculated A1 flow setpoint upward
-    to 38.0 C and that this clamped value propagates unchanged through
-    0x2544 -> 0x555A -> 0x55E0 -> 0xA391 -> 0xA307.
+    outdoor-temperature signal is used by the curve. It does hardware-confirm
+    that C5 clamps the calculated A1 flow setpoint upward to 38.0 C. The other
+    setpoint datapoints happened to read the same 38.0 C in this snapshot;
+    later fast-cycle data show that at least 0x555A is dynamic and can diverge.
 
     0x2500 bytes6..7 were 7C 01 in this normal-curve sample, whereas they
     were F4 01 in the forced +40 K sample. They therefore track the same
@@ -604,10 +645,11 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       heating-curve configuration and must not be used to characterize normal
       day-to-day control behaviour.
       Under this deliberately forced condition, d4=+40 K raises the raw curve
-      above C6, so the measured 50.0 C setpoint is expected to be the C6 clamp.
-      This is useful as a controlled test because it proves that the complete
-      chain 0x2544 -> 0x555A -> 0x55E0 -> 0xA391 -> 0xA307 propagates the
-      clamped setpoint consistently.
+      above C6, so the measured 50.0 C A1 flow setpoint is expected to be the
+      C6 clamp. Contemporaneous spot reads showed the same 50.0 C value at
+      0x555A/0x55E0/0xA391/0xA307, but a later fast cycle proved that 0x555A
+      can diverge dynamically; do not describe these datapoints as a rigid
+      serial propagation chain.
       C5=38 C is the lower clamp, but it was not active in this sample.
 
   Heating-circuit-to-burner setpoint-chain verification (2026-09-22):
@@ -618,19 +660,12 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       0x55E0 bytes10..11 = F4 01 -> RKR boiler setpoint = 50.0 C.
       0xA391 = 88 13 -> CFDM effective setpoint = 50.0 C.
       0xA307 = 88 13 -> BLR effective setpoint = 50.0 C.
-    Therefore the source-side A1 flow setpoint and every verified downstream
-    boiler/controller setpoint were identical at 50.0 C in this sample:
-      A1 VT Soll (0x2544)
-        -> Kesselsoll effektiv (0x555A)
-        -> RKR KTSoll (0x55E0)
-        -> CFDM EffectSetpt (0xA391)
-        -> BLR EffectSetpt (0xA307)
-    The measured A1 flow temperature was 43.0 C, i.e. 7.0 K below setpoint at
-    the instant of the sequential reads.
-    This sample shows no additional boiler-setpoint uplift between 0x2544 and
-    0x555A. Do not generalize that to all operating modes without further
-    captures; DHW, mixer circuits, frost protection or other controller logic
-    may alter the relationship.
+    Therefore all sampled setpoint datapoints were equal at 50.0 C in this
+    single operating snapshot. The measured A1 flow temperature was 43.0 C,
+    i.e. 7.0 K below the A1 flow setpoint at the instant of the sequential
+    reads. A later fast burner-cycle capture showed 0x555A changing
+    independently during burner operation, so this equality must be treated
+    as a state-specific observation rather than proof of a fixed chain.
 
   HCC1/RKR local control-path verification (2026-09-22, active heating):
     HCC1 external/input-side object:
@@ -654,10 +689,10 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       0x55E0 bytes10..11 = F4 01 -> RKR boiler setpoint = 50.0 C.
       0xA391 = 88 13 -> CFDM effective setpoint = 50.0 C.
       0xA307 = 88 13 -> BLR effective setpoint = 50.0 C.
-    This hardware-confirms a common 50.0 C setpoint propagated through
-    boiler/RKR -> CFDM -> BLR. The explicit A1 flow-setpoint datapoint
-    0x2544 (VT_SolltemperaturA1M1, div10) is already in the production
-    profile and is the next source-side value to compare against this chain.
+    These simultaneous spot reads show the same 50.0 C value at all four
+    datapoints in this operating state. They do NOT prove a rigid propagation
+    chain between 0x555A, RKR, CFDM and BLR; a later fast burner-cycle capture
+    showed 0x555A diverging dynamically while 0x2544 remained at 50.0 C.
 
   CFDM local-vs-external input verification (2026-09-22, burner firing):
     0xA380 len2 = 00 FF -> nviProdCmd CFDM: 0 percent, state AUTO.
