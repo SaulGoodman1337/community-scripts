@@ -31,6 +31,9 @@ Write verification on this exact appliance:
   0x2308 party room target: R/W
   0x2323 operating mode: R/W verified for values 2 and 4; synthetic Party
     uses value 4 (Dauernd Normal) and restores the previous value afterwards
+  synthetic Party end-to-end: verified with distinct setpoints (0x2306=21 C,
+    0x2308=22 C): ON mirrored 22 C to 0x2306 and set 0x2323=4; OFF restored
+    0x2306=21 C and 0x2323=2. Native physical Party still tracks through 0x2303.
   0x6300 DHW target: R/W, current configured range 10..60 C
   0x6773 circulation interval: R/W verified for values 0 and 7
 
