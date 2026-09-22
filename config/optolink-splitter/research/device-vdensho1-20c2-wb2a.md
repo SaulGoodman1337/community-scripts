@@ -134,3 +134,98 @@ This is a strong correlation, not proof of causality.
 5. Decode all relevant `0x55DD` status bits.
 6. Find an independently documented/verified blower-speed datapoint for this
    exact VDensHO1/20C2 generation.
+
+
+## Candidate origin of the 12 s delay and 1 %/s ramp
+
+### Regulation delay after burner start
+
+Vitosoft contains a dedicated fire-control/timing parameter named:
+
+```text
+Reglerverzögerung nach Brennerstart
+GWG_FA_Takt_ReglerverzoegerungStart
+```
+
+In the LGM29/GWG datapoint families it is part of the `Taktschutz` group and
+is associated with the `0x0083` parameter structure. Some LGM29 variants also
+use that same structure for burner-minimum-run-time data, so `0x0083` must
+not yet be treated as a proven direct byte mapping on this VDensHO1.
+
+Independent Viessmann service documentation for other controller generations
+uses parameter `1B` for:
+
+```text
+Zeit vom Zünden des Brenners bis zum Beginn der Regelung
+```
+
+with the value expressed in seconds and factory setting dependent on the
+coding plug.
+
+This semantic definition matches the measured WB2A behavior extremely well:
+
+```text
+first normal 0x21 flame state: about T=1.02 s
+sustained modulation decrease: about T=13.12 s
+difference: about 12.1 s
+```
+
+**Current assessment:** the measured ~12.1 s is very likely a deliberate
+regulation-delay parameter or equivalent firmware constant. Its exact storage
+location on VDensHO1/20C2 is not yet proven.
+
+### Downward modulation ramp
+
+Viessmann controllers with conventional modulating-burner configuration expose
+a parameter named:
+
+```text
+Laufzeit Stellantrieb Brenner
+```
+
+(commonly coding parameter `15`), expressed as the time for actuator travel
+and factory-defined according to the coding plug.
+
+The WB2A measurement gives:
+
+```text
+65 % -> 33 %
+32 percentage points in 32.05 s
+=> 0.998 percentage points/s
+```
+
+A full 0..100 % actuator travel time of 100 s would mathematically produce:
+
+```text
+100 percentage points / 100 s = 1 percentage point/s
+```
+
+which matches the observed ramp almost exactly.
+
+The coding-plug raw block also contains an unresolved byte value `0x64 = 100`
+at offset `0x1038`:
+
+```text
+0x1030 = 41 be 1d e2 03 fc 51 ae 64 9b 00 ff 00 ff 00 ff
+                                      ^^
+                                     100
+```
+
+Vitosoft currently provides no `GWG38` or other semantic label tying this
+specific byte to actuator travel time. Therefore this is an **interesting
+correlation, not a proven mapping**.
+
+### Candidate read-only locations to test
+
+Two parameter families deserve read-only probing:
+
+- controller-side conventional coding block around `0x5715..`:
+  `15` actuator run time, `1A` startup optimization,
+  `1B` regulation delay, `1C` burner start delay in other Viessmann
+  controller generations;
+- LGM29/GWG fire-control timing structure around `0x0083`, where Vitosoft
+  lists `Reglerverzögerung nach Brennerstart` for GWG/LGM29 families.
+
+The VDensHO1-specific datapoint list does **not** expose those names directly,
+so any result from these addresses must be treated as an experimental
+read-only probe rather than an established VDensHO1 mapping.
