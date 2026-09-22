@@ -224,9 +224,12 @@ views:
             icon: mdi:party-popper
             tap_action:
               action: toggle
+            features:
+              - type: toggle
+            features_position: bottom
             grid_options:
               columns: 12
-              rows: 1
+              rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_party
             name: Partytemperatur
