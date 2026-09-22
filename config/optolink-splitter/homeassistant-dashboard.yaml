@@ -167,25 +167,29 @@ views:
             icon: mdi:home-thermometer-outline
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal
-            name: Normal
+            name: Tagestemperatur
             icon: mdi:sun-thermometer
+            show_entity_picture: false
+            vertical: false
             features:
               - type: numeric-input
-                style: buttons
+                style: slider
             features_position: bottom
             grid_options:
-              columns: 6
+              columns: 12
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
-            name: Reduziert
+            name: Nachttemperatur
             icon: mdi:weather-night
+            show_entity_picture: false
+            vertical: false
             features:
               - type: numeric-input
-                style: buttons
+                style: slider
             features_position: bottom
             grid_options:
-              columns: 6
+              columns: 12
               rows: 2
           - type: heading
             heading: Warmwasser
@@ -201,9 +205,11 @@ views:
             entity: number.vitodens_200_wb2a_warmwasser_solltemperatur
             name: Warmwasser Soll
             icon: mdi:water-thermometer
+            show_entity_picture: false
+            vertical: false
             features:
               - type: numeric-input
-                style: buttons
+                style: slider
             features_position: bottom
             grid_options:
               columns: 12
@@ -219,19 +225,25 @@ views:
             tap_action:
               action: toggle
             grid_options:
-              columns: 6
-              rows: 2
+              columns: 12
+              rows: 1
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_party
-            name: Party Soll
+            name: Partytemperatur
             icon: mdi:thermometer-plus
+            show_entity_picture: false
+            vertical: false
             features:
               - type: numeric-input
-                style: buttons
+                style: slider
             features_position: bottom
             grid_options:
-              columns: 6
+              columns: 12
               rows: 2
+            visibility:
+              - condition: state
+                entity: switch.vitodens_200_wb2a_heizkreis_m1_partybetrieb
+                state: "on"
           - type: custom:mushroom-select-card
             entity: select.vitodens_200_wb2a_zirkulation_intervall
             name: Zirkulation
@@ -446,24 +458,101 @@ views:
                 name: Ist
                 show_state: true
                 show_icon: false
-          - type: entities
-            title: Kennlinie
+          - type: heading
+            heading: Kennlinie
+            heading_style: subtitle
             icon: mdi:tune
-            entities:
-              - entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung
-                name: Neigung D3
-              - entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung
-                name: Niveau D4
-              - entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung
-                name: Vorlauf Minimum C5
-              - entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung
-                name: Vorlauf Maximum C6
-              - entity: number.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3_einstellung
-                name: Frostgrenze A3
-              - entity: number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung
-                name: Pumpenlogik A5
-              - entity: number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung
-                name: Sommerspar A6
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung
+            name: Neigung D3
+            icon: mdi:chart-bell-curve
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung
+            name: Niveau D4
+            icon: mdi:chart-areaspline-variant
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung
+            name: Vorlauf Minimum C5
+            icon: mdi:thermometer-chevron-down
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung
+            name: Vorlauf Maximum C6
+            icon: mdi:thermometer-chevron-up
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3_einstellung
+            name: Frostgrenze A3
+            icon: mdi:snowflake-alert
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung
+            name: Heizkreispumpenlogik A5
+            icon: mdi:radiator-disabled
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung
+            name: Sommersparabschaltung A6
+            icon: mdi:weather-sunny-off
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
       - type: grid
         column_span: 2
         cards:
@@ -480,7 +569,7 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 6
+              columns: 12
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
@@ -491,7 +580,7 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 6
+              columns: 12
               rows: 2
           - type: history-graph
             title: Vorlaufregelung – 7 Tage
@@ -538,17 +627,88 @@ views:
                 name: Intern %
                 show_state: true
                 show_icon: false
-          - type: entities
-            title: Pumpenparameter
+          - type: heading
+            heading: Pumpenparameter
+            heading_style: subtitle
             icon: mdi:cog-outline
-            entities:
-              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_max_drehzahl_e6_einstellung
-              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_min_drehzahl_e7_einstellung
-              - select.vitodens_200_wb2a_heizkreis_m1_pumpe_nebenbetrieb_e8_einstellung
-              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9_einstellung
-              - number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9_einstellung
-              - number.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31_einstellung
-              - sensor.vitodens_200_wb2a_interne_pumpe_kennung_30_anzeige
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_interne_pumpe_kennung_30_anzeige
+                name: Pumpentyp
+                show_state: true
+                show_icon: false
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_pumpe_min_drehzahl_e7_einstellung
+            name: Minimale Drehzahl E7
+            icon: mdi:pump
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_pumpe_max_drehzahl_e6_einstellung
+            name: Maximale Drehzahl E6
+            icon: mdi:pump
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: custom:mushroom-select-card
+            entity: select.vitodens_200_wb2a_heizkreis_m1_pumpe_nebenbetrieb_e8_einstellung
+            name: Nebenbetrieb E8
+            icon: mdi:pump
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9_einstellung
+            name: Reduzierte Drehzahl E9
+            icon: mdi:pump
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9_einstellung
+            name: Pumpen-Nachlauf A9
+            icon: mdi:timer-cog-outline
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31_einstellung
+            name: Interne Pumpe Solldrehzahl 31
+            icon: mdi:pump
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
       - type: grid
         column_span: 2
         cards:
@@ -576,17 +736,67 @@ views:
             entity: select.vitodens_200_wb2a_zirkulation_intervall
             name: Zirkulationsmodus
             icon: mdi:clock-outline
-          - type: entities
-            title: Warmwasser-/Zirkulationsparameter
+          - type: heading
+            heading: Regelparameter
+            heading_style: subtitle
             icon: mdi:tune-variant
-            entities:
-              - sensor.vitodens_200_wb2a_warmwasser_sollbereich_56_anzeige
-              - sensor.vitodens_200_wb2a_warmwasser_einschalt_offset_59_anzeige
-              - number.vitodens_200_wb2a_warmwasser_kessel_offset_60_einstellung
-              - number.vitodens_200_wb2a_warmwasser_pumpennachlauf_62_einstellung
-              - sensor.vitodens_200_wb2a_umschaltventil_bauart_65_anzeige
-              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll1_71_anzeige
-              - sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll2_72_anzeige
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_warmwasser_sollbereich_56_anzeige
+                name: Sollbereich
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_warmwasser_einschalt_offset_59_anzeige
+                name: Einschaltpunkt
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_umschaltventil_bauart_65_anzeige
+                name: Ventil
+                show_state: true
+                show_icon: false
+          - type: tile
+            entity: number.vitodens_200_wb2a_warmwasser_kessel_offset_60_einstellung
+            name: Kessel-Offset 60
+            icon: mdi:thermometer-plus
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_warmwasser_pumpennachlauf_62_einstellung
+            name: Pumpennachlauf 62
+            icon: mdi:timer-outline
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: heading
+            heading: Zirkulation bei Warmwasser-Soll
+            heading_style: subtitle
+            icon: mdi:pump
+            badges:
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll1_71_anzeige
+                name: Soll 1
+                show_state: true
+                show_icon: false
+              - type: entity
+                entity: sensor.vitodens_200_wb2a_zirkulation_bei_ww_soll2_72_anzeige
+                name: Soll 2
+                show_state: true
+                show_icon: false
     cards: []
 
   - title: Nachtabsenkung
