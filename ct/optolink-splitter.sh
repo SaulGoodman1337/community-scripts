@@ -152,7 +152,7 @@ function update_script() {
     exit 1
   fi
 
-  configure_private_update ct/optolink-splitter.sh
+  configure_private_update tools/optolink-splitter-update.sh
 
   msg_ok "Updated successfully!"
   exit
