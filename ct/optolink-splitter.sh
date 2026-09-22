@@ -115,6 +115,10 @@ function update_script() {
   chmod 755 /usr/local/bin/optolink-party-test
   ln -sf /usr/local/bin/optolink-party-test /usr/bin/optolink-party-test
 
+  cs_repo_fetch tools/optolink-debug.py /usr/local/bin/optolink-debug
+  chmod 755 /usr/local/bin/optolink-debug
+  ln -sf /usr/local/bin/optolink-debug /usr/bin/optolink-debug
+
   cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
   chown -R optolink:optolink /opt/optolink
   msg_ok "Refreshed profile helpers"
