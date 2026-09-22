@@ -510,6 +510,18 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  CFDM/GFA exported-interface spot check (2026-09-22, burner idle):
+    0xA382 len1 = FF -> nviApplicMode CFDM = HVAC_NUL.
+    0xA385 len2 = 0000 -> nviConsumerDmd Temp CFDM = 0.00 C.
+    0xA307 len2 = D80E -> BLR effective setpoint = 38.00 C.
+    0xA391 len2 = D80E -> CFDM effective setpoint = 38.00 C.
+    0x55DD len1 = 01 -> GWG_Flamme1 bit 0x20 clear.
+    0x55D3 len9 = 00 A9 A5 00 00 01 00 00 00:
+      byte5 is also 0x01, so its flame bit 0x20 is clear as well.
+    Thus the two documented flame indicators agree in this sample. The idle
+    CFDM input demand is zero while the downstream BLR/CFDM effective
+    setpoints retain the previously observed 38 C floor/default setpoint.
+
   GFA internal process-address reachability test (2026-09-22):
     0x7650 len1 -> raw 0x20, hardware-confirming GFA identifier 0x20.
     Vitosoft groups its internal FA process values by chip family:
@@ -887,6 +899,8 @@ poll_items = [
     ('RARE', 'systemzeit', 0x088E, 8, 'vdatetime', False),  # HW verified R/W DateTimeBCD
 
     # Internal burner/controller chain, hardware verified live.
+    ('NORMAL', 'cfdm_application_mode', 0xA382, 1, 1, False),  # idle FF=HVAC_NUL
+    ('NORMAL', 'cfdm_consumer_demand_temperatur', 0xA385, 2, 0.01, False),  # idle 0000=0.00 C
     ('NORMAL', 'blr_kesselsolltemperatur_effektiv', 0xA307, 2, 0.01, False),  # 9c18=63.0 C, d80e=38.0 C
     ('NORMAL', 'cfdm_vorlauftemperatur', 0xA393, 2, 0.01, False),  # full-cycle HW verified vs 0x0810
     ('NORMAL', 'cfdm_kesselsolltemperatur_effektiv', 0xA391, 2, 0.01, False),  # same values as A307
