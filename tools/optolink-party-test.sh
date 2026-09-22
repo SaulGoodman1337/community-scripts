@@ -4,6 +4,9 @@ set -euo pipefail
 APP_DIR="/opt/optolink"
 ACTION="${1:-on}"
 
+echo "NOTE: diagnostic native-Party probe only. Production HA Party ON uses" >&2
+echo "      optolink-party-emulator because remote 0x2303=1 is not reliable." >&2
+
 case "$ACTION" in
   on|1|true)
     VALUE=1
