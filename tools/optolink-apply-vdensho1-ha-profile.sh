@@ -3,7 +3,11 @@ set -euo pipefail
 
 CS_REPO="${COMMUNITY_SCRIPTS_REPO:-SaulGoodman1337/community-scripts}"
 CS_REF="${COMMUNITY_SCRIPTS_REF:-main}"
+HELPER_REV="2026-09-22-r3"
 APP_DIR="/opt/optolink"
+
+echo "VDensHO1 profile helper: $HELPER_REV"
+echo "community-scripts source: $CS_REPO @ $CS_REF"
 PROFILE_REL="config/optolink-splitter/vdensho1-20c2-wb2a-homeassistant.py"
 PROFILE_NAME="vdensho1-20c2-wb2a-homeassistant.py"
 

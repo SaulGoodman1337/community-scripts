@@ -84,6 +84,11 @@ function update_script() {
   check_container_storage
   check_container_resources
 
+  msg_info "Using community-scripts source"
+  echo "Repository: $CS_REPO"
+  echo "Ref:        $CS_REF"
+  msg_ok "Using community-scripts source"
+
   if [[ ! -d /opt/optolink/.git || ! -f /opt/optolink/settings_ini.py ]]; then
     msg_error "No ${APP} installation found!"
     exit 1
@@ -106,6 +111,7 @@ function update_script() {
   msg_info "Refreshing VDensHO1 Home Assistant profile"
   cs_repo_fetch tools/optolink-apply-vdensho1-ha-profile.sh /usr/local/bin/optolink-apply-vdensho1-ha-profile
   chmod 755 /usr/local/bin/optolink-apply-vdensho1-ha-profile
+  grep -E '^HELPER_REV=' /usr/local/bin/optolink-apply-vdensho1-ha-profile || true
 
   # Keep the previous VScotHO1 helper as an explicit rollback option.
   cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
