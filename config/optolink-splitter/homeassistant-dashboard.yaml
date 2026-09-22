@@ -2392,9 +2392,9 @@ views:
               - entity: binary_sensor.vitodens_200_wb2a_cfdm_leistungsstatus
                 name: CFDM Leistungsstatus
               - entity: sensor.vitodens_200_wb2a_cfdm_application_mode
-                name: CFDM Application Mode
+                name: CFDM externer Application-Mode-Eingang
               - entity: sensor.vitodens_200_wb2a_cfdm_consumer_demand_temperatur
-                name: CFDM Consumer Demand
+                name: CFDM externer Consumer-Demand-Eingang
               - entity: sensor.vitodens_200_wb2a_blr_kesselsolltemperatur_effektiv
                 name: BLR effektiver Kesselsollwert
               - entity: sensor.vitodens_200_wb2a_cfdm_kesselsolltemperatur_effektiv

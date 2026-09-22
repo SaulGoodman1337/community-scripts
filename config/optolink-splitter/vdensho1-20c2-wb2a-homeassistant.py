@@ -1038,8 +1038,9 @@ poll_list = {
                 # full start/stop cycle. Mean delta was +0.04 K, mean absolute
                 # delta 0.14 K (sequential reads, therefore not atomic).
                 ("NORMAL", "cfdm_vorlauftemperatur",              0xA393, 2, 0.01, False),
-                # nviConsumerDmd Temp CFDM; hardware-readable on this WB2A.
-                # Idle sample: 0000 = 0.00 C while A307/A391 both held 38.0 C.
+                # nviConsumerDmd Temp CFDM; hardware-readable, but verified as
+                # an inactive/external input on this WB2A's local heating path:
+                # it stayed 0.00 C both idle and during a live 50 C burner run.
                 ("NORMAL", "cfdm_consumer_demand_temperatur",     0xA385, 2, 0.01, False),
                 ("NORMAL", "rkr_kesselsolltemperatur",            0x55E0, 17, "b:10:11", 0.1, False),
             ],
@@ -1069,7 +1070,8 @@ poll_list = {
             "enabled_by_default": True,
             "value_template": "{% set v = value | int(-1) %}{% set m = {0:'HVAC_AUTO',1:'HVAC_HEAT',2:'HVAC_MRNG_WRMUP',3:'HVAC_COOL',4:'HVAC_NIGHT_PURGE',5:'HVAC_PRE_COOL',6:'HVAC_OFF',7:'HVAC_TEST',8:'HVAC_EMERG_HEAT',9:'HVAC_FAN_ONLY',10:'HVAC_FREE_COOL',100:'HVAC_FLOW_TEMP',110:'HVAC_SLAVE_ACTIVE',111:'HVAC_LOW_FIRE',112:'HVAC_HIGH_FIRE',255:'HVAC_NUL'} %}{{ m.get(v, 'Wert ' ~ v) }}",
             "poll": [
-                # Hardware-readable; idle sample FF = HVAC_NUL.
+                # Hardware-readable external/LON-style input. It remained
+                # FF=HVAC_NUL through a complete local heating burner start.
                 ("NORMAL", "cfdm_application_mode", 0xA382, 1, 1, False),
             ],
         },

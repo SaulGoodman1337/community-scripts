@@ -510,6 +510,21 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  CFDM local-vs-external input verification (2026-09-22, burner firing):
+    0xA380 len2 = 00 FF -> nviProdCmd CFDM: 0 percent, state AUTO.
+    0xA383 len2 = 00 00 -> nviSetpoint CFDM: 0.00 C.
+    0xA391 len2 = 88 13 -> effective CFDM setpoint 50.00 C.
+    0xA38F len2 = 7F 01 -> effective CFDM power 63.5 percent, state EIN.
+    0xA305 len1 = 80 -> BLR modulation 64.0 percent.
+    0x55D3 = 41 9C A7 00 00 21 0B 62 00:
+      byte0=65 fine GFA control/power value,
+      flame bit set, fan=0x0B62=2914 rpm.
+    Together with the previous A382=FF and A385=0000 observations during the
+    heating start, this proves the nvi CFDM fields A380/A382/A383/A385 are not
+    the active local command path on this WB2A. They are consistent with
+    external/LON-style inputs while the local controller computes A391/A38F
+    internally. Do not use them to explain or control the normal heating path.
+
   CFDM/GFA exported-interface spot check (2026-09-22, burner idle):
     0xA382 len1 = FF -> nviApplicMode CFDM = HVAC_NUL.
     0xA385 len2 = 0000 -> nviConsumerDmd Temp CFDM = 0.00 C.
