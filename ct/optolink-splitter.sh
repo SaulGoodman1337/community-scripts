@@ -125,6 +125,11 @@ function update_script() {
   chmod 755 /usr/local/bin/optolink-debug
   ln -sf /usr/local/bin/optolink-debug /usr/bin/optolink-debug
 
+  cs_repo_fetch config/optolink-splitter/wb2a-single-session-logger.py /usr/local/bin/wb2a-single-session-logger
+  chmod 755 /usr/local/bin/wb2a-single-session-logger
+  chown root:root /usr/local/bin/wb2a-single-session-logger
+  ln -sf /usr/local/bin/wb2a-single-session-logger /usr/bin/wb2a-single-session-logger
+
   cs_repo_fetch tools/optolink-party-emulator.py /usr/local/bin/optolink-party-emulator
   chmod 755 /usr/local/bin/optolink-party-emulator
   chown root:root /usr/local/bin/optolink-party-emulator
