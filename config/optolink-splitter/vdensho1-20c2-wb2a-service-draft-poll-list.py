@@ -538,9 +538,12 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       19:37:12  VT_SOLL=50.0 C, KTS=58.5 C, A305=0, A38F=OFF,
                  flame off, fan=0.
     Therefore flame-off occurred between +7.5 K and +8.5 K relative to the
-    50.0 C A1 flow setpoint. This is strong hardware evidence consistent with
-    coding-plug GWG61=8 K "Ausschaltdifferenz". Sequential reads limit the
-    threshold resolution; do not claim an exact 58.0 C event temperature.
+    50.0 C A1 flow setpoint, which is numerically consistent with coding-plug
+    GWG61=8 K "Ausschaltdifferenz". This is NOT yet a definitive threshold
+    verification: an earlier fast capture showed A307 changing 50 -> 38 C
+    shortly before flame-off, and A307/A391 were not included in this logger.
+    The next capture must correlate KTS, A307/A391 and flame state at the
+    shutdown transition. Sequential reads also limit exact event resolution.
 
     0x555A behavior during the same cycle:
       it changed 38.0 -> 30.0 C at start, stayed at 30.0 C while firing,
