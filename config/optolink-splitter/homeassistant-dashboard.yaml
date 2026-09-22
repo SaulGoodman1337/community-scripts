@@ -1262,35 +1262,6 @@ views:
               columns: 12
               rows: 2
       - type: grid
-        column_span: 2
-        cards:
-          - type: heading
-            heading: Temperaturniveau
-            heading_style: title
-            icon: mdi:thermostat
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal
-            name: Normaltemperatur
-            icon: mdi:sun-thermometer
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
-            name: Reduzierte Temperatur
-            icon: mdi:weather-night
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-      - type: grid
         column_span: 4
         cards:
           - type: heading
