@@ -560,3 +560,71 @@ that the object is absent: the object may require a larger structure length.
 The logger therefore probes `0x0083` read-only with lengths 1, 2, 4, 8 and
 16 on startup. If all lengths fail, the LGM29 map can be rejected more
 confidently for this GFA generation.
+
+
+## 2026-09-22 RKR structure discovery: 0x5556 mirrored at 0x55E0
+
+A direct four-byte read from `0x5556` produced:
+
+```text
+0x5556;4 = 01 3e 01 00
+```
+
+At the same time the 17-byte block at `0x55E0` was:
+
+```text
+0x55E0;17 = 01 3e 01 00 00 00 00 00 05 51 3e 01 00 00 00 00 00
+             ^^^^^^^^^^^
+             exact mirror of 0x5556;4
+```
+
+This is a structural match, not merely a similar value. The first four bytes
+of the `0x55E0` block are identical to the direct `0x5556;4` object.
+
+The currently best-supported interpretation is:
+
+```text
+0x5556 +0     01       RKR enable/release candidate
+0x5556 +1..2 3e 01    RKR boiler setpoint candidate = 31.8 C (LE / 10)
+0x5556 +3     00       unresolved, cross-family hint: RKR power setpoint/status
+```
+
+The temperature field is strongly supported by simultaneous values:
+
+```text
+0x2544 = 3e01 -> 31.8 C
+0x5556[1:3]   -> 31.8 C
+0x55E0[10:12] -> 31.8 C
+0xA307 = 6c0c -> 31.8 C when decoded /100
+```
+
+The same snapshot showed:
+
+```text
+0xA305 = 00
+0x55D3 = 00 9a a2 00 00 01 00 00 00 ...
+flame = off
+0x5556[0] = 01
+```
+
+Therefore `0x5556[0] = 01` is definitively **not equivalent to burner
+running/flame present**. It is more plausibly an upstream RKR demand/release
+state that may remain active while the burner is off due to temperature
+limits, minimum off-time or other burner-control logic.
+
+The semantic names of byte 0 and byte 3 are not yet proven on VDensHO1/20C2.
+They must be verified dynamically across a full sequence:
+
+```text
+burner on -> flame off -> boiler pause -> next release/ignition
+```
+
+For that purpose the repository now contains:
+
+```text
+config/optolink-splitter/wb2a-rkr-cycle-logger.py
+```
+
+It logs `0x5556`, `0x55E0`, `0xA395`, `0xA305`, `0x55D3`,
+`0x2544`, `0x0810` and `0xA307` in one persistent TCP session and
+marks flame, RKR-byte-0 and A395-byte-2 transitions.
