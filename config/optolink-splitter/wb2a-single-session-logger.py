@@ -160,7 +160,7 @@ def main():
         "status_55dd",
         "flame",
         "lockout",
-        "blower_rpm",
+        "gfa_word_6_7",
         "seconds_since_flame",
         "raw_a305",
         "a305_raw",
@@ -201,14 +201,17 @@ def main():
                 # Hardware-verified in this WB2A project:
                 # byte 5 bit 0x20 = flame
                 # byte 5 bit 0x40 = GFA lockout
-                # bytes 6..7 = blower rpm, big-endian
                 flame = bool(raw55[5] & 0x20)
                 lockout = bool(raw55[5] & 0x40)
-                blower_rpm = (raw55[6] << 8) | raw55[7]
 
-                # Under investigation:
-                # byte 9 = address 0x55DC; observed 65/66 -> 33 during startup ramp
-                # byte 10 = address 0x55DD; observed 01/09/29/21 status patterns
+                # bytes 6..7 are an unresolved GFA runtime word. An earlier
+                # hypothesis called this blower rpm, but high-resolution logs
+                # show it remains ~2914 while modulation falls 66 -> 33 %.
+                gfa_word_6_7 = (raw55[6] << 8) | raw55[7]
+
+                # byte 9 / 0x55DC is hardware-correlated 1:1 with the scaled
+                # A305 live Modulationsgrad (%). byte 10 / 0x55DD is a status
+                # byte with observed 01/09/29/21 patterns.
                 value55dc = raw55[9]
                 status55dd = raw55[10]
 
@@ -272,7 +275,7 @@ def main():
                     "status_55dd": f"{status55dd:02x}",
                     "flame": int(flame),
                     "lockout": int(lockout),
-                    "blower_rpm": blower_rpm,
+                    "gfa_word_6_7": gfa_word_6_7,
                     "seconds_since_flame": "" if flame_age is None else f"{flame_age:.3f}",
                     "raw_a305": raw305.hex(),
                     "a305_raw": a305_raw,
@@ -287,7 +290,7 @@ def main():
                     f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]}  "
                     f"55DC={value55dc:3d}  "
                     f"A305={a305_pct:5.1f}% (raw {a305_raw:3d})  "
-                    f"RPM={blower_rpm:4d}  "
+                    f"GFA67={gfa_word_6_7:4d}  "
                     f"FL={int(flame)}  "
                     f"55DD=0x{status55dd:02X}  "
                     f"T={age_txt}s  "
