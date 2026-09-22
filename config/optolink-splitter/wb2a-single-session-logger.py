@@ -82,12 +82,15 @@ class OptolinkTcp:
             # Once bytes have arrived, use a short idle timeout to detect EOT.
             self.sock.settimeout(self.idle_timeout)
 
-    def request(self, command: str) -> tuple[str, str]:
+    def request_any(self, command: str) -> str:
         if self.sock is None:
             raise ConnectionError("TCP socket is not connected")
 
         self.sock.sendall((command + "\n").encode("ascii"))
-        response = self._recv_response()
+        return self._recv_response()
+
+    def request(self, command: str) -> tuple[str, str]:
+        response = self.request_any(command)
 
         parts = response.split(";", 2)
         if len(parts) != 3:
@@ -147,6 +150,35 @@ def main():
     except OSError as e:
         print(f"TCP connect failed: {e}", file=sys.stderr)
         return 2
+
+    # One-time read-only probes for candidate startup-delay/ramp parameters.
+    # These address semantics are NOT proven for VDensHO1/20C2; the values are
+    # captured only to test correlations found in other Viessmann/GWG families.
+    probe_commands = [
+        ("K15_candidate_actuator_runtime", "read;0x5715;1"),
+        ("K1A_candidate_start_optimization", "read;0x571A;1"),
+        ("K1B_candidate_regulation_delay", "read;0x571B;1"),
+        ("K1C_candidate_burner_start_delay", "read;0x571C;1"),
+        ("GFA_candidate_regulation_delay", "read;0x0083;1"),
+        ("coding_plug_0x1038_candidate_100", "read;0x1038;1"),
+    ]
+
+    probe_path = logfile.with_suffix(".probes.txt")
+    print("Candidate read-only probes:")
+    with probe_path.open("w", encoding="utf-8") as pf:
+        pf.write("# WB2A candidate startup/ramp probes\n")
+        pf.write("# Read-only. Address semantics are hypotheses unless noted.\n")
+        pf.write(f"# {datetime.now().isoformat(timespec='seconds')}\n")
+        for label, command in probe_commands:
+            try:
+                response = client.request_any(command)
+            except Exception as e:
+                response = f"ERROR: {e}"
+            line = f"{label:38s} {command:20s} -> {response}"
+            print("  " + line)
+            pf.write(line + "\n")
+    print(f"Probe file: {probe_path}")
+    print()
 
     fields = [
         "timestamp",
