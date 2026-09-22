@@ -222,6 +222,7 @@ PY
 if [[ "$mqtt_enabled" == "1" && -c /dev/ttyUSB0 ]]; then
   if systemctl cat optolink-party-emulator.service >/dev/null 2>&1; then
     echo "Starting persistent Party emulation service..."
+    systemctl enable optolink-party-emulator.service >/dev/null 2>&1 || true
     systemctl restart optolink-party-emulator.service
     sleep 2
     if systemctl is-active --quiet optolink-party-emulator.service; then
