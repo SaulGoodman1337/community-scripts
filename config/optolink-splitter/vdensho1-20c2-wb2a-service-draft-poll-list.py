@@ -510,6 +510,49 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  Heating-curve source calculation verification (2026-09-22):
+    Hardware values:
+      0x0800 = BF 00 -> current outdoor temperature = 19.1 C.
+      0x5525 = BF 00 -> ATS low-pass value = 19.1 C.
+      0x5527 = A7 00 -> "Gemischte AT" = 16.7 C.
+      0x27D3 = 08 -> heating-curve slope d3 = 0.8.
+      0x27D4 = 28 -> signed level d4 = +40 K.
+      0x2306 = 15 -> normal room setpoint = 21 C.
+      0x2307 = 12 -> reduced room setpoint = 18 C.
+      0x2500 bytes12..13 = D2 00 -> active room setpoint = 21.0 C.
+      0x27C5 = 26 -> flow minimum C5 = 38 C.
+      0x27C6 = 32 -> flow maximum C6 = 50 C.
+      0x27FA and 0x27FB -> retcode 3 on this controller; unavailable via
+      normal Optolink and therefore not usable as live evidence.
+      0x2544 = F4 01 -> resulting A1 flow setpoint = 50.0 C.
+      0x555A = F4 01 -> resulting effective boiler setpoint = 50.0 C.
+
+    Using the Viessmann heating-curve polynomial commonly documented for
+    Vitotronic weather-compensated control:
+      D = outdoor_temp - room_setpoint
+      VT = room_setpoint + level
+           - slope * D * (1.4347 + 0.021*D + 0.0002479*D^2)
+
+    With the controller's "Gemischte AT" 16.7 C:
+      D = -4.3 K
+      raw curve result ~= 65.64 C.
+    With current/ATS-low-pass 19.1 C:
+      D = -1.9 K
+      raw curve result ~= 63.12 C.
+    Both exceed C6=50 C, so the observed 0x2544=50.0 C is exactly explained
+    by the electronic maximum flow-temperature limit.
+
+    Consequence of the present settings:
+      d4=+40 K alone gives 61 C when outdoor temperature equals the active
+      21 C room setpoint. With d3=0.8, the unconstrained curve does not fall
+      below 50 C until roughly 29.4 C outdoor temperature. In any realistic
+      heating-weather range, C6 therefore dominates and clamps the requested
+      flow temperature to 50 C (subject to heating being enabled at all).
+      C5=38 C is the lower clamp, but it is not active in this sample.
+    This means the current normal-heating behaviour is effectively a
+    50-C capped/flat request over most relevant outdoor temperatures rather
+    than a freely varying weather-compensated curve.
+
   Heating-circuit-to-burner setpoint-chain verification (2026-09-22):
     Same active-heating state, hardware read:
       0x2544 = F4 01 -> VT_SolltemperaturA1M1 = 50.0 C.
