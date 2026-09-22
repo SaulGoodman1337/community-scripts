@@ -36,6 +36,12 @@ views:
                 show_state: true
                 show_icon: true
               - type: entity
+                entity: sensor.vitodens_200_wb2a_geblaesedrehzahl
+                name: Gebläse
+                icon: mdi:fan
+                show_state: true
+                show_icon: true
+              - type: entity
                 entity: sensor.vitodens_200_wb2a_aussentemperatur
                 name: Außen
                 icon: mdi:thermometer
@@ -2222,6 +2228,9 @@ views:
               - sensor.vitodens_200_wb2a_sensorstatus_vlts_anzeige
               - sensor.vitodens_200_wb2a_sensorstatus_raum_m1_anzeige
               - sensor.vitodens_200_wb2a_heizkreis_m1_reglervariante_anzeige
+              - entity: sensor.vitodens_200_wb2a_geblaesedrehzahl
+                name: Gebläsedrehzahl
+                icon: mdi:fan
               - binary_sensor.vitodens_200_wb2a_feuerungsautomat_verriegelt
       - type: grid
         column_span: 2
