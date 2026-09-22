@@ -2387,12 +2387,16 @@ views:
                 name: Brenner Modulationsgrad
               - entity: sensor.vitodens_200_wb2a_cfdm_leistungswert
                 name: CFDM Leistungswert
+              - entity: sensor.vitodens_200_wb2a_gfa_leistungs_ansteuerwert_fein
+                name: GFA Leistungs-/Ansteuerwert fein
               - entity: binary_sensor.vitodens_200_wb2a_cfdm_leistungsstatus
                 name: CFDM Leistungsstatus
               - entity: sensor.vitodens_200_wb2a_blr_kesselsolltemperatur_effektiv
                 name: BLR effektiver Kesselsollwert
               - entity: sensor.vitodens_200_wb2a_cfdm_kesselsolltemperatur_effektiv
                 name: CFDM effektiver Kesselsollwert
+              - entity: sensor.vitodens_200_wb2a_cfdm_vorlauftemperatur
+                name: CFDM Vorlauftemperatur
               - entity: sensor.vitodens_200_wb2a_rkr_kesselsolltemperatur
                 name: RKR Kesselsollwert
       - type: grid

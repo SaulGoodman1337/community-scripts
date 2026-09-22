@@ -1017,7 +1017,11 @@ poll_list = {
         # Hardware-verified in a live burner cycle:
         #   A307 = A391 = 63.0 C while firing, 38.0 C after demand drop
         #   55E0 bytes10..11 = same RKR setpoint (63.0 -> 38.0 C)
-        #   A38F byte0 = 31.5..33.0 %, byte1 = 1 while firing / 0 when off
+        #   A38F byte0 = 31.5..65.0 %, byte1 = 1 while firing / 0 when off
+        #   A393 tracks 0x0810 boiler temperature within normal sequential-read
+        #        jitter (mean delta +0.04 K over the captured cycle)
+        #   55D3 byte0 closely follows burner modulation during firing, but is
+        #        also active during pre-purge; expose only as diagnostic
         # -----------------------------------------------------------------
         {
             "domain": "sensor",
@@ -1030,6 +1034,10 @@ poll_list = {
             "poll": [
                 ("NORMAL", "blr_kesselsolltemperatur_effektiv",  0xA307, 2, 0.01, False),
                 ("NORMAL", "cfdm_kesselsolltemperatur_effektiv", 0xA391, 2, 0.01, False),
+                # nvoSupplyTemp_CFDM; hardware-verified against 0x0810 over a
+                # full start/stop cycle. Mean delta was +0.04 K, mean absolute
+                # delta 0.14 K (sequential reads, therefore not atomic).
+                ("NORMAL", "cfdm_vorlauftemperatur",              0xA393, 2, 0.01, False),
                 ("NORMAL", "rkr_kesselsolltemperatur",            0x55E0, 17, "b:10:11", 0.1, False),
             ],
         },
@@ -1042,6 +1050,13 @@ poll_list = {
             "suggested_display_precision": 1,
             "poll": [
                 ("NORMAL", "cfdm_leistungswert", 0xA38F, 2, "b:0:0", 0.5, False),
+                # 55D3 byte0 is treated by historical vcontrold/OpenV configs
+                # as a fine burner-power value. This WB2A capture confirms a
+                # close correlation while firing (69 at A305=66%, 38 at
+                # A305=33%), but the field already ramps during pre-purge.
+                # Therefore keep it diagnostic and describe it as a GFA
+                # power/control value rather than thermal output.
+                ("NORMAL", "gfa_leistungs_ansteuerwert_fein", 0x55D3, 9, "b:0:0", 1, False),
             ],
         },
 

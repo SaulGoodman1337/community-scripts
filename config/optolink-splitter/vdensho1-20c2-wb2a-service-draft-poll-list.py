@@ -510,6 +510,59 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  Full fast burner-cycle capture (2026-09-22 18:02:59..18:09:12):
+    The capture started during the end of a DHW phase:
+      18:04:59.580  A395 Speicher-CFDM bit cleared
+      18:05:03.965  diverter 0x0A10 changed WW -> HEIZEN
+      delta = 4.385 s
+
+    Heating burner start:
+      18:05:59.226  55D3 bytes6..7 = 0x0820 -> 2080 rpm, flame still off
+      18:06:08.496  bytes6..7 = 0x0F50 -> 3920 rpm, byte5=0x09
+      18:06:08.942  flame bit set; bytes6..7 = 0x0B60 -> 2912 rpm
+      18:06:10.089  A305 first nonzero = 66%; A395 becomes 00 00 50 00
+      18:06:11.530  A38F becomes 0x8201 -> 65%; CFDM state EIN
+    Thus the observed ordering is fan pre-purge -> short speed increase ->
+    flame -> A305 modulation -> A38F CFDM power/state. Requests are sequential,
+    so quoted sub-second deltas are upper-resolution observations, not atomic
+    controller event times.
+
+    Controlled modulation:
+      A305 ramped from 66% down to 33%.
+      A38F followed from 65% down to 31.5%.
+      55D3 byte0 closely followed the same trend: approx. 0x45=69 at the high
+      end and 0x26=38 at A305=33%.
+    Historical OpenV/vcontrold configurations also treat 55D3 byte0 as a fine
+    burner-power/modulation-style value. On this appliance it is already
+    nonzero during pre-purge (0x09 -> 0x46 before flame), so it must not be
+    interpreted as delivered thermal power. Promote only as a diagnostic
+    "GFA Leistungs-/Ansteuerwert fein".
+
+    Shutdown:
+      18:07:09.674  BLR setpoint A307 changes 50 -> 38 C, flame still on
+      18:07:10.544  A305 changes 33 -> 0%; flame still on, fan 2914 -> 2418
+      18:07:11.628  A38F -> 0/off, flame clears, fan -> 0
+      18:07:12.553  55D3 byte0 decays 0x26 -> 0x0A
+      18:07:15.365  55D3 byte0 reaches 0
+      18:08:09.752  A395 00 00 50 00 finally returns to 00 00 00 00
+    So the undocumented A395 byte2 bits 0x10/0x40 persist for about 58 s after
+    flame-off; do not map them without source documentation.
+
+    A393 nvoSupplyTemp_CFDM is hardware-confirmed:
+      across the capture it tracks 0x0810 boiler temperature extremely closely.
+      Mean A393-0x0810 difference = +0.04 K; mean absolute difference = 0.14 K;
+      largest observed absolute delta = 1.2 K. The reads are sequential and
+      A393/0x0810 change during the cycle, so small differences are expected.
+
+    55D3 unknown bytes:
+      byte1 has a very strong inverse relationship to boiler temperature
+      (idle Pearson r about -0.998). A simple empirical transform
+      T ~= 102.4 - 0.4*byte1 is close to the measured water temperature, but
+      no VDensHO1/Vitosoft field definition tying byte1 to a temperature was
+      found. Keep byte1 raw/unexposed.
+      byte2 stayed almost entirely 0x9F (and 0xA0 at parts of WW/fully cooled
+      state). Its meaning remains unknown. Do not label it.
+
   GFA error/event archive hardware verification:
     Slots 01..20 at 0x7590..0x763B all accept 9-byte reads.
     Layout is code byte + 8-byte BCD DateTime (YYYY MM DD weekday HH MM SS).
@@ -820,9 +873,11 @@ poll_items = [
 
     # Internal burner/controller chain, hardware verified live.
     ('NORMAL', 'blr_kesselsolltemperatur_effektiv', 0xA307, 2, 0.01, False),  # 9c18=63.0 C, d80e=38.0 C
+    ('NORMAL', 'cfdm_vorlauftemperatur', 0xA393, 2, 0.01, False),  # full-cycle HW verified vs 0x0810
     ('NORMAL', 'cfdm_kesselsolltemperatur_effektiv', 0xA391, 2, 0.01, False),  # same values as A307
     ('NORMAL', 'rkr_kesselsolltemperatur', 0x55E0, 17, 'b:10:11', 0.1, False),  # 7602=63.0 C, 7c01=38.0 C
     ('NORMAL', 'cfdm_leistungswert', 0xA38F, 2, 'b:0:0', 0.5, False),  # 3f=31.5%, 42=33%
+    ('NORMAL', 'gfa_leistungs_ansteuerwert_fein', 0x55D3, 9, 'b:0:0', 1, False),  # HW: 69@A305=66%, 38@33%; nonzero pre-purge
     ('NORMAL', 'cfdm_leistungsstatus', 0xA38F, 2, 'b:1:1:0x01', 'bool', False),  # 1 firing, 0 off
 
     # Separate GFA error/event archive. Code byte + BCD timestamp; no code map.
