@@ -77,7 +77,11 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     controller/control-panel firmware can require one complete local Party
     activation/confirmation after its internal state has been reset.  Home
     Assistant should send the exact raw commands w;0x2303;1;0 / w;0x2303;1;1
-    and remain non-optimistic with 0x2303 as authoritative state.
+    and remain non-optimistic with 0x2303 as authoritative state.  A direct
+    snapshot immediately after a dashboard write proved that the controller
+    state changes promptly; the observed ~30 s lag was state feedback waiting
+    for the normal poll cycle.  Production therefore forces staged 0x2303
+    read-backs at 0.25/1.0/2.5/5.0 s after those exact raw Party writes.
 
   Party room setpoint P300 write test on the real appliance:
     initial 0x2308 = 0x15 = 21 C
