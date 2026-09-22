@@ -61,8 +61,15 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     write 0x2303 len1 value 1 -> ACK, read-back 0x01
       0x2308 remains 21 C
       0x2500 switches to normal operation and 21.0 C effective room setpoint
-    Result: 0x2303 is hardware-verified READ/WRITE for party mode on this
-    exact 20C2 / software-index 0x03 controller.
+    Result at that time: 0x2303 could be switched off/on remotely after
+    party mode had first been enabled at the physical control panel.
+    Follow-up test on 2026-09-22 from a normal remote-off state:
+      write 0x2303 len1 value 1 -> transport ACK (1;0x2303;1)
+      immediate explicit read-back -> 0x00
+    Therefore the write telegram itself is valid, but remote activation is
+    conditional or the controller immediately rejects/resets it in at least
+    some operating states. Do not treat an ACK alone as proof that party mode
+    became active. Current state must always be confirmed by read-back.
 
   Party room setpoint P300 write test on the real appliance:
     initial 0x2308 = 0x15 = 21 C
@@ -595,11 +602,13 @@ poll_items = [
 #       remotely via 0x2303;
 #     - our real appliance has now been manually put into party mode and
 #       reports 0x2303=1 plus the expected 21 C effective room setpoint.
-#   Hardware verification on this exact 20C2 / SW index 0x03 is complete:
-#     write 0 -> ACK + read-back 0 + state block returns to reduced/18 C
-#     write 1 -> ACK + read-back 1 + state block switches to normal/21 C
-#   Therefore 0x2303 len1 values 0/1 is approved as the party-mode R/W datapoint
-#   for this appliance and can be exposed as a Home Assistant switch.
+#   Earlier hardware verification on this exact 20C2 / SW index 0x03:
+#     after manual party activation, write 0 -> ACK + read-back 0 and
+#     write 1 -> ACK + read-back 1 with matching effective setpoint changes.
+#   Follow-up 2026-09-22: a remote write 1 from party-off returned protocol ACK
+#   but immediate read-back stayed 0. Remote activation is therefore conditional
+#   on controller state and must be treated as confirmed only after read-back.
+#   The HA switch may expose the command, but must remain non-optimistic.
 #   Later generations also use 0x2330, but the exact VDensHO1 Vitosoft-derived
 #   catalog contains no 0x2330 datapoint, so do not substitute 0x2330 here.
 #
