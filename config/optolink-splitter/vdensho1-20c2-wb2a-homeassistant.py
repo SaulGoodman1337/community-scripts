@@ -23,7 +23,8 @@ Policy used here:
   * do not expose economy mode as a switch: 0x2302 write ACKs but is ignored.
 
 Write verification on this exact appliance:
-  0x2303 party mode: R/W 0/1
+  0x2303 party mode: R/W 0/1; raw writes w;0x2303;1;0/1 verified stable
+    after one full local Party activation/confirmation on the control panel
   0x2306 normal room target: R/W
   0x2307 reduced room target: R/W
   0x2308 party room target: R/W
@@ -216,12 +217,23 @@ poll_list = {
         {
             "domain": "switch",
             "icon": "mdi:party-popper",
-            # Use the /set path so every write gets the common staged read-back
-            # handling. mqtt_util.py converts 1/0 to the same verified P300
-            # write command: write;0x2303;1;1 or write;0x2303;1;0.
-            "command_topic": "{mqtt_base}/heizkreis_m1_partybetrieb/set",
-            "payload_on": "1",
-            "payload_off": "0",
+            # Send the exact raw P300 commands that are verified on this
+            # VDensHO1 / 20C2 / SW03 controller.  Bypass the generic /set
+            # conversion layer so Home Assistant uses the same path as
+            # optolink-debug:
+            #   OFF -> w;0x2303;1;0
+            #   ON  -> w;0x2303;1;1
+            #
+            # Important controller quirk observed on 2026-09-22: after a
+            # controller/control-panel reset, the first remote Party activation
+            # can be rejected even though the write is ACKed.  After Party has
+            # once been fully activated/confirmed at the physical control panel,
+            # repeated raw OFF/ON writes remain stable and 0x2500[8] follows
+            # 0x01 <-> 0x02.  Keep the switch non-optimistic and use 0x2303 as
+            # the authoritative state.
+            "command_topic": "%mqtt_listen%",
+            "payload_on": "w;0x2303;1;1",
+            "payload_off": "w;0x2303;1;0",
             "state_on": "1",
             "state_off": "0",
             "optimistic": False,
