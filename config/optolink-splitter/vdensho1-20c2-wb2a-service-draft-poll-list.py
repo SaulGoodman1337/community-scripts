@@ -364,6 +364,19 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     capability. Use 10..60 C for the Home Assistant number entity unless the
     controller coding is intentionally changed.
 
+    Coding-plug block 0x1070 len16:
+      raw = 05 1D 14 18 41 32 3C 00 00 00 00 00 00 00 00 00
+      byte 0 = 5 C minimum boiler temperature (GWG70)
+      byte 1 = 29 percent burner minimum power (GWG71)
+      byte 2 = 20 K modulating-burner offset (GWG72)
+      byte 3 = 24 * 10 s = 240 s burner startup optimization (GWG73)
+      byte 4 = 65 percent boiler target power in storage-tank mode (GWG74)
+      byte 5 = 50 percent minimum internal-pump speed (GWG75)
+      byte 6 = 60 s internal-pump overrun (GWG76)
+    This block is read-only in the productive profile. The 29 percent GWG71
+    value is the appliance coding-plug burner minimum; GWG75 is explicitly the
+    minimum speed of the internal pump, not the burner blower.
+
   Outdoor-temperature comparison:
     0x0800 = 13.6 C, 0x5525 = 13.8 C, 0x5527 = 14.4 C, with 0x083A=0 (sensor OK).
     0x0800 is hardware-readable on this exact SW03 controller even though it is
@@ -412,6 +425,14 @@ poll_items = [
     ('ONCE', 'codierstecker_wwsoll_min', 0x1050, 16, 'b:11:11', 1, False),  # HW: 10 C
     ('ONCE', 'codierstecker_ww_max_leistung', 0x1050, 16, 'b:12:12', 1, False),  # HW: 65%
     ('ONCE', 'codierstecker_heizung_max_leistung', 0x1050, 16, 'b:13:13', 1, False),  # HW: 65%
+    ('ONCE', 'codierstecker_block_1070_raw', 0x1070, 16),  # HW verified raw: 051d141841323c000000000000000000
+    ('ONCE', 'codierstecker_kesseltemperatur_min', 0x1070, 16, 'b:0:0', 1, False),  # HW: GWG70=5 C
+    ('ONCE', 'codierstecker_brenner_min_leistung', 0x1070, 16, 'b:1:1', 1, False),  # HW: GWG71=29%
+    ('ONCE', 'codierstecker_brenner_offset', 0x1070, 16, 'b:2:2', 1, False),  # HW: GWG72=20 K
+    ('ONCE', 'codierstecker_brenner_anfahroptimierung', 0x1070, 16, 'b:3:3', 10, False),  # HW: GWG73=240 s
+    ('ONCE', 'codierstecker_kesselsollleistung_speicherbetrieb', 0x1070, 16, 'b:4:4', 1, False),  # HW: GWG74=65%
+    ('ONCE', 'codierstecker_interne_pumpe_min_drehzahl', 0x1070, 16, 'b:5:5', 1, False),  # HW: GWG75=50%
+    ('ONCE', 'codierstecker_interne_pumpe_nachlauf', 0x1070, 16, 'b:6:6', 1, False),  # HW: GWG76=60 s
     ('ONCE', 'hydraulische_weiche_vorhanden', 0x7752, 1, 1, False),  # HW verified: 0=nicht vorhanden
     ('ONCE', 'solar_typ', 0x7754, 1, 1, False),  # HW verified: 0=ohne
 

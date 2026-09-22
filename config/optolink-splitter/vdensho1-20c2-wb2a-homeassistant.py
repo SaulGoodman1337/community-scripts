@@ -725,6 +725,69 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
+        # Coding-plug limits / characteristics - read only
+        #
+        # Hardware-verified on this exact WB2A / VDensHO1 controller.
+        # These are appliance-specific values from the coding plug, not live
+        # operating setpoints. No write controls are exposed.
+        # -----------------------------------------------------------------
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_kesselsoll_max",          0x1050, 16, "b:8:8",   1, False),
+                ("ONCE", "codierstecker_kesselsoll_min",          0x1050, 16, "b:9:9",   1, False),
+                ("ONCE", "codierstecker_wwsoll_max",              0x1050, 16, "b:10:10", 1, False),
+                ("ONCE", "codierstecker_wwsoll_min",              0x1050, 16, "b:11:11", 1, False),
+                ("ONCE", "codierstecker_kesseltemperatur_min",    0x1070, 16, "b:0:0",   1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "%",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_ww_max_leistung",                  0x1050, 16, "b:12:12", 1, False),
+                ("ONCE", "codierstecker_heizung_max_leistung",             0x1050, 16, "b:13:13", 1, False),
+                ("ONCE", "codierstecker_brenner_min_leistung",             0x1070, 16, "b:1:1",   1, False),
+                ("ONCE", "codierstecker_kesselsollleistung_speicherbetrieb", 0x1070, 16, "b:4:4",   1, False),
+                ("ONCE", "codierstecker_interne_pumpe_min_drehzahl",       0x1070, 16, "b:5:5",   1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "K",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_brenner_offset", 0x1070, 16, "b:2:2", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "s",
+            "device_class": "duration",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_brenner_anfahroptimierung", 0x1070, 16, "b:3:3", 10, False),
+                ("ONCE", "codierstecker_interne_pumpe_nachlauf",    0x1070, 16, "b:6:6",  1, False),
+            ],
+        },
+
+        # -----------------------------------------------------------------
         # Identification/topology - diagnostics
         # -----------------------------------------------------------------
         {

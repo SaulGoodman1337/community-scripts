@@ -2216,6 +2216,53 @@ views:
         column_span: 2
         cards:
           - type: heading
+            heading: Codierstecker
+            heading_style: title
+            icon: mdi:chip
+          - type: markdown
+            content: >-
+              Gerätespezifische, nur gelesene Grenz- und Kennwerte aus dem
+              Kessel-Codierstecker. Das sind keine aktuellen Sollwerte.
+          - type: entities
+            title: Temperaturgrenzen
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_kesselsoll_max
+                name: Kessel-Sollbereich max
+              - entity: sensor.vitodens_200_wb2a_codierstecker_kesselsoll_min
+                name: Kessel-Sollbereich min
+              - entity: sensor.vitodens_200_wb2a_codierstecker_kesseltemperatur_min
+                name: Kessel-Mindesttemperatur
+              - entity: sensor.vitodens_200_wb2a_codierstecker_wwsoll_max
+                name: Warmwasser-Sollbereich max
+              - entity: sensor.vitodens_200_wb2a_codierstecker_wwsoll_min
+                name: Warmwasser-Sollbereich min
+          - type: entities
+            title: Brenner & Leistung
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_min_leistung
+                name: Brennerleistung min
+              - entity: sensor.vitodens_200_wb2a_codierstecker_heizung_max_leistung
+                name: Heizleistung max
+              - entity: sensor.vitodens_200_wb2a_codierstecker_ww_max_leistung
+                name: Warmwasserleistung max
+              - entity: sensor.vitodens_200_wb2a_codierstecker_kesselsollleistung_speicherbetrieb
+                name: Kesselsollleistung Speicherbetrieb
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_offset
+                name: Brenner-Offset
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_anfahroptimierung
+                name: Brenner-Anfahroptimierung
+          - type: entities
+            title: Interne Pumpe
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_interne_pumpe_min_drehzahl
+                name: Mindestdrehzahl
+              - entity: sensor.vitodens_200_wb2a_codierstecker_interne_pumpe_nachlauf
+                name: Nachlaufzeit
+
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
             heading: Sensorstatus
             heading_style: title
             icon: mdi:thermometer-alert
