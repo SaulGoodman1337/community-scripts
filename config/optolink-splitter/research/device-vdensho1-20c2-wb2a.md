@@ -519,3 +519,44 @@ controller. The exact meaning of `00ff` is not yet decoded.
 
 For high-resolution follow-up logging, `0xA380` no longer needs to be sampled
 continuously unless a different operating mode is being investigated.
+
+
+## Regulator-delay interpretation after CFDM correlation
+
+The CFDM correlation changes the interpretation of the startup sequence:
+
+- `0x55DC` already contains the approximately 1 %/s downward ramp.
+- `0xA38F` becomes valid only after stable flame and then follows `0x55DC`
+  very closely.
+- Therefore the ramp is generated upstream in the controller/GFA modulation
+  command path; it is not primarily caused by a slow downstream actuator.
+
+This is consistent with the generic combustion-controller concept called
+`Reglerverzögerung nach Brennerstart`: after positive flame detection the
+controller holds a defined startup power for a fixed time before normal
+modulation is released.
+
+The measured WB2A plateau is approximately 12 seconds after flame
+establishment.
+
+Important correction: `GWG73 / Anfahroptimierung modulierender Brenner` is
+not this 12-second delay. A VDensHO1-specific catalog decodes GWG73 as
+`raw * 10 s`; with raw 24 this coding plug therefore contains 240 s (4 min)
+of startup optimization. Viessmann documentation for other controller
+families also treats startup optimization and regulation delay as separate
+parameters.
+
+### GFA 0x0083 object probe
+
+In the LGM29/GWG Vitosoft family both:
+
+- `Brennermindestlaufzeit`
+- `Reglerverzögerung nach Brennerstart`
+
+are associated with the same base `0x0083` object.
+
+A one-byte read on this WB2A returned retcode 3, but this does not yet prove
+that the object is absent: the object may require a larger structure length.
+The logger therefore probes `0x0083` read-only with lengths 1, 2, 4, 8 and
+16 on startup. If all lengths fail, the LGM29 map can be rejected more
+confidently for this GFA generation.
