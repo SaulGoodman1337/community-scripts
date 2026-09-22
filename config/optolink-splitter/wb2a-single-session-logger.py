@@ -6,8 +6,12 @@ Keeps exactly one TCP connection to optolink-splitter open and performs
 multiple read commands sequentially inside that session.
 
 Current fast set:
-  - 0x55D3 len 11: GFA/burner runtime block
-  - 0xA305 len 1: Vitosoft nvoBoilerState_BLR_value / Modulationsgrad
+  - 0x55D3 len 14: GFA/burner runtime block including 0x55DC, 0x55DD, 0x55E0
+  - 0x555A len 4: effective boiler setpoint block including 0x555C
+
+The previously logged 0xA305 is omitted from the fast loop because hardware
+testing proved that scaled A305 tracks 0x55DC essentially 1:1. Keeping only
+two Optolink reads per cycle preserves time resolution.
 
 No writes are performed.
 """
@@ -140,7 +144,7 @@ def main():
     print("==============================")
     print(f"Splitter: {args.host}:{args.port}")
     print(f"CSV:      {logfile}")
-    print("Reads:    0x55D3/11 + 0xA305/1")
+    print("Reads:    0x55D3/14 + 0x555A/4")
     print("Writes:   none")
     print("Ctrl-C beendet")
     print()
@@ -189,18 +193,20 @@ def main():
         "sample_dt_ms",
         "cycle_ms",
         "read_55d3_ms",
-        "read_a305_ms",
-        "a305_offset_ms",
+        "read_555a_ms",
+        "rkr_offset_ms",
         "raw_55d3",
-        "value_55dc",
+        "modulation_55dc_pct",
         "status_55dd",
         "flame",
         "lockout",
         "gfa_word_6_7",
+        "burner_power_55e0_raw",
         "seconds_since_flame",
-        "raw_a305",
-        "a305_raw",
-        "a305_pct",
+        "raw_555a",
+        "boiler_setpoint_555a_c",
+        "effective_power_555c_raw",
+        "raw_555d",
     ]
 
     last_sample_mid = None
@@ -216,10 +222,14 @@ def main():
                 cycle_start = time.monotonic()
 
                 # ------------------------------------------------------
-                # Read 1: GFA runtime block
+                # Read 1: extended GFA/runtime block.
+                #
+                # byte 9  = 0x55DC live modulation percentage
+                # byte 10 = 0x55DD status
+                # byte 13 = 0x55E0 Vitosoft RKR_04PIst_Kessel / Brennerleistung
                 # ------------------------------------------------------
                 q1_start = time.monotonic()
-                payload55, _ = client.request("read;0x55D3;11")
+                payload55, _ = client.request("read;0x55D3;14")
                 q1_end = time.monotonic()
 
                 try:
@@ -227,29 +237,20 @@ def main():
                 except ValueError:
                     raise RuntimeError(f"invalid 0x55D3 hex payload: {payload55!r}")
 
-                if len(raw55) < 11:
+                if len(raw55) < 14:
                     raise RuntimeError(
-                        f"0x55D3 returned {len(raw55)} bytes, expected at least 11: {payload55}"
+                        f"0x55D3 returned {len(raw55)} bytes, expected at least 14: {payload55}"
                     )
 
                 sample_mid = (q1_start + q1_end) / 2.0
 
-                # Hardware-verified in this WB2A project:
-                # byte 5 bit 0x20 = flame
-                # byte 5 bit 0x40 = GFA lockout
                 flame = bool(raw55[5] & 0x20)
                 lockout = bool(raw55[5] & 0x40)
-
-                # bytes 6..7 are an unresolved GFA runtime word. An earlier
-                # hypothesis called this blower rpm, but high-resolution logs
-                # show it remains ~2914 while modulation falls 66 -> 33 %.
                 gfa_word_6_7 = (raw55[6] << 8) | raw55[7]
 
-                # byte 9 / 0x55DC is hardware-correlated 1:1 with the scaled
-                # A305 live Modulationsgrad (%). byte 10 / 0x55DD is a status
-                # byte with observed 01/09/29/21 patterns.
-                value55dc = raw55[9]
+                modulation_55dc = raw55[9]
                 status55dd = raw55[10]
+                burner_power_55e0 = raw55[13]
 
                 if flame and not previous_flame:
                     flame_start = sample_mid
@@ -268,28 +269,34 @@ def main():
                     flame_age = sample_mid - flame_start
 
                 # ------------------------------------------------------
-                # Read 2: official Vitosoft Modulationsgrad
-                # Same TCP session; no second client connection.
+                # Read 2: RKR effective setpoint structure.
+                #
+                # bytes 0..1 = 0x555A effective boiler target temperature
+                #              little-endian, 0.1 degC
+                # byte 2      = 0x555C Vitosoft RKR_12PSolleff_Kessel /
+                #              effective boiler power setpoint
+                # byte 3      = 0x555D, currently kept raw/unresolved
                 # ------------------------------------------------------
                 q2_start = time.monotonic()
-                payload305, _ = client.request("read;0xA305;1")
+                payload_rkr, _ = client.request("read;0x555A;4")
                 q2_end = time.monotonic()
 
                 try:
-                    raw305 = bytes.fromhex(payload305)
+                    raw_rkr = bytes.fromhex(payload_rkr)
                 except ValueError:
-                    raise RuntimeError(f"invalid 0xA305 hex payload: {payload305!r}")
+                    raise RuntimeError(f"invalid 0x555A hex payload: {payload_rkr!r}")
 
-                if len(raw305) < 1:
-                    raise RuntimeError("0xA305 returned no data")
+                if len(raw_rkr) < 4:
+                    raise RuntimeError(
+                        f"0x555A returned {len(raw_rkr)} bytes, expected at least 4: {payload_rkr}"
+                    )
 
-                a305_raw = raw305[0]
+                boiler_setpoint_c = int.from_bytes(raw_rkr[0:2], "little") / 10.0
+                effective_power_555c = raw_rkr[2]
+                raw_555d = raw_rkr[3]
 
-                # Existing hardware verification in this project uses *0.5.
-                a305_pct = a305_raw * 0.5
-
-                a305_mid = (q2_start + q2_end) / 2.0
-                a305_offset_ms = (a305_mid - sample_mid) * 1000.0
+                rkr_mid = (q2_start + q2_end) / 2.0
+                rkr_offset_ms = (rkr_mid - sample_mid) * 1000.0
 
                 cycle_end = time.monotonic()
 
@@ -304,18 +311,20 @@ def main():
                     "sample_dt_ms": "" if sample_dt_ms is None else f"{sample_dt_ms:.0f}",
                     "cycle_ms": f"{(cycle_end - cycle_start) * 1000.0:.0f}",
                     "read_55d3_ms": f"{(q1_end - q1_start) * 1000.0:.0f}",
-                    "read_a305_ms": f"{(q2_end - q2_start) * 1000.0:.0f}",
-                    "a305_offset_ms": f"{a305_offset_ms:.0f}",
+                    "read_555a_ms": f"{(q2_end - q2_start) * 1000.0:.0f}",
+                    "rkr_offset_ms": f"{rkr_offset_ms:.0f}",
                     "raw_55d3": raw55.hex(),
-                    "value_55dc": value55dc,
+                    "modulation_55dc_pct": modulation_55dc,
                     "status_55dd": f"{status55dd:02x}",
                     "flame": int(flame),
                     "lockout": int(lockout),
                     "gfa_word_6_7": gfa_word_6_7,
+                    "burner_power_55e0_raw": burner_power_55e0,
                     "seconds_since_flame": "" if flame_age is None else f"{flame_age:.3f}",
-                    "raw_a305": raw305.hex(),
-                    "a305_raw": a305_raw,
-                    "a305_pct": f"{a305_pct:.1f}",
+                    "raw_555a": raw_rkr.hex(),
+                    "boiler_setpoint_555a_c": f"{boiler_setpoint_c:.1f}",
+                    "effective_power_555c_raw": effective_power_555c,
+                    "raw_555d": raw_555d,
                 }
                 writer.writerow(row)
 
@@ -324,14 +333,15 @@ def main():
 
                 print(
                     f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]}  "
-                    f"55DC={value55dc:3d}  "
-                    f"A305={a305_pct:5.1f}% (raw {a305_raw:3d})  "
-                    f"GFA67={gfa_word_6_7:4d}  "
+                    f"MOD={modulation_55dc:3d}%  "
+                    f"PSET555C={effective_power_555c:3d}  "
+                    f"PIST55E0={burner_power_55e0:3d}  "
+                    f"KTSOLL={boiler_setpoint_c:5.1f}C  "
                     f"FL={int(flame)}  "
                     f"55DD=0x{status55dd:02X}  "
                     f"T={age_txt}s  "
                     f"dt={dt_txt}ms  "
-                    f"A305off={a305_offset_ms:+.0f}ms"
+                    f"RKRoff={rkr_offset_ms:+.0f}ms"
                     f"{event}"
                 )
 
@@ -350,7 +360,6 @@ def main():
             return 1
         finally:
             try:
-                # Politely tell the splitter to close this one TCP session.
                 if client.sock is not None:
                     client.sock.sendall(b"exit\n")
             except OSError:
