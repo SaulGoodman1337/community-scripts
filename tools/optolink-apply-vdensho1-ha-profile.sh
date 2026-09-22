@@ -135,6 +135,42 @@ PY
 
 python3 -m py_compile "$publisher"
 
+# Use staged read-backs for all /set writes. Some VDensHO1 state changes are
+# visible immediately while others settle a few seconds later. A single
+# read-back at 1 s can therefore report a transient value. Re-poll the written
+# datapoint several times after the write; this only adds bus traffic when the
+# user actually changes a writable control.
+mqtt_module="$APP_DIR/mqtt_util.py"
+python3 - "$mqtt_module" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+src = path.read_text()
+marker = '# community-scripts: staged writable readback'
+
+if marker not in src:
+    old = '''        # Ensure the affected datapoint will be refreshed quite soon
+        force_delayed(list_index, settings.readback_delay_set)
+'''
+    new = '''        # community-scripts: staged writable readback
+        # Some controller states briefly expose the requested value, then
+        # settle, or apply only after several seconds. Publish the real state
+        # as soon as possible and confirm it again after settling.
+        delays = (0.25, 1.0, 2.5, 5.0)
+        for delay in delays:
+            force_delayed(list_index, delay)
+'''
+    if old not in src:
+        raise SystemExit(
+            "Unsupported upstream mqtt_util.py layout; refusing to patch "
+            "writable state read-back handling."
+        )
+    path.write_text(src.replace(old, new, 1))
+PY
+
+python3 -m py_compile "$mqtt_module"
+
 echo "Validating Home Assistant discovery configuration..."
 # Validate the generated HA discovery configuration before touching the service.
 if ! timeout 30s runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
