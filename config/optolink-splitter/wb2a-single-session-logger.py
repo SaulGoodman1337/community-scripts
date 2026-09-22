@@ -161,6 +161,10 @@ def main():
         ("K1C_candidate_burner_start_delay", "read;0x571C;1"),
         ("GFA_candidate_regulation_delay", "read;0x0083;1"),
         ("coding_plug_0x1038_candidate_100", "read;0x1038;1"),
+        ("RKR_candidate_power_setpoint_direct", "read;0x555C;1"),
+        ("RKR_candidate_burner_power_direct", "read;0x55E0;1"),
+        ("RKR_candidate_555A_struct", "read;0x555A;4"),
+        ("GFA_candidate_55D3_extended", "read;0x55D3;14"),
     ]
 
     probe_path = logfile.with_suffix(".probes.txt")
