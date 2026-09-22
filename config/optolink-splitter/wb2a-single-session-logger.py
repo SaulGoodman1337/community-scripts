@@ -7,13 +7,11 @@ multiple read commands sequentially inside that session.
 
 Current fast set:
   - 0x55D3 len 11: burner/GFA runtime block including 0x55DC and 0x55DD
-  - 0xA380 len 2: raw CFDM production-command object
-  - 0xA38F len 2: raw CFDM power-state object
+  - 0xA38F len 2: raw CFDM active power-state object
 
-The previously tested 0x555C and 0x55E0 are intentionally not used as
-power values on VDensHO1/20C2: a full burner run showed them fixed at 0 and 1
-while verified modulation changed from 66 % to 33 %. 0xA305 is also omitted
-because scaled A305 tracks 0x55DC essentially 1:1.
+0xA380 was removed from the fast loop after a full start showed it fixed at
+00ff throughout this heating mode. The rejected cross-family LGM29/0x57xx
+candidate probes were also removed after repeated read-only tests.
 
 No writes are performed.
 """
@@ -146,7 +144,7 @@ def main():
     print("==============================")
     print(f"Splitter: {args.host}:{args.port}")
     print(f"CSV:      {logfile}")
-    print("Reads:    0x55D3/11 + 0xA380/2 + 0xA38F/2")
+    print("Reads:    0x55D3/11 + 0xA38F/2")
     print("Writes:   none")
     print("Ctrl-C beendet")
     print()
@@ -161,20 +159,10 @@ def main():
     # These address semantics are NOT proven for VDensHO1/20C2; the values are
     # captured only to test correlations found in other Viessmann/GWG families.
     probe_commands = [
-        ("K15_candidate_actuator_runtime", "read;0x5715;1"),
-        ("K1A_candidate_start_optimization", "read;0x571A;1"),
-        ("K1B_candidate_regulation_delay", "read;0x571B;1"),
-        ("K1C_candidate_burner_start_delay", "read;0x571C;1"),
-        ("GFA_candidate_regulation_delay_len1", "read;0x0083;1"),
-        ("GFA_candidate_regulation_delay_len2", "read;0x0083;2"),
-        ("GFA_candidate_regulation_delay_len4", "read;0x0083;4"),
-        ("GFA_candidate_regulation_delay_len8", "read;0x0083;8"),
-        ("GFA_candidate_regulation_delay_len16", "read;0x0083;16"),
-        ("coding_plug_0x1038_candidate_100", "read;0x1038;1"),
-        ("RKR_candidate_power_setpoint_direct", "read;0x555C;1"),
-        ("RKR_candidate_burner_power_direct", "read;0x55E0;1"),
-        ("RKR_candidate_555A_struct", "read;0x555A;4"),
-        ("GFA_candidate_55D3_extended", "read;0x55D3;14"),
+        ("GFA_chip_id", "read;0x7650;6"),
+        ("coding_card_revision", "read;0x7656;4"),
+        ("coding_plug_part_number", "read;0x1010;7"),
+        ("coding_plug_runtime_block", "read;0x1070;16"),
     ]
 
     probe_path = logfile.with_suffix(".probes.txt")
@@ -199,24 +187,27 @@ def main():
         "sample_dt_ms",
         "cycle_ms",
         "read_55d3_ms",
-        "read_a380_ms",
         "read_a38f_ms",
-        "a380_offset_ms",
         "a38f_offset_ms",
         "raw_55d3",
+        "gfa_b0",
+        "gfa_b1",
+        "gfa_b2",
+        "gfa_b3",
+        "gfa_b4",
+        "gfa_b5",
+        "gfa_b6",
+        "gfa_b7",
+        "gfa_b8",
         "modulation_55dc_pct",
         "status_55dd",
         "flame",
         "lockout",
-        "gfa_word_6_7",
         "seconds_since_flame",
-        "raw_a380",
-        "a380_b0",
-        "a380_b1",
         "raw_a38f",
         "a38f_b0",
         "a38f_b1",
-        "a38f_b0_half",
+        "a38f_value_half",
     ]
 
     last_sample_mid = None
@@ -231,11 +222,6 @@ def main():
             while True:
                 cycle_start = time.monotonic()
 
-                # ------------------------------------------------------
-                # Read 1: burner/GFA runtime block.
-                # byte 9 / 0x55DC = hardware-correlated live modulation %
-                # byte 10 / 0x55DD = burner/GFA status byte
-                # ------------------------------------------------------
                 q1_start = time.monotonic()
                 payload55, _ = client.request("read;0x55D3;11")
                 q1_end = time.monotonic()
@@ -251,10 +237,8 @@ def main():
                     )
 
                 sample_mid = (q1_start + q1_end) / 2.0
-
                 flame = bool(raw55[5] & 0x20)
                 lockout = bool(raw55[5] & 0x40)
-                gfa_word_6_7 = (raw55[6] << 8) | raw55[7]
                 modulation_55dc = raw55[9]
                 status55dd = raw55[10]
 
@@ -270,52 +254,22 @@ def main():
                 previous_flame = flame
                 flame_age = None if flame_start is None else sample_mid - flame_start
 
-                # ------------------------------------------------------
-                # Read 2: raw CFDM production-command object.
-                # Vitosoft cross-family name:
-                # nviProdCmd_CFDM_state/value at 0xA380.
-                # Encoding on this exact 20C2 is intentionally left raw.
-                # ------------------------------------------------------
                 q2_start = time.monotonic()
-                payload380, _ = client.request("read;0xA380;2")
-                q2_end = time.monotonic()
-
-                try:
-                    raw380 = bytes.fromhex(payload380)
-                except ValueError:
-                    raise RuntimeError(f"invalid 0xA380 hex payload: {payload380!r}")
-                if len(raw380) < 2:
-                    raise RuntimeError(
-                        f"0xA380 returned {len(raw380)} bytes, expected at least 2: {payload380}"
-                    )
-
-                # ------------------------------------------------------
-                # Read 3: raw CFDM power-state object.
-                # Vitosoft cross-family name:
-                # nvoPWRState_CFDM_state/value at 0xA38F.
-                #
-                # Earlier hardware logs show e.g. A305=0x84 (66.0 %) while
-                # A38F=0x82 0x01. This makes byte0 * 0.5 a useful correlation
-                # candidate, but it is NOT yet a proven decode.
-                # ------------------------------------------------------
-                q3_start = time.monotonic()
                 payload38f, _ = client.request("read;0xA38F;2")
-                q3_end = time.monotonic()
+                q2_end = time.monotonic()
 
                 try:
                     raw38f = bytes.fromhex(payload38f)
                 except ValueError:
                     raise RuntimeError(f"invalid 0xA38F hex payload: {payload38f!r}")
+
                 if len(raw38f) < 2:
                     raise RuntimeError(
                         f"0xA38F returned {len(raw38f)} bytes, expected at least 2: {payload38f}"
                     )
 
-                a380_mid = (q2_start + q2_end) / 2.0
-                a38f_mid = (q3_start + q3_end) / 2.0
-                a380_offset_ms = (a380_mid - sample_mid) * 1000.0
+                a38f_mid = (q2_start + q2_end) / 2.0
                 a38f_offset_ms = (a38f_mid - sample_mid) * 1000.0
-
                 cycle_end = time.monotonic()
 
                 if last_sample_mid is None:
@@ -329,24 +283,27 @@ def main():
                     "sample_dt_ms": "" if sample_dt_ms is None else f"{sample_dt_ms:.0f}",
                     "cycle_ms": f"{(cycle_end - cycle_start) * 1000.0:.0f}",
                     "read_55d3_ms": f"{(q1_end - q1_start) * 1000.0:.0f}",
-                    "read_a380_ms": f"{(q2_end - q2_start) * 1000.0:.0f}",
-                    "read_a38f_ms": f"{(q3_end - q3_start) * 1000.0:.0f}",
-                    "a380_offset_ms": f"{a380_offset_ms:.0f}",
+                    "read_a38f_ms": f"{(q2_end - q2_start) * 1000.0:.0f}",
                     "a38f_offset_ms": f"{a38f_offset_ms:.0f}",
                     "raw_55d3": raw55.hex(),
+                    "gfa_b0": raw55[0],
+                    "gfa_b1": raw55[1],
+                    "gfa_b2": raw55[2],
+                    "gfa_b3": raw55[3],
+                    "gfa_b4": raw55[4],
+                    "gfa_b5": raw55[5],
+                    "gfa_b6": raw55[6],
+                    "gfa_b7": raw55[7],
+                    "gfa_b8": raw55[8],
                     "modulation_55dc_pct": modulation_55dc,
                     "status_55dd": f"{status55dd:02x}",
                     "flame": int(flame),
                     "lockout": int(lockout),
-                    "gfa_word_6_7": gfa_word_6_7,
                     "seconds_since_flame": "" if flame_age is None else f"{flame_age:.3f}",
-                    "raw_a380": raw380.hex(),
-                    "a380_b0": raw380[0],
-                    "a380_b1": raw380[1],
                     "raw_a38f": raw38f.hex(),
                     "a38f_b0": raw38f[0],
                     "a38f_b1": raw38f[1],
-                    "a38f_b0_half": f"{raw38f[0] * 0.5:.1f}",
+                    "a38f_value_half": f"{raw38f[0] * 0.5:.1f}",
                 }
                 writer.writerow(row)
 
@@ -356,14 +313,13 @@ def main():
                 print(
                     f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]}  "
                     f"MOD={modulation_55dc:3d}%  "
-                    f"A380={raw380.hex()}  "
                     f"A38F={raw38f.hex()} "
                     f"(b0/2={raw38f[0] * 0.5:5.1f})  "
+                    f"GFA0-8={raw55[:9].hex()}  "
                     f"FL={int(flame)}  "
                     f"55DD=0x{status55dd:02X}  "
                     f"T={age_txt}s  "
                     f"dt={dt_txt}ms  "
-                    f"off380={a380_offset_ms:+.0f}ms "
                     f"off38F={a38f_offset_ms:+.0f}ms"
                     f"{event}"
                 )
