@@ -230,7 +230,9 @@ poll_list = {
             # once been fully activated/confirmed at the physical control panel,
             # repeated raw OFF/ON writes remain stable and 0x2500[8] follows
             # 0x01 <-> 0x02.  Keep the switch non-optimistic and use 0x2303 as
-            # the authoritative state.
+            # the authoritative state.  The profile apply helper patches
+            # mqtt_util.py to force staged 0x2303 read-backs after these exact
+            # raw commands, avoiding the normal full-poll-cycle state latency.
             "command_topic": "%mqtt_listen%",
             "payload_on": "w;0x2303;1;1",
             "payload_off": "w;0x2303;1;0",
