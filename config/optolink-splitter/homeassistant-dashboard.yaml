@@ -1418,27 +1418,54 @@ views:
                   content:
                     type: markdown
                     content: |
-                      **Funktion:** A5 ist die schnelle, außentemperaturabhängige Heizkreispumpenlogik.
+                      ## Was macht A5?
                       
-                      Sie vergleicht die **aktuelle Außentemperatur** mit der jeweils wirksamen **Raum-Solltemperatur**. Wird die daraus berechnete Grenze überschritten, schaltet die Heizkreispumpe ab.
+                      A5 ist **kein Raumthermostat**. Die Vitodens braucht dafür keinen Raumtemperaturfühler und vergleicht auch nicht die gemessene Raumtemperatur.
                       
-                      **Bereich:** 0–15
+                      Stattdessen benutzt A5 die **eingestellte Raum-Solltemperatur als Rechengröße** und bildet daraus eine Außentemperaturgrenze für die Heizkreispumpe.
                       
+                      **Formel für die Abschaltgrenze:**
+                      
+                      `Außen-Grenze = Raum-Soll + (6 − A5) K`
+                      
+                      Wird die Außentemperatur größer als diese Grenze, schaltet die Vitodens die **Heizkreispumpe aus**.
+                      
+                      **Bereich:** 0–15  
                       **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung') }}
                       
-                      {% set v = states('number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung') | int(-1) %}{% if v == 0 %}**Aktuelle Bedeutung:** A5 ist deaktiviert.{% elif v >= 1 and v <= 15 %}{% set o = 6 - v %}**Aktuelle Bedeutung:** Pumpe AUS, wenn die aktuelle Außentemperatur größer ist als Raum-Soll {% if o > 0 %}+ {{ o }} K{% elif o == 0 %}{% else %}− {{ -o }} K{% endif %}.{% endif %}
+                      {% set v = states('number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung') | int(-1) %}{% if v == 0 %}**Aktuelle Bedeutung:** A5 ist deaktiviert.{% elif v >= 1 and v <= 15 %}{% set o = 6 - v %}**Aktuelle Bedeutung:** Heizkreispumpe AUS bei Außen > Raum-Soll {% if o > 0 %}+ {{ o }} K{% elif o == 0 %}{% else %}− {{ -o }} K{% endif %}.{% endif %}
                       
-                      **Beispiele:**
+                      **Beispiel mit A5 = 5:**
                       
-                      - A5 = 1 → AUS bei Außen > Raum-Soll + 5 K
-                      - A5 = 5 → AUS bei Außen > Raum-Soll + 1 K
-                      - A5 = 6 → AUS bei Außen > Raum-Soll
-                      - A5 = 7 → AUS bei Außen > Raum-Soll − 1 K
-                      - A5 = 15 → AUS bei Außen > Raum-Soll − 9 K
+                      - Raum-Soll 20 °C → Pumpe AUS bei Außen > 21 °C
+                      - Raum-Soll 18 °C → Pumpe AUS bei Außen > 19 °C
+                      - Raum-Soll 16 °C → Pumpe AUS bei Außen > 17 °C
                       
-                      **Zusammenspiel mit A6:** A5 und A6 sind zwei getrennte Sparbedingungen, die parallel wirken. A5 ist **relativ zur Raum-Solltemperatur** und nutzt die **aktuelle Außentemperatur**. Dadurch reagiert A5 vergleichsweise schnell auf Wetteränderungen.
+                      Genau deshalb hängt A5 an der Raum-Solltemperatur: Beim Wechsel von Normal- auf reduzierten Betrieb verschiebt sich auch die Pumpen-Abschaltgrenze.
                       
-                      A6 dagegen ist eine **absolute Heizgrenze** auf Basis der **gedämpften Außentemperatur**. Wenn entweder A5 oder A6 seine Abschaltbedingung erreicht, kann der Heizbetrieb beendet werden. A5 wirkt dabei primär über die Heizkreispumpe; A6 schaltet ausdrücklich Heizkreispumpe und Brenner ab.
+                      ## A5 und A6 sind zwei verschiedene Abschaltungen
+                      
+                      **A5 = relative Pumpenabschaltung**
+                      
+                      - Grenze hängt von der gerade wirksamen Raum-Solltemperatur ab
+                      - verwendet die Außentemperatur
+                      - schaltet laut Codierung die **Heizkreispumpe** aus
+                      - verändert nicht den A6-Wert
+                      
+                      **A6 = absolute Heizgrenze**
+                      
+                      - fester Temperaturwert, unabhängig vom Raum-Soll
+                      - verwendet ausdrücklich die **gedämpfte Außentemperatur**
+                      - schaltet **Brenner und Heizkreispumpe** aus
+                      
+                      Beide Funktionen laufen **parallel**. Es gibt keine Reihenfolge „erst A5, dann A6“.
+                      
+                      Beispiel: Raum-Soll 20 °C, A5 = 5, A6 = 18 °C:
+                      
+                      - A5: Pumpe AUS, sobald Außen > 21 °C
+                      - A6: Brenner + Pumpe AUS, sobald die gedämpfte Außentemperatur > 19 °C
+                      
+                      Je nach Wetterverlauf kann also A5 oder A6 zuerst greifen.
                       
                       Frostschutz über A3 kann die Sparabschaltung übersteuern.
                       
@@ -1475,31 +1502,29 @@ views:
                   content:
                     type: markdown
                     content: |
-                      **Funktion:** A6 ist die erweiterte Sparschaltung und wirkt als automatische Sommer-/Winter-Heizgrenze.
+                      ## Was macht A6?
                       
-                      Im Unterschied zu A5 wird A6 **nicht mit der Raum-Solltemperatur verglichen**. A6 ist ein fester Außentemperatur-Grenzwert.
+                      A6 ist die **absolute Sommer-/Winter-Heizgrenze** der Vitodens.
                       
-                      **Bereich:** 5–36 °C
+                      Anders als A5 hängt diese Grenze **nicht von der Raum-Solltemperatur** ab. A6 wird direkt als Temperaturgrenze eingestellt.
                       
+                      **Bereich:** 5–36 °C  
                       **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung') }} °C
                       
-                      {% set v = states('number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung') | int(-1) %}{% if v == 36 %}**Aktuelle Bedeutung:** Erweiterte Sparschaltung deaktiviert.{% elif v >= 5 and v <= 35 %}**Aktuelle Bedeutung:** Wenn die gedämpfte Außentemperatur ungefähr über {{ v + 1 }} °C steigt, werden Heizkreispumpe und Brenner abgeschaltet.{% endif %}
+                      {% set v = states('number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung') | int(-1) %}{% if v == 36 %}**Aktuelle Bedeutung:** Erweiterte Sparschaltung deaktiviert.{% elif v >= 5 and v <= 35 %}**Aktuelle Bedeutung:** Brenner und Heizkreispumpe AUS, wenn die gedämpfte Außentemperatur > {{ v + 1 }} °C ist.{% endif %}
                       
-                      A6 verwendet die **gedämpfte Außentemperatur**. Diese bildet die Außentemperatur zeitlich verzögert ab und soll die thermische Trägheit des Gebäudes berücksichtigen. Deshalb reagiert A6 deutlich langsamer auf kurzfristige Wetteränderungen als A5.
+                      Beispiel: A6 = 18 °C → Abschaltung bei gedämpfter Außentemperatur > 19 °C.
                       
-                      **Zusammenspiel mit A5:**
+                      **Warum gedämpfte Außentemperatur?**  
+                      Die Regelung reagiert damit nicht sofort auf einen einzelnen warmen Nachmittag. Die gedämpfte Außentemperatur berücksichtigt die thermische Trägheit eines durchschnittlichen Gebäudes.
                       
-                      - **A5:** schnelle Pumpensparfunktion; aktuelle Außentemperatur relativ zu Raum-Soll
-                      - **A6:** langsamere, absolute Heizgrenze; gedämpfte Außentemperatur
-                      - Beide Bedingungen wirken **parallel**, nicht nacheinander.
-                      - Es muss also nicht erst A5 und danach A6 greifen. Die zuerst erreichte Abschaltbedingung kann den Heizbetrieb beenden.
+                      ## Unterschied zu A5
                       
-                      **Beispiel:** Raum-Soll 20 °C, A5 = 5 und A6 = 18:
-                      
-                      - A5 kann bereits bei aktueller Außentemperatur > 21 °C die Heizkreispumpe abschalten.
-                      - A6 beendet den Heizbetrieb, wenn die gedämpfte Außentemperatur ungefähr über 19 °C liegt.
-                      
-                      Weil A6 gedämpft ist, können aktuelle und gedämpfte Außentemperatur deutlich voneinander abweichen.
+                      - **A5:** variable Grenze = Raum-Soll +/− Offset → nur Heizkreispumpe
+                      - **A6:** feste absolute Grenze → Brenner + Heizkreispumpe
+                      - **A5:** hängt vom Normal-/Reduziert-Sollwert ab
+                      - **A6:** unabhängig vom Raum-Soll
+                      - Beide Funktionen wirken unabhängig voneinander.
                       
                       Frostschutz über A3 kann die Sparabschaltung übersteuern.
                       
