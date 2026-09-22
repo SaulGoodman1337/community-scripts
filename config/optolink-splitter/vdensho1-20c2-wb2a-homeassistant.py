@@ -93,10 +93,10 @@ poll_list = {
                 ("FAST",   "kessel_solltemperatur_effektiv",     0x555A, 2, 0.1, True),
                 ("NORMAL", "abgastemperatur",                    0x0816, 2, 0.1, True),
                 ("FAST",   "warmwasser_temperatur",              0x0812, 2, 0.1, True),
-                ("NORMAL", "warmwasser_solltemperatur_aktuell",  0x6500, 2, 0.1, True),
+                ("FAST", "warmwasser_solltemperatur_aktuell",  0x6500, 2, 0.1, True),
                 ("FAST",   "heizkreis_m1_vorlauftemperatur",     0x2900, 2, 0.1, True),
                 ("FAST",   "heizkreis_m1_vorlaufsolltemperatur", 0x2544, 2, 0.1, True),
-                ("NORMAL", "heizkreis_m1_raumsolltemperatur_aktuell",
+                ("FAST", "heizkreis_m1_raumsolltemperatur_aktuell",
                                                                   0x2500, 22, "b:12:13", 0.1, True),
             ],
         },
@@ -216,12 +216,12 @@ poll_list = {
         {
             "domain": "switch",
             "icon": "mdi:party-popper",
-            # Send the exact hardware-verified P300 command as the MQTT payload.
-            # No command_template is used, so there is no ambiguity about what
-            # Home Assistant places on mqtt_listen.
-            "command_topic": "%mqtt_listen%",
-            "payload_on": "w;0x2303;1;1",
-            "payload_off": "w;0x2303;1;0",
+            # Use the /set path so every write gets the common staged read-back
+            # handling. mqtt_util.py converts 1/0 to the same verified P300
+            # write command: write;0x2303;1;1 or write;0x2303;1;0.
+            "command_topic": "{mqtt_base}/heizkreis_m1_partybetrieb/set",
+            "payload_on": "1",
+            "payload_off": "0",
             "state_on": "1",
             "state_off": "0",
             "optimistic": False,
@@ -544,13 +544,13 @@ poll_list = {
                 {
                     "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Abschaltbetrieb{% elif v == 1 %}Reduzierter Betrieb{% elif v == 2 %}Normalbetrieb{% elif v == 3 %}Dauernd Normal{% else %}Wert {{ v }}{% endif %}",
                     "poll": [
-                        ("NORMAL", "heizkreis_m1_betriebsart_aktuell", 0x2500, 22, "b:1:1", 1, False),
+                        ("FAST", "heizkreis_m1_betriebsart_aktuell", 0x2500, 22, "b:1:1", 1, False),
                     ],
                 },
                 {
                     "value_template": "{% set v = value | int(-1) %}{% if v == 2 %}Normal dauernd{% elif v == 3 %}Heizen + WW Schaltzeiten{% else %}Wert {{ v }}{% endif %}",
                     "poll": [
-                        ("NORMAL", "heizkreis_m1_betriebsprogramm_aktuell", 0x2301, 1, 1, False),
+                        ("FAST", "heizkreis_m1_betriebsprogramm_aktuell", 0x2301, 1, 1, False),
                     ],
                 },
                 {
