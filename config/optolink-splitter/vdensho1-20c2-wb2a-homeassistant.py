@@ -216,18 +216,17 @@ poll_list = {
         {
             "domain": "switch",
             "icon": "mdi:party-popper",
-            # Use the splitters raw command queue for this hardware-verified
-            # write. This bypasses the generic /set conversion layer and sends
-            # exactly the P300 write used during the successful appliance test.
+            # Send the exact hardware-verified P300 command as the MQTT payload.
+            # No command_template is used, so there is no ambiguity about what
+            # Home Assistant places on mqtt_listen.
             "command_topic": "%mqtt_listen%",
-            "payload_on": "1",
-            "payload_off": "0",
+            "payload_on": "w;0x2303;1;1",
+            "payload_off": "w;0x2303;1;0",
             "state_on": "1",
             "state_off": "0",
-            "command_template": "{% if value == '1' %}w;%DpAddr%;%Length%;1{% else %}w;%DpAddr%;%Length%;0{% endif %}",
             "optimistic": False,
             "poll": [
-                ("NORMAL", "heizkreis_m1_partybetrieb", 0x2303, 1, 1, False),
+                ("FAST", "heizkreis_m1_partybetrieb", 0x2303, 1, 1, False),
             ],
         },
 
@@ -248,9 +247,9 @@ poll_list = {
                     "min": 3,
                     "max": 37,
                     "poll": [
-                        ("NORMAL", "heizkreis_m1_raumsolltemperatur_normal",     0x2306, 1, 1, False),
-                        ("NORMAL", "heizkreis_m1_raumsolltemperatur_reduziert", 0x2307, 1, 1, False),
-                        ("NORMAL", "heizkreis_m1_raumsolltemperatur_party",     0x2308, 1, 1, False),
+                        ("FAST", "heizkreis_m1_raumsolltemperatur_normal",     0x2306, 1, 1, False),
+                        ("FAST", "heizkreis_m1_raumsolltemperatur_reduziert", 0x2307, 1, 1, False),
+                        ("FAST", "heizkreis_m1_raumsolltemperatur_party",     0x2308, 1, 1, False),
                     ],
                 },
                 {
@@ -259,7 +258,7 @@ poll_list = {
                     "min": 10,
                     "max": 60,
                     "poll": [
-                        ("NORMAL", "warmwasser_solltemperatur", 0x6300, 1, 1, False),
+                        ("FAST", "warmwasser_solltemperatur", 0x6300, 1, 1, False),
                     ],
                 },
             ],
@@ -283,7 +282,7 @@ poll_list = {
             "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Abschalt{% elif v == 1 %}Nur WW{% elif v == 2 %}Heizen + WW{% elif v == 3 %}Dauernd Reduziert{% elif v == 4 %}Dauernd Normal{% else %}Unbekannt ({{ v }}){% endif %}",
             "optimistic": False,
             "poll": [
-                ("NORMAL", "heizkreis_m1_betriebsart", 0x2323, 1, 1, False),
+                ("FAST", "heizkreis_m1_betriebsart", 0x2323, 1, 1, False),
             ],
         },
 
@@ -308,7 +307,7 @@ poll_list = {
             "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Schaltuhr{% elif v == 1 %}1 pro Stunde{% elif v == 2 %}2 pro Stunde{% elif v == 3 %}3 pro Stunde{% elif v == 4 %}4 pro Stunde{% elif v == 5 %}5 pro Stunde{% elif v == 6 %}6 pro Stunde{% elif v == 7 %}EIN{% else %}Unbekannt ({{ v }}){% endif %}",
             "optimistic": False,
             "poll": [
-                ("SLOW", "zirkulation_intervall", 0x6773, 1, 1, False),
+                ("FAST", "zirkulation_intervall", 0x6773, 1, 1, False),
             ],
         },
 
