@@ -454,6 +454,43 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     the coding-plug characteristic curve; do not confuse the curve values with
     the separate GWG71 burner-minimum parameter (29 percent).
 
+  Internal diagnostic readout:
+    0x0A33 len1 = 00 -> KM Error PumpeA1 raw status 0
+    0x0A35 len1 = 00 -> KM Error PumpeIntern raw status 0
+    0x5738 len1 = 00 -> Vitosoft name "(38) aktueller Fehlerstatus GFA", raw 0
+
+    0x778B len4 = 00 01 03 03:
+      0x778B = 0  -> EEPROM status
+      0x778C = 1  -> control-software version upper byte
+      0x778D = 3  -> control-software version lower byte
+      resulting displayed control-software version = 1.3
+      0x778E = 3  -> "I2C Fehlerflag EEPROM GWG"
+    No verified value table for 0x778E is present in the source catalog. Keep
+    value 3 as a raw diagnostic flag; do not infer that it means an active
+    EEPROM fault.
+
+    0xA395 len4 = 00 02 50 00:
+      byte1 bit 0x02 -> Speicher CFDM = true
+      byte2 bit 0x08 -> SP CFDM = false
+      byte2 bit 0x01 -> HarteSperre CFDM = false
+      byte2 bit 0x04 -> Fehler CFDM = false
+      byte2 also contains 0x10 and 0x40, whose meanings are not exposed by
+      the VDensHO1 catalog used here.
+
+    0xA132 len29 =
+      00 00 00 00 00 00 00 00 00 00 00 00 19 17 31 01 EA 07
+      09 16 10 1E 23 00 00 00 00 00 00
+      bytes12..13 little-endian -> alarm identifier 0x1719
+      byte14 = 0x31; documented masks include Fehlermanager 0x20 and
+               Veraenderung 0x10, both set in this sample
+      byte15 = 1 -> participant number
+      bytes16..17 little-endian -> year 2026
+      byte18..22 -> 09-22 16:30:35
+      byte27 = 0 -> disturbed-participant number
+      byte28 = 0 -> current alarm error code
+    The timestamp matched the live controller time at readout, so do not label
+    it "last fault time". Only the current error-code byte is promoted.
+
   Outdoor-temperature comparison:
     0x0800 = 13.6 C, 0x5525 = 13.8 C, 0x5527 = 14.4 C, with 0x083A=0 (sensor OK).
     0x0800 is hardware-readable on this exact SW03 controller even though it is
@@ -487,6 +524,15 @@ poll_items = [
     # ---------------------------------------------------------------------
     # Identification / topology
     # ---------------------------------------------------------------------
+    ('NORMAL', 'km_fehler_pumpe_a1', 0x0A33, 1, 1, False),  # HW=0
+    ('NORMAL', 'km_fehler_interne_pumpe', 0x0A35, 1, 1, False),  # HW=0
+    ('NORMAL', 'aktueller_gfa_fehlerstatus', 0x5738, 1, 1, False),  # HW=0
+    ('SLOW', 'eeprom_status', 0x778B, 4, 'b:0:0', 1, False),  # HW=0
+    ('ONCE', 'regelungssoftware_version_raw', 0x778B, 4, 'b:1:2::big', 1, False),  # 0x0103 -> 1.3
+    ('SLOW', 'i2c_eeprom_gwg_flag', 0x778B, 4, 'b:3:3', 1, False),  # HW=3, meaning table unavailable
+    ('NORMAL', 'cfdm_harte_sperre', 0xA395, 4, 'b:2:2:0x01', 'bool', False),  # HW false
+    ('NORMAL', 'cfdm_fehler', 0xA395, 4, 'b:2:2:0x04', 'bool', False),  # HW false
+    ('NORMAL', 'aktueller_alarm_fehlercode', 0xA132, 29, 'b:28:28', 1, False),  # HW=0
     ('ONCE', 'device_ident_raw', 0x00F8, 8),  # HW verified: 20c2000300000103
     ('ONCE', 'anlagenschema', 0x7700, 1, 1, False),  # HW verified: 2=A1+WW
     ('ONCE', 'anlagentyp', 0x7701, 1, 1, False),  # HW observed via 0x7700 len2: 1=Einkessel

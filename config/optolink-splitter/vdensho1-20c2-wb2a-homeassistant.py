@@ -1013,6 +1013,84 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
+        # Internal WB2A diagnostics
+        #
+        # Hardware-verified on this appliance:
+        #   0x0A33 = 00          KM error A1 pump
+        #   0x0A35 = 00          KM error internal pump
+        #   0x5738 = 00          current GFA error status
+        #   0x778B..0x778E       00 01 03 03
+        #     EEPROM status      = 0
+        #     control SW version = 1.3
+        #     I2C EEPROM/GWG flag= 3 (source has no value table; keep raw)
+        #   0xA395 = 00 02 50 00
+        #     byte2 bit 0x01 hard lock = false
+        #     byte2 bit 0x04 error     = false
+        #   0xA132 current alarm object ends with error code 00.
+        #
+        # Numeric error/status fields are kept as text diagnostics instead of
+        # guessing undocumented nonzero code meanings.
+        # -----------------------------------------------------------------
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% else %}Code {{ v }}{% endif %}",
+            "poll": [
+                ("NORMAL", "km_fehler_pumpe_a1",          0x0A33, 1, 1, False),
+                ("NORMAL", "km_fehler_interne_pumpe",     0x0A35, 1, 1, False),
+                ("NORMAL", "aktueller_gfa_fehlerstatus",  0x5738, 1, 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}OK{% else %}Wert {{ v }}{% endif %}",
+            "poll": [
+                ("SLOW", "eeprom_status", 0x778B, 4, "b:0:0", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(0) %}{{ v // 256 }}.{{ v % 256 }}",
+            "poll": [
+                ("ONCE", "regelungssoftware_version", 0x778B, 4, "b:1:2::big", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "poll": [
+                ("SLOW", "i2c_eeprom_gwg_flag", 0x778B, 4, "b:3:3", 1, False),
+            ],
+        },
+        {
+            "domain": "binary_sensor",
+            "payload_on": "True",
+            "payload_off": "False",
+            "device_class": "problem",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "poll": [
+                ("NORMAL", "cfdm_harte_sperre", 0xA395, 4, "b:2:2:0x01", "bool", False),
+                ("NORMAL", "cfdm_fehler",        0xA395, 4, "b:2:2:0x04", "bool", False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "value_template": "{% set v = value | int(-1) %}{% if v == 0 %}Kein Fehler{% elif v >= 0 %}0x{{ '%02X' | format(v) }}{% else %}unbekannt{% endif %}",
+            "poll": [
+                ("NORMAL", "aktueller_alarm_fehlercode", 0xA132, 29, "b:28:28", 1, False),
+            ],
+        },
+
+        # -----------------------------------------------------------------
         # Identification/topology - diagnostics
         # -----------------------------------------------------------------
         {

@@ -2384,6 +2384,42 @@ views:
         column_span: 2
         cards:
           - type: heading
+            heading: Interne Diagnose
+            heading_style: title
+            icon: mdi:alert-decagram-outline
+          - type: markdown
+            content: >-
+              Read-only Statuswerte aus Regelung, Feuerungsautomat und CFDM.
+              Das I²C-EEPROM-GWG-Flag wird bewusst roh angezeigt, da für seine
+              Zahlenwerte keine belastbare Zuordnung vorliegt.
+          - type: entities
+            title: Aktueller Status
+            entities:
+              - entity: sensor.vitodens_200_wb2a_km_fehler_pumpe_a1
+                name: KM Heizkreispumpe A1
+              - entity: sensor.vitodens_200_wb2a_km_fehler_interne_pumpe
+                name: KM interne Pumpe
+              - entity: sensor.vitodens_200_wb2a_aktueller_gfa_fehlerstatus
+                name: GFA aktueller Fehlerstatus
+              - entity: binary_sensor.vitodens_200_wb2a_cfdm_fehler
+                name: CFDM Fehler
+              - entity: binary_sensor.vitodens_200_wb2a_cfdm_harte_sperre
+                name: CFDM harte Sperre
+              - entity: sensor.vitodens_200_wb2a_aktueller_alarm_fehlercode
+                name: Aktueller Alarmcode
+          - type: entities
+            title: Regelung / EEPROM
+            entities:
+              - entity: sensor.vitodens_200_wb2a_regelungssoftware_version
+                name: Regelungssoftware
+              - entity: sensor.vitodens_200_wb2a_eeprom_status
+                name: EEPROM Status
+              - entity: sensor.vitodens_200_wb2a_i2c_eeprom_gwg_flag
+                name: I²C EEPROM-GWG Flag
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
             heading: Fehlerhistorie
             heading_style: title
             icon: mdi:alert-circle-outline
