@@ -85,6 +85,21 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     0x2323 mode and 0x2306 normal setpoint, mirrors 0x2308 into 0x2306 while
     active, and applies the configured 0x27F2 time limit.
 
+    End-to-end synthetic Party validation on the real appliance:
+      baseline: 0x2323=2, 0x2306=21 C, 0x2308=21 C
+      mode-only test:
+        0x2323 2 -> 4 produced program 0x2301=2 and effective 0x2500 party-like
+        state byte 8=0x02; restore 4 -> 2 returned program 0x2301=3 and
+        0x2500 byte 8=0x01.
+      distinct-setpoint test:
+        0x2308 changed 21 -> 22 while 0x2306 stayed 21;
+        synthetic Party ON produced 0x2306=22 and 0x2323=4;
+        synthetic Party OFF restored 0x2306=21 and 0x2323=2.
+      native physical Party interoperability:
+        physical Party ON produced 0x2303=1 / 0x2500 byte 8=0x02 and the HA
+        switch followed ON; physical Party OFF produced 0x2303=0 /
+        0x2500 byte 8=0x01 and HA followed OFF.
+
   Party room setpoint P300 write test on the real appliance:
     initial 0x2308 = 0x15 = 21 C
     write 0x2308 len1 value 22 -> ACK
