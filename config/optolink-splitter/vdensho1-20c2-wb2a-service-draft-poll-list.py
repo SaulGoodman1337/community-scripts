@@ -510,6 +510,28 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  Heating-circuit-to-burner setpoint-chain verification (2026-09-22):
+    Same active-heating state, hardware read:
+      0x2544 = F4 01 -> VT_SolltemperaturA1M1 = 50.0 C.
+      0x2900 = AE 01 -> VorlauftemperaturM1 = 43.0 C actual.
+      0x555A = F4 01 -> effective boiler setpoint = 50.0 C.
+      0x55E0 bytes10..11 = F4 01 -> RKR boiler setpoint = 50.0 C.
+      0xA391 = 88 13 -> CFDM effective setpoint = 50.0 C.
+      0xA307 = 88 13 -> BLR effective setpoint = 50.0 C.
+    Therefore the source-side A1 flow setpoint and every verified downstream
+    boiler/controller setpoint were identical at 50.0 C in this sample:
+      A1 VT Soll (0x2544)
+        -> Kesselsoll effektiv (0x555A)
+        -> RKR KTSoll (0x55E0)
+        -> CFDM EffectSetpt (0xA391)
+        -> BLR EffectSetpt (0xA307)
+    The measured A1 flow temperature was 43.0 C, i.e. 7.0 K below setpoint at
+    the instant of the sequential reads.
+    This sample shows no additional boiler-setpoint uplift between 0x2544 and
+    0x555A. Do not generalize that to all operating modes without further
+    captures; DHW, mixer circuits, frost protection or other controller logic
+    may alter the relationship.
+
   HCC1/RKR local control-path verification (2026-09-22, active heating):
     HCC1 external/input-side object:
       0xA400 = FF -> nviHCC1 ApplicMode = HVAC_NUL.
