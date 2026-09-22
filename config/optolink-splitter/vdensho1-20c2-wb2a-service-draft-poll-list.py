@@ -510,6 +510,21 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  GFA internal process-address reachability test (2026-09-22):
+    0x7650 len1 -> raw 0x20, hardware-confirming GFA identifier 0x20.
+    Vitosoft groups its internal FA process values by chip family:
+      20h - GFA: P09 Modulationssollwert @ 0x4009,
+                 P89 60-Hz-Betrieb @ 0x4059
+      21h - SCOT / 23h - CES: broader P00..Pxx process-value sets.
+    Direct Optolink reads on this WB2A returned retcode 3 for every tested
+    length (1, 2, 4 bytes) at:
+      0x4050 P80 FA-chip identifier
+      0x4009 P09 modulation setpoint
+      0x4059 P89 60-Hz status
+    Therefore the VSKO internal 0x4000 process-value address space is not
+    directly readable through this controller's normal Optolink path. Do not
+    add these addresses to the production poll list.
+
   Full fast burner-cycle capture (2026-09-22 18:02:59..18:09:12):
     The capture started during the end of a DHW phase:
       18:04:59.580  A395 Speicher-CFDM bit cleared
