@@ -328,3 +328,38 @@ The next full startup log will distinguish two architectures:
 The single-session logger was updated to use exactly two fast block reads
 (`0x55D3;14` and `0x555A;4`) so this comparison does not reduce sampling
 resolution relative to the previous two-read logger.
+
+
+## Correction: 0x555C / 0x55E0 are not usable as power values on VDensHO1/20C2
+
+A full high-resolution burner start on 2026-09-22 showed:
+
+```text
+0x555C raw = 0 for the entire run
+0x55E0 raw = 1 for the entire run
+```
+
+while verified live modulation at `0x55DC` changed from about 66 % down to
+33 %. Therefore the Vitosoft labels known from other controller families:
+
+```text
+0x555C  RKR_12PSolleff_Kessel  Kesselsollleistung (effektiv)
+0x55E0  RKR_04PIst_Kessel     Brennerleistung
+```
+
+must **not** be transferred to this VDensHO1/20C2 as working power datapoints
+just because the addresses are readable.
+
+The VDensHO1-specific Vitosoft datapoint list itself contains `0x555A`
+(Kesselsolltemperatur) but does not list either `0x555C` or `0x55E0`.
+This device-specific list takes precedence over cross-family address matches.
+
+Conclusion:
+
+- `0x555C`: readable raw byte, semantics unresolved on 20C2
+- `0x55E0`: readable raw byte, semantics unresolved on 20C2
+- neither value should currently be labelled set power / burner power for this device
+
+The search for the source of the ~1 %/s ramp therefore moves to the CFDM
+objects (`0xA380` / `0xA38F`), which have already shown dynamic behavior in
+earlier WB2A logs.
