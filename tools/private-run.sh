@@ -38,6 +38,18 @@ mkdir -p "$tmp_dir/repo"
 tar -xzf "$archive" -C "$tmp_dir/repo" --strip-components=1
 
 repo_root="$tmp_dir/repo"
+
+# Existing Optolink-Splitter LXCs historically pointed their update target at
+# ct/optolink-splitter.sh. Running that full CT entrypoint inside the container
+# unnecessarily loads the community-scripts UI/spinner stack and can fail with
+# a broken stdout pipe. Migrate those legacy update calls transparently to the
+# dedicated in-container updater. Host-side csrun installs are unaffected.
+if [[ "$TARGET" == "ct/optolink-splitter.sh" &&
+      -d /opt/optolink/.git &&
+      -f /etc/community-scripts-private.conf ]]; then
+  TARGET="tools/optolink-splitter-update.sh"
+fi
+
 script="$repo_root/$TARGET"
 if [[ ! -f "$script" ]]; then
   echo "Repository script not found: $TARGET" >&2
