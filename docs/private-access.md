@@ -39,6 +39,20 @@ csrun ct/optolink-splitter.sh
 
 The bootstrap downloads a temporary authenticated archive of the repository, sets `COMMUNITY_SCRIPTS_ROOT` to that checkout, executes the requested script, and removes the checkout afterwards. The token is not committed to the repository and is not stored permanently by the bootstrap.
 
-LXC installations created with this flow install a private-aware `/usr/bin/update`. Running `update` asks for the token again and does not store it on disk.
+LXC installations created with this flow install a private-aware `/usr/bin/update`. By default, `update` asks for the token when no saved token is available.
+
+To store the read-only token persistently on the LXC, run:
+
+```bash
+update --save-token
+```
+
+The token is stored in `/etc/community-scripts-github-token` with mode `0600` and is used automatically by later updates. Remove it with:
+
+```bash
+update --forget-token
+```
+
+The token file is local to the LXC and is never committed to the repository.
 
 For existing containers created before the repository became private, run their normal `update` command once while the repository is still public. That migrates `/usr/bin/update` to the private-aware wrapper before changing repository visibility.
