@@ -585,13 +585,706 @@ views:
             grid_options:
               columns: 12
               rows: 2
-          - type: history-graph
-            title: Vorlaufregelung – 7 Tage
-            hours_to_show: 168
+          - type: custom:plotly-graph
+            raw_plotly_config: true
+            refresh_interval: 5
+            disable_pinch_to_zoom: true
+            config:
+              displayModeBar: false
+              scrollZoom: false
+              doubleClick: false
+              responsive: true
+            defaults:
+              entity:
+                showlegend: true
+            layout:
+              height: 430
+              margin:
+                l: 55
+                r: 35
+                t: 20
+                b: 70
+              hovermode: closest
+              hoverdistance: 100
+              showlegend: true
+              dragmode: false
+              legend:
+                orientation: h
+                x: 0
+                "y": -0.18
+              xaxis:
+                title:
+                  text: Außentemperatur °C
+                range:
+                  - 20
+                  - -30
+                dtick: 5
+                showgrid: true
+                zeroline: true
+                zerolinewidth: 1
+                fixedrange: true
+              yaxis:
+                title:
+                  text: Vorlauftemperatur °C
+                dtick: 5
+                showgrid: true
+                zeroline: false
+                fixedrange: true
+                range: |
+                  $ex {
+                    const c5 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung'
+                      ]?.state
+                    );
+
+                    const c6 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung'
+                      ]?.state
+                    );
+
+                    const ist = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur'
+                      ]?.state
+                    );
+
+                    const values = [c5, c6, ist]
+                      .filter(v => Number.isFinite(v));
+
+                    if (!values.length) {
+                      return [20, 80];
+                    }
+
+                    const minValue = Math.min(...values);
+                    const maxValue = Math.max(...values);
+
+                    return [
+                      Math.max(
+                        0,
+                        Math.floor((minValue - 10) / 5) * 5
+                      ),
+                      Math.ceil((maxValue + 10) / 5) * 5
+                    ];
+                  }
             entities:
-              - sensor.vitodens_200_wb2a_aussentemperatur_gedaempft
-              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur
-              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur
+              - entity: ""
+                name: Normal
+                mode: lines
+                x: |
+                  $ex Array.from(
+                    { length: 51 },
+                    (_, i) => 20 - i
+                  )
+                "y": |
+                  $ex {
+                    const neigung = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung'
+                      ]?.state
+                    );
+
+                    const niveau = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung'
+                      ]?.state
+                    );
+
+                    const raum = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal'
+                      ]?.state
+                    );
+
+                    const c5 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung'
+                      ]?.state
+                    );
+
+                    const c6 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung'
+                      ]?.state
+                    );
+
+                    const outdoorTemps = Array.from(
+                      { length: 51 },
+                      (_, i) => 20 - i
+                    );
+
+                    if (
+                      !Number.isFinite(neigung) ||
+                      !Number.isFinite(niveau) ||
+                      !Number.isFinite(raum) ||
+                      !Number.isFinite(c5) ||
+                      !Number.isFinite(c6)
+                    ) {
+                      return outdoorTemps.map(() => null);
+                    }
+
+                    return outdoorTemps.map(aussen => {
+                      if (aussen >= raum) {
+                        return null;
+                      }
+
+                      const theoretisch =
+                        neigung *
+                        1.8317984 *
+                        Math.pow(
+                          raum - aussen,
+                          0.8281902
+                        ) +
+                        niveau +
+                        raum;
+
+                      const begrenzt =
+                        Math.min(
+                          c6,
+                          Math.max(
+                            c5,
+                            theoretisch
+                          )
+                        );
+
+                      return Math.ceil(begrenzt * 10) / 10;
+                    });
+                  }
+                line:
+                  width: 4
+                  shape: spline
+                  color: orange
+                hovertemplate: >-
+                  <b>Normalbetrieb</b><br>
+                  Außen: %{x:.0f} °C<br>
+                  Vorlauf: %{y:.1f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: Reduziert
+                mode: lines
+                x: |
+                  $ex Array.from(
+                    { length: 51 },
+                    (_, i) => 20 - i
+                  )
+                "y": |
+                  $ex {
+                    const neigung = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung'
+                      ]?.state
+                    );
+
+                    const niveau = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung'
+                      ]?.state
+                    );
+
+                    const raum = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert'
+                      ]?.state
+                    );
+
+                    const c5 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung'
+                      ]?.state
+                    );
+
+                    const c6 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung'
+                      ]?.state
+                    );
+
+                    const outdoorTemps = Array.from(
+                      { length: 51 },
+                      (_, i) => 20 - i
+                    );
+
+                    if (
+                      !Number.isFinite(neigung) ||
+                      !Number.isFinite(niveau) ||
+                      !Number.isFinite(raum) ||
+                      !Number.isFinite(c5) ||
+                      !Number.isFinite(c6)
+                    ) {
+                      return outdoorTemps.map(() => null);
+                    }
+
+                    return outdoorTemps.map(aussen => {
+                      if (aussen >= raum) {
+                        return null;
+                      }
+
+                      const theoretisch =
+                        neigung *
+                        1.8317984 *
+                        Math.pow(
+                          raum - aussen,
+                          0.8281902
+                        ) +
+                        niveau +
+                        raum;
+
+                      const begrenzt =
+                        Math.min(
+                          c6,
+                          Math.max(
+                            c5,
+                            theoretisch
+                          )
+                        );
+
+                      return Math.ceil(begrenzt * 10) / 10;
+                    });
+                  }
+                line:
+                  width: 3
+                  dash: dot
+                  shape: spline
+                  color: blue
+                hovertemplate: >-
+                  <b>Reduzierter Betrieb</b><br>
+                  Außen: %{x:.0f} °C<br>
+                  Vorlauf: %{y:.1f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: C5 Minimum
+                mode: lines
+                x:
+                  - 20
+                  - -30
+                "y": |
+                  $ex {
+                    const value = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung'
+                      ]?.state
+                    );
+
+                    if (!Number.isFinite(value)) {
+                      return [null, null];
+                    }
+
+                    return [value, value];
+                  }
+                line:
+                  width: 1
+                  dash: dash
+                  color: gray
+                hovertemplate: >-
+                  C5 Minimum: %{y:.0f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: C6 Maximum
+                mode: lines
+                x:
+                  - 20
+                  - -30
+                "y": |
+                  $ex {
+                    const value = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung'
+                      ]?.state
+                    );
+
+                    if (!Number.isFinite(value)) {
+                      return [null, null];
+                    }
+
+                    return [value, value];
+                  }
+                line:
+                  width: 1
+                  dash: dash
+                  color: gray
+                hovertemplate: >-
+                  C6 Maximum: %{y:.0f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: Außen aktuell
+                mode: lines
+                x: |
+                  $ex {
+                    const aussen = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_aussentemperatur_gedaempft'
+                      ]?.state
+                    );
+
+                    if (!Number.isFinite(aussen)) {
+                      return [];
+                    }
+
+                    return [aussen, aussen];
+                  }
+                "y": |
+                  $ex {
+                    const c5 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung'
+                      ]?.state
+                    );
+
+                    const c6 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung'
+                      ]?.state
+                    );
+
+                    if (
+                      !Number.isFinite(c5) ||
+                      !Number.isFinite(c6)
+                    ) {
+                      return [];
+                    }
+
+                    return [
+                      Math.max(0, c5 - 10),
+                      c6 + 10
+                    ];
+                  }
+                line:
+                  width: 1
+                  dash: dot
+                  color: gray
+                hovertemplate: >-
+                  Außen aktuell: %{x:.1f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: Normal aktuell
+                mode: markers+text
+                x: |
+                  $ex {
+                    const aussen = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_aussentemperatur_gedaempft'
+                      ]?.state
+                    );
+
+                    const raum = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal'
+                      ]?.state
+                    );
+
+                    if (
+                      !Number.isFinite(aussen) ||
+                      !Number.isFinite(raum) ||
+                      aussen >= raum
+                    ) {
+                      return [];
+                    }
+
+                    return [aussen];
+                  }
+                "y": |
+                  $ex {
+                    const aussen = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_aussentemperatur_gedaempft'
+                      ]?.state
+                    );
+
+                    const neigung = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung'
+                      ]?.state
+                    );
+
+                    const niveau = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung'
+                      ]?.state
+                    );
+
+                    const raum = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal'
+                      ]?.state
+                    );
+
+                    const c5 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung'
+                      ]?.state
+                    );
+
+                    const c6 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung'
+                      ]?.state
+                    );
+
+                    if (
+                      !Number.isFinite(aussen) ||
+                      !Number.isFinite(neigung) ||
+                      !Number.isFinite(niveau) ||
+                      !Number.isFinite(raum) ||
+                      !Number.isFinite(c5) ||
+                      !Number.isFinite(c6) ||
+                      aussen >= raum
+                    ) {
+                      return [];
+                    }
+
+                    const theoretisch =
+                      neigung *
+                      1.8317984 *
+                      Math.pow(
+                        raum - aussen,
+                        0.8281902
+                      ) +
+                      niveau +
+                      raum;
+
+                    const begrenzt =
+                      Math.min(
+                        c6,
+                        Math.max(
+                          c5,
+                          theoretisch
+                        )
+                      );
+
+                    return [
+                      Math.ceil(begrenzt * 10) / 10
+                    ];
+                  }
+                texttemplate: "Normal %{y:.1f} °C"
+                textposition: top right
+                marker:
+                  size: 12
+                  symbol: circle
+                  color: orange
+                hovertemplate: >-
+                  <b>Normal aktuell</b><br>
+                  Außen: %{x:.1f} °C<br>
+                  Vorlauf: %{y:.1f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: Reduziert aktuell
+                mode: markers+text
+                x: |
+                  $ex {
+                    const aussen = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_aussentemperatur_gedaempft'
+                      ]?.state
+                    );
+
+                    const raum = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert'
+                      ]?.state
+                    );
+
+                    if (
+                      !Number.isFinite(aussen) ||
+                      !Number.isFinite(raum) ||
+                      aussen >= raum
+                    ) {
+                      return [];
+                    }
+
+                    return [aussen];
+                  }
+                "y": |
+                  $ex {
+                    const aussen = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_aussentemperatur_gedaempft'
+                      ]?.state
+                    );
+
+                    const neigung = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung'
+                      ]?.state
+                    );
+
+                    const niveau = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung'
+                      ]?.state
+                    );
+
+                    const raum = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert'
+                      ]?.state
+                    );
+
+                    const c5 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung'
+                      ]?.state
+                    );
+
+                    const c6 = Number(
+                      hass.states[
+                        'number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung'
+                      ]?.state
+                    );
+
+                    if (
+                      !Number.isFinite(aussen) ||
+                      !Number.isFinite(neigung) ||
+                      !Number.isFinite(niveau) ||
+                      !Number.isFinite(raum) ||
+                      !Number.isFinite(c5) ||
+                      !Number.isFinite(c6) ||
+                      aussen >= raum
+                    ) {
+                      return [];
+                    }
+
+                    const theoretisch =
+                      neigung *
+                      1.8317984 *
+                      Math.pow(
+                        raum - aussen,
+                        0.8281902
+                      ) +
+                      niveau +
+                      raum;
+
+                    const begrenzt =
+                      Math.min(
+                        c6,
+                        Math.max(
+                          c5,
+                          theoretisch
+                        )
+                      );
+
+                    return [
+                      Math.ceil(begrenzt * 10) / 10
+                    ];
+                  }
+                texttemplate: "Red. %{y:.1f} °C"
+                textposition: bottom right
+                marker:
+                  size: 11
+                  symbol: circle
+                  color: blue
+                hovertemplate: >-
+                  <b>Reduziert aktuell</b><br>
+                  Außen: %{x:.1f} °C<br>
+                  Vorlauf: %{y:.1f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: Regler-Soll
+                mode: markers+text
+                x: |
+                  $ex {
+                    const aussen = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_aussentemperatur_gedaempft'
+                      ]?.state
+                    );
+
+                    const soll = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur'
+                      ]?.state
+                    );
+
+                    if (
+                      !Number.isFinite(aussen) ||
+                      !Number.isFinite(soll) ||
+                      soll <= 0
+                    ) {
+                      return [];
+                    }
+
+                    return [aussen];
+                  }
+                "y": |
+                  $ex {
+                    const soll = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur'
+                      ]?.state
+                    );
+
+                    if (
+                      !Number.isFinite(soll) ||
+                      soll <= 0
+                    ) {
+                      return [];
+                    }
+
+                    return [soll];
+                  }
+                texttemplate: "Soll %{y:.1f} °C"
+                textposition: top left
+                marker:
+                  size: 15
+                  symbol: diamond
+                  color: red
+                hovertemplate: >-
+                  <b>Regler-Soll</b><br>
+                  Außen: %{x:.1f} °C<br>
+                  Vorlauf: %{y:.1f} °C
+                  <extra></extra>
+
+              - entity: ""
+                name: Vorlauf Ist
+                mode: markers+text
+                x: |
+                  $ex {
+                    const aussen = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_aussentemperatur_gedaempft'
+                      ]?.state
+                    );
+
+                    if (!Number.isFinite(aussen)) {
+                      return [];
+                    }
+
+                    return [aussen];
+                  }
+                "y": |
+                  $ex {
+                    const ist = Number(
+                      hass.states[
+                        'sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur'
+                      ]?.state
+                    );
+
+                    if (!Number.isFinite(ist)) {
+                      return [];
+                    }
+
+                    return [ist];
+                  }
+                texttemplate: "Ist %{y:.1f} °C"
+                textposition: bottom left
+                marker:
+                  size: 14
+                  symbol: circle-open
+                  color: green
+                  line:
+                    width: 3
+                hovertemplate: >-
+                  <b>Vorlauf Ist</b><br>
+                  Außen: %{x:.1f} °C<br>
+                  Vorlauf: %{y:.1f} °C
+                  <extra></extra>
             grid_options:
               columns: full
     cards: []
