@@ -542,16 +542,17 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     Both exceed C6=50 C, so the observed 0x2544=50.0 C is exactly explained
     by the electronic maximum flow-temperature limit.
 
-    Consequence of the present settings:
-      d4=+40 K alone gives 61 C when outdoor temperature equals the active
-      21 C room setpoint. With d3=0.8, the unconstrained curve does not fall
-      below 50 C until roughly 29.4 C outdoor temperature. In any realistic
-      heating-weather range, C6 therefore dominates and clamps the requested
-      flow temperature to 50 C (subject to heating being enabled at all).
-      C5=38 C is the lower clamp, but it is not active in this sample.
-    This means the current normal-heating behaviour is effectively a
-    50-C capped/flat request over most relevant outdoor temperatures rather
-    than a freely varying weather-compensated curve.
+    Test-condition note:
+      d4=+40 K was intentionally set by the user to force a burner start for
+      this diagnostic capture. It is NOT representative of the user's normal
+      heating-curve configuration and must not be used to characterize normal
+      day-to-day control behaviour.
+      Under this deliberately forced condition, d4=+40 K raises the raw curve
+      above C6, so the measured 50.0 C setpoint is expected to be the C6 clamp.
+      This is useful as a controlled test because it proves that the complete
+      chain 0x2544 -> 0x555A -> 0x55E0 -> 0xA391 -> 0xA307 propagates the
+      clamped setpoint consistently.
+      C5=38 C is the lower clamp, but it was not active in this sample.
 
   Heating-circuit-to-burner setpoint-chain verification (2026-09-22):
     Same active-heating state, hardware read:
