@@ -113,6 +113,7 @@ function update_script() {
 
   cs_repo_fetch tools/optolink-party-test.sh /usr/local/bin/optolink-party-test
   chmod 755 /usr/local/bin/optolink-party-test
+  ln -sf /usr/local/bin/optolink-party-test /usr/bin/optolink-party-test
 
   cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
   chown -R optolink:optolink /opt/optolink
