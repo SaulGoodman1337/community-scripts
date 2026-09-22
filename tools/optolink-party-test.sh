@@ -5,10 +5,24 @@ APP_DIR="/opt/optolink"
 ACTION="${1:-on}"
 
 case "$ACTION" in
-  on|1|true) VALUE=1 ;;
-  off|0|false) VALUE=0 ;;
+  on|1|true)
+    VALUE=1
+    WRITE_ADDR="0x2303"
+    ;;
+  off|0|false)
+    VALUE=0
+    WRITE_ADDR="0x2303"
+    ;;
+  cmd-on|2330-on)
+    VALUE=1
+    WRITE_ADDR="0x2330"
+    ;;
+  cmd-off|2330-off)
+    VALUE=0
+    WRITE_ADDR="0x2330"
+    ;;
   *)
-    echo "Usage: optolink-party-test [on|off]" >&2
+    echo "Usage: optolink-party-test [on|off|cmd-on|cmd-off]" >&2
     exit 2
     ;;
 esac
@@ -20,7 +34,7 @@ fi
 
 cd "$APP_DIR"
 
-runuser -u optolink -- ./venv/bin/python - "$VALUE" <<'PY'
+runuser -u optolink -- ./venv/bin/python - "$VALUE" "$WRITE_ADDR" <<'PY'
 import sys
 import time
 
@@ -28,6 +42,7 @@ from c_settings_adapter import settings
 from homeassistant_publish import connect_mqtt
 
 value = int(sys.argv[1])
+write_addr = sys.argv[2]
 responses = []
 
 client = connect_mqtt(retries=2, delay=1)
@@ -68,19 +83,15 @@ request("PROG 2301", "r;0x2301;1;1;False")
 request("PARTY 2303", "r;0x2303;1;1;False")
 request("SETPT 2308", "r;0x2308;1;1;False")
 request("HOLIDAY", "r;0x2535;1;1;False")
-
-# Some Viessmann generations use 0x2330 as a separate party command/state
-# register. It is not present in the exact VDensHO1 source catalog, so this
-# helper probes it read-only. Do not write it unless a hardware read proves
-# that the datapoint exists and its semantics are established.
 request("ALT 2330", "r;0x2330;1;1;False")
 
 print("=== Party write ===")
-request("WRITE 2303", f"w;0x2303;1;{value}")
+print(f"Using command address {write_addr}; live party state is always verified at 0x2303.")
+request("WRITE", f"w;{write_addr};1;{value}")
 
-for delay in (0.2, 1.0, 3.0):
+for delay in (0.2, 1.0, 3.0, 6.0):
     time.sleep(delay)
-    request(f"READ +{delay:g}s", "r;0x2303;1;1;False")
+    request(f"STATE +{delay:g}s", "r;0x2303;1;1;False")
 
 print("=== Context after write ===")
 request("MODE 2323", "r;0x2323;1;1;False")
