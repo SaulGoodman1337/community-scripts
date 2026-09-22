@@ -55,26 +55,29 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       bytes 20..21 also mirror 0x00D2 in this sample
     0x0842 len1 -> 0x01 unchanged, so relay K12 does not track party mode
 
-  Party mode P300 write test on the real appliance:
-    write 0x2303 len1 value 0 -> ACK, read-back 0x00
-      0x2500 returns to reduced operation and 18.0 C effective room setpoint
-    write 0x2303 len1 value 1 -> ACK, read-back 0x01
-      0x2308 remains 21 C
-      0x2500 switches to normal operation and 21.0 C effective room setpoint
-    Result at that time: 0x2303 could be switched off/on remotely after
-    party mode had first been enabled at the physical control panel.
-    Follow-up test on 2026-09-22 from a normal remote-off state:
-      write 0x2303 len1 value 1 -> transport ACK (1;0x2303;1)
-      read-back after 0.2 s -> 0x01
-      read-back after another 1.0 s -> 0x00
-      read-back after another 3.0 s -> 0x00
-      a subsequent independent read shortly afterwards -> 0x01
-    A following write 0 -> ACK and remained 0, and the next write 1 remained
-    1 through the 0.2 s / 1 s / 3 s confirmation reads.
-    Therefore the command is valid and remote activation works, but the first
-    activation can expose a transient/delayed controller state for several
-    seconds. ACK alone is not sufficient; use repeated read-back until the
-    controller has settled.
+  Party mode P300 write tests on the real appliance:
+    Before local Party initialization/confirmation, write 0x2303 len1 value 1
+    was ACKed but reverted to 0 and did not change the effective 0x2500 state.
+    This was reproduced both in normal operation and in forced reduced mode.
+    Writing the Party setpoint 0x2308 first did not change that behavior.
+
+    After Party had once been fully activated/confirmed at the physical control
+    panel, the same raw writes became stable:
+      write 0x2303 len1 value 0 -> ACK, read-back remains 0
+      write 0x2303 len1 value 1 -> ACK, read-back remains 1
+      0x2500 byte 8 follows 0x01 (Party off) <-> 0x02 (Party on)
+    Repeated remote OFF/ON tests then worked without touching the control panel.
+
+    A byte-by-byte read-only scan of 0x2300..0x233F while toggling Party at the
+    physical control panel found only 0x2303 changing.  0x2330 is not a usable
+    command on this exact 20C2/SW03 controller: write 0x2330 returned P300
+    retcode 3 / payload 0x01.
+
+    Practical conclusion: 0x2303 is the correct Party R/W datapoint, but the
+    controller/control-panel firmware can require one complete local Party
+    activation/confirmation after its internal state has been reset.  Home
+    Assistant should send the exact raw commands w;0x2303;1;0 / w;0x2303;1;1
+    and remain non-optimistic with 0x2303 as authoritative state.
 
   Party room setpoint P300 write test on the real appliance:
     initial 0x2308 = 0x15 = 21 C
@@ -598,29 +601,23 @@ poll_items = [
 #   but 0x2331 is absent from the exact VDensHO1 Vitosoft-derived catalog.
 #   Hardware probe on this 20C2/SW03 returned P300 retcode 3 for read 0x2331,
 #   confirming that 0x2331 is not a usable ordinary datapoint here.
-#   Strong write candidate for THIS exact generation: 0x2303 len1 values 0/1.
+#   Hardware-verified write datapoint for THIS exact generation: 0x2303 len1.
 #   Evidence:
-#     - a historical FHEM field report from a Vitodens 200 HO1 reporting
-#       device ID 20C2 shows P300/KW writes to 0x2303 being ACKed;
-#     - after party mode had once been manually enabled/confirmed at the
-#       boiler, the same user could subsequently switch party mode on/off
-#       remotely via 0x2303;
-#     - our real appliance has now been manually put into party mode and
-#       reports 0x2303=1 plus the expected 21 C effective room setpoint.
-#   Earlier hardware verification on this exact 20C2 / SW index 0x03:
-#     after manual party activation, write 0 -> ACK + read-back 0 and
-#     write 1 -> ACK + read-back 1 with matching effective setpoint changes.
-#   Follow-up 2026-09-22: first remote activation showed a transient sequence
-#   1 -> 0 -> 0 over the first ~4 s, then a later independent read returned 1.
-#   A following off write stayed 0 and the next on write stayed 1 across repeated
-#   confirmation reads. The HA switch must remain non-optimistic and use staged
-#   read-back while the controller settles.
-#   Multiple external Viessmann/OpenV implementations model party mode with
-#   separate addresses: write command at 0x2330 and live state at 0x2303.
-#   A read of 0x2330 on this controller returns P300 retcode 3 / payload 0x01,
-#   which is compatible with 0x2330 being a write-only command datapoint.
-#   Do not switch production control to 0x2330 until a write-to-2330 followed
-#   by state read-back at 0x2303 is confirmed on this exact controller.
+#     - before local Party initialization/confirmation, write 1 is ACKed but
+#       reverts to 0 and leaves the effective 0x2500 state unchanged;
+#     - this failure was reproduced in both normal and forced reduced operation;
+#     - after one complete physical Party activation/confirmation, repeated raw
+#       writes 0 -> off and 1 -> on remain stable without further local input;
+#     - 0x2500 byte 8 follows 0x01 (off) <-> 0x02 (on);
+#     - a read-only scan of 0x2300..0x233F during physical Party toggling found
+#       only 0x2303 changing.
+#   This matches historical 20C2/HO1 field reports that remote Party starts
+#   working after Party has once been activated/confirmed at the control panel.
+#   Production HA control should therefore bypass the generic /set conversion
+#   and publish the exact raw commands w;0x2303;1;0 / w;0x2303;1;1 to
+#   mqtt_listen while keeping 0x2303 as the non-optimistic state source.
+#   0x2330 is explicitly ruled out on this controller: a hardware write returned
+#   P300 retcode 3 / payload 0x01.
 #
 #
 # Party room setpoint:
