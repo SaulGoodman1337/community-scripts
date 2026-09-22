@@ -94,6 +94,14 @@ chmod 755 /usr/local/bin/optolink-apply-vdensho1-ha-profile
 cs_repo_fetch tools/optolink-apply-vscotho1-profile.sh /usr/local/bin/optolink-apply-vscotho1-profile
 chmod 755 /usr/local/bin/optolink-apply-vscotho1-profile
 
+cs_repo_fetch tools/optolink-party-emulator.py /usr/local/bin/optolink-party-emulator
+chmod 755 /usr/local/bin/optolink-party-emulator
+chown root:root /usr/local/bin/optolink-party-emulator
+
+cs_repo_fetch config/optolink-splitter/optolink-party-emulator.service /etc/systemd/system/optolink-party-emulator.service
+chmod 644 /etc/systemd/system/optolink-party-emulator.service
+chown root:root /etc/systemd/system/optolink-party-emulator.service
+
 cs_repo_fetch config/optolink-splitter/vcontrol-mapping.md /root/optolink-vcontrol-mapping.md
 
 chown optolink:optolink /opt/optolink/settings_ini.py /opt/optolink/homeassistant_poll_list.py
@@ -136,6 +144,9 @@ chmod 755 /usr/local/bin/optolink-ports
 
 systemctl daemon-reload
 systemctl enable optolink-splitter.service
+# The Party emulator is enabled by the VDensHO1 profile helper once MQTT is
+# configured. The fresh installation intentionally leaves it disabled because
+# mqtt_broker defaults to None.
 msg_ok "Created systemd service"
 
 msg_info "Checking serial adapter"
