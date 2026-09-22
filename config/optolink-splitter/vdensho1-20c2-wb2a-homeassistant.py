@@ -59,12 +59,12 @@ poll_list = {
         "search": [
             "aussentemperatur", "kessel", "warmwasser", "heizkreis_m1",
             "brenner", "pumpe", "zirkulation", "betriebsart", "solltemperatur",
-            "temperatur", "ueber", "stoer", "geraete"
+            "temperatur", "geblaese", "ueber", "stoer", "geraete"
         ],
         "replace": [
             "außentemperatur", "kessel", "warmwasser", "heizkreis m1",
             "brenner", "pumpe", "zirkulation", "betriebsart", "solltemperatur",
-            "temperatur", "über", "stör", "geräte"
+            "temperatur", "gebläse", "über", "stör", "geräte"
         ],
         "fixed": ["WW", "A1", "M1", "K12", "GFA", "SW"],
     },
@@ -183,16 +183,34 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
-        # Binary status: bit filters formatted as True/False by splitter
+        # Fire-control diagnostic block (single shared 0x55D3 read)
+        #
+        # Hardware-verified on this WB2A / VDensHO1:
+        #   byte 5 bit 0x20  = flame
+        #   byte 5 bit 0x40  = fire-control lockout
+        #   bytes 6..7       = blower speed, big-endian, rpm
+        #
+        # Keep these three FAST entries consecutive. optolink-splitter reuses
+        # the first 9-byte response for the following byte/bit filters, so
+        # blower speed, flame and lockout need only one Optolink read.
         # -----------------------------------------------------------------
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "rpm",
+            "state_class": "measurement",
+            "suggested_display_precision": 0,
+            "icon": "mdi:fan",
+            "poll": [
+                ("FAST", "geblaesedrehzahl", 0x55D3, 9, "b:6:7::big", 1, False),
+            ],
+        },
         {
             "domain": "binary_sensor",
             "payload_on": "True",
             "payload_off": "False",
+            "icon": "mdi:fire",
             "poll": [
-                ("FAST",   "brenner_flamme",              0x55D3, 9, "b:5:5:0x20", "bool", False),
-                ("NORMAL", "heizkreis_m1_frostgefahr",    0x2500, 22, "b:16:16:0x01", "bool", False),
-                ("NORMAL", "heizkreis_m1_ferienbetrieb",   0x2535, 1, "b:0:0:0x01", "bool", False),
+                ("FAST", "brenner_flamme", 0x55D3, 9, "b:5:5:0x20", "bool", False),
             ],
         },
         {
@@ -203,6 +221,19 @@ poll_list = {
             "entity_category": "diagnostic",
             "poll": [
                 ("FAST", "feuerungsautomat_verriegelt", 0x55D3, 9, "b:5:5:0x40", "bool", False),
+            ],
+        },
+
+        # -----------------------------------------------------------------
+        # Other bit-filtered binary status
+        # -----------------------------------------------------------------
+        {
+            "domain": "binary_sensor",
+            "payload_on": "True",
+            "payload_off": "False",
+            "poll": [
+                ("NORMAL", "heizkreis_m1_frostgefahr",  0x2500, 22, "b:16:16:0x01", "bool", False),
+                ("NORMAL", "heizkreis_m1_ferienbetrieb", 0x2535, 1, "b:0:0:0x01", "bool", False),
             ],
         },
         {

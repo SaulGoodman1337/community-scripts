@@ -33,6 +33,17 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     byte 5 mask 0x20 -> flame false
     byte 5 mask 0x40 -> fire-control lockout false
   0x55DD len1 -> 0x01 (raw; mask 0x20 is false)
+
+  Dynamic burner-cycle verification of 0x55D3 bytes 6..7 (big-endian):
+    idle:       0x0000 -> 0 rpm, A305=0.0 %, flame=false
+    pre-purge:  0x0820 -> 2080 rpm, A305=0.0 %, flame=false
+    firing:     0x0B60 -> 2912 rpm, A305=66.0 %, flame=true
+    firing:     0x0B62 -> 2914 rpm, A305=61.0/55.0 %, flame=true
+    flame off:  0x0000 -> 0 rpm, A305=0.0 %, flame=false
+    Result: bytes 6..7 are hardware-verified as blower speed in rpm on this
+    WB2A/VDensHO1 controller. Direct reads at 0x55D9 and 0x55DA are rejected
+    with P300 retcode 3 / payload 0x01; the value must be extracted from the
+    9-byte 0x55D3 block.
   0x0B1C len2 -> P300 error response (retcode 3, payload 0x01)
   0x0B1E len2 -> P300 error response (retcode 3, payload 0x01)
   0x2906 len1 -> 0x01 (A1/M1 heating-circuit pump ON)
@@ -453,8 +464,10 @@ poll_items = [
     ('FAST', 'relais_k12_status', 0x0842, 1, 1, False),  # HW verified: 1
     ('NORMAL', 'warmwasser_flowswitch', 0x0883, 1, 1, False),  # HW verified: OFF
 
-    # The VDensHO1 catalog exposes flame and lockout as bit fields in the
-    # 9-byte block beginning at 0x55D3.
+    # One 9-byte fire-control block feeds blower speed, flame and lockout.
+    # Keep these entries consecutive so optolink-splitter performs one shared
+    # read and applies the byte/bit filters to the same response.
+    ('FAST', 'geblaesedrehzahl', 0x55D3, 9, 'b:6:7::big', 1, False),  # HW verified: 2080 rpm pre-purge, ~2912 rpm firing, 0 rpm idle
     ('FAST', 'brenner_flamme', 0x55D3, 9, 'b:5:5:0x20', 'bool', False),  # HW verified dynamically against firing cycle
     ('FAST', 'feuerungsautomat_verriegelt', 0x55D3, 9, 'b:5:5:0x40', 'bool', False),  # HW verified block readable
 
