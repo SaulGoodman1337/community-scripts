@@ -410,3 +410,112 @@ The single-session logger now records raw `0xA380;2` and `0xA38F;2`
 alongside verified `0x55DC` modulation. The goal is to determine whether the
 CFDM command changes abruptly while CFDM actual power follows the 1 %/s ramp,
 or whether the CFDM command itself is already ramp-limited.
+
+
+## 2026-09-22 CFDM correlation: 0x55DC command vs 0xA38F active power state
+
+A full single-session start log with simultaneous raw reads of `0x55D3`,
+`0xA380` and `0xA38F` resolves an important architectural question.
+
+### Pre-ignition behavior
+
+Before flame is present, `0x55DC` already moves through the startup sequence:
+
+```text
+55DC: 30 -> 33 -> 58 -> 67 -> 68 -> 67 -> 66 -> 65 %
+FL:   0
+A38F: 0000
+```
+
+This proves that `0x55DC` is not a direct measurement of current combustion
+output. It is better interpreted as the live burner modulation command/state
+used by the controller.
+
+At flame establishment:
+
+```text
+T=0.00 s  55DC=65  A38F=0000  55DD=29
+T=0.74 s  55DC=66  A38F=0000  55DD=21
+T=1.48 s  55DC=66  A38F=8201  55DD=21
+```
+
+Thus the CFDM power-state object becomes active only after stable flame.
+
+### 0xA38F raw layout
+
+The observed raw form is strongly consistent with:
+
+```text
+byte 0 = power/modulation value with 0.5 % per LSB
+byte 1 = state/valid flag
+```
+
+Examples:
+
+```text
+A38F=8201 -> byte0 0x82 = 130 -> 65.0 %
+A38F=7c01 -> 124 -> 62.0 %
+A38F=6401 -> 100 -> 50.0 %
+A38F=5401 ->  84 -> 42.0 %
+A38F=4201 ->  66 -> 33.0 %
+A38F=0000 -> inactive/off
+```
+
+This byte order/scaling is empirically very strong, although the Vitosoft
+metadata only names the object as `nvoPWRState_CFDM_state/value` and does
+not document the raw member layout.
+
+The second byte changes from 0 to 1 when the active power state becomes valid
+after flame establishment and remains 1 during firing.
+
+### Ramp correlation
+
+Across the falling-ramp interval, comparing:
+
+```text
+x = 0x55DC modulation command
+y = A38F byte0 * 0.5
+```
+
+gives approximately:
+
+```text
+y = 1.002 * x - 0.04
+correlation r ~= 0.996
+```
+
+The remaining differences are consistent with:
+
+- sequential sampling delay between the two Optolink reads, and
+- coarser update/quantization of the A38F power-state value.
+
+Therefore the approximately 1 percentage-point/s downward ramp is already
+present in `0x55DC` before the downstream active-power state follows it.
+
+**Conclusion:** the measured ramp is not explained by a slow physical burner
+actuator that receives an immediate lower target. It is generated in the
+controller/GFA modulation-command path itself.
+
+This substantially weakens the earlier hypothesis that a generic
+"100 s actuator travel time" parameter is the direct cause of the observed
+1 %/s ramp.
+
+### 0xA380 result
+
+`0xA380` remained exactly:
+
+```text
+00ff
+```
+
+for the complete off/start/ramp/steady interval.
+
+The cross-family Vitosoft name is
+`nviProdCmd_CFDM_state/value / Anlagen-/Kessel-Sollleistung`, but this object
+is evidently not carrying a changing power command in this VDensHO1 heating
+mode. A plausible interpretation is that no direct CFDM power command is
+active and the boiler instead operates from a temperature demand/local burner
+controller. The exact meaning of `00ff` is not yet decoded.
+
+For high-resolution follow-up logging, `0xA380` no longer needs to be sampled
+continuously unless a different operating mode is being investigated.
