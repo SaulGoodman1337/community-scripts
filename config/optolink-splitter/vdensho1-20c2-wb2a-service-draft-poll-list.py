@@ -615,8 +615,12 @@ poll_items = [
 #   A following off write stayed 0 and the next on write stayed 1 across repeated
 #   confirmation reads. The HA switch must remain non-optimistic and use staged
 #   read-back while the controller settles.
-#   Later generations also use 0x2330, but the exact VDensHO1 Vitosoft-derived
-#   catalog contains no 0x2330 datapoint, so do not substitute 0x2330 here.
+#   Multiple external Viessmann/OpenV implementations model party mode with
+#   separate addresses: write command at 0x2330 and live state at 0x2303.
+#   A read of 0x2330 on this controller returns P300 retcode 3 / payload 0x01,
+#   which is compatible with 0x2330 being a write-only command datapoint.
+#   Do not switch production control to 0x2330 until a write-to-2330 followed
+#   by state read-back at 0x2303 is confirmed on this exact controller.
 #
 #
 # Party room setpoint:
