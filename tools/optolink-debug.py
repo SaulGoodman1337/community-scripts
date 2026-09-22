@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/opt/optolink/venv/bin/python
 import argparse
 import sys
 import time
