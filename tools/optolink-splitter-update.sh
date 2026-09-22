@@ -59,13 +59,16 @@ install_repo_file tools/optolink-party-emulator.py   /usr/local/bin/optolink-par
 install_repo_file config/optolink-splitter/wb2a-single-session-logger.py   /usr/local/bin/wb2a-single-session-logger 0755
 ln -sf /usr/local/bin/wb2a-single-session-logger /usr/bin/wb2a-single-session-logger
 
+install_repo_file config/optolink-splitter/wb2a-rkr-cycle-logger.py   /usr/local/bin/wb2a-rkr-cycle-logger 0755
+ln -sf /usr/local/bin/wb2a-rkr-cycle-logger /usr/bin/wb2a-rkr-cycle-logger
+
 install_repo_file config/optolink-splitter/optolink-party-emulator.service   /etc/systemd/system/optolink-party-emulator.service 0644
 
 install_repo_file config/optolink-splitter/vcontrol-mapping.md   /root/optolink-vcontrol-mapping.md 0644
 
 systemctl daemon-reload
 systemctl enable optolink-party-emulator.service >/dev/null 2>&1 || true
-chown root:root   /usr/local/bin/optolink-apply-vdensho1-ha-profile   /usr/local/bin/optolink-apply-vscotho1-profile   /usr/local/bin/optolink-party-test   /usr/local/bin/optolink-debug   /usr/local/bin/optolink-party-emulator   /usr/local/bin/wb2a-single-session-logger   /etc/systemd/system/optolink-party-emulator.service   /root/optolink-vcontrol-mapping.md
+chown root:root   /usr/local/bin/optolink-apply-vdensho1-ha-profile   /usr/local/bin/optolink-apply-vscotho1-profile   /usr/local/bin/optolink-party-test   /usr/local/bin/optolink-debug   /usr/local/bin/optolink-party-emulator   /usr/local/bin/wb2a-single-session-logger   /usr/local/bin/wb2a-rkr-cycle-logger   /etc/systemd/system/optolink-party-emulator.service   /root/optolink-vcontrol-mapping.md
 ok "Helpers refreshed"
 
 info "Activating VDensHO1/20C2 Home Assistant profile"
@@ -89,6 +92,8 @@ chmod 600 /etc/community-scripts-private.conf
 ln -sf /usr/local/lib/community-scripts/private-update.sh /usr/bin/update
 ok "Future 'update' runs use the dedicated Optolink updater"
 
-printf '\nInstalled logger: /usr/local/bin/wb2a-single-session-logger\n' >&2
-printf 'Run: wb2a-single-session-logger\n' >&2
+printf '\nInstalled loggers:\n' >&2
+printf '  /usr/local/bin/wb2a-single-session-logger\n' >&2
+printf '  /usr/local/bin/wb2a-rkr-cycle-logger\n' >&2
+printf 'Run RKR logger: wb2a-rkr-cycle-logger\n' >&2
 ok "Optolink-Splitter update completed"
