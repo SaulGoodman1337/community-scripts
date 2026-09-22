@@ -98,6 +98,11 @@ cs_repo_fetch tools/optolink-party-emulator.py /usr/local/bin/optolink-party-emu
 chmod 755 /usr/local/bin/optolink-party-emulator
 chown root:root /usr/local/bin/optolink-party-emulator
 
+cs_repo_fetch config/optolink-splitter/wb2a-single-session-logger.py /usr/local/bin/wb2a-single-session-logger
+chmod 755 /usr/local/bin/wb2a-single-session-logger
+chown root:root /usr/local/bin/wb2a-single-session-logger
+ln -sf /usr/local/bin/wb2a-single-session-logger /usr/bin/wb2a-single-session-logger
+
 cs_repo_fetch config/optolink-splitter/optolink-party-emulator.service /etc/systemd/system/optolink-party-emulator.service
 chmod 644 /etc/systemd/system/optolink-party-emulator.service
 chown root:root /etc/systemd/system/optolink-party-emulator.service
