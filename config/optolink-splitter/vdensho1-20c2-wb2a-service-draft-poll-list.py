@@ -510,6 +510,37 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  Heating-curve normal-configuration verification (2026-09-22):
+    After restoring the user's normal curve level:
+      0x0800 = B5 00 -> current outdoor temperature = 18.1 C.
+      0x5525 = B4 00 -> ATS low-pass value = 18.0 C.
+      0x5527 = A4 00 -> "Gemischte AT" = 16.4 C.
+      0x27D3 = 08 -> slope d3 = 0.8.
+      0x27D4 = 05 -> level d4 = +5 K.
+      active room setpoint = 21.0 C.
+      C5 = 38 C; C6 = 50 C.
+      0x2544 = 7C 01 -> A1 flow setpoint = 38.0 C.
+      0x2900 = F9 01 -> A1 flow actual = 50.5 C.
+      0x555A = 7C 01 -> effective boiler setpoint = 38.0 C.
+      0x55E0 bytes10..11 = 7C 01 -> RKR setpoint = 38.0 C.
+      0xA391 = D8 0E -> CFDM effective setpoint = 38.0 C.
+      0xA307 = D8 0E -> BLR effective setpoint = 38.0 C.
+
+    Applying the same Viessmann curve polynomial gives approximately:
+      using 18.1 C current AT: 29.2 C
+      using 18.0 C ATS low-pass: 29.3 C
+      using 16.4 C mixed AT: 30.9 C
+    All candidates are below C5=38 C, so this sample cannot identify which
+    outdoor-temperature signal is used by the curve. It does, however,
+    hardware-confirm that C5 clamps the calculated A1 flow setpoint upward
+    to 38.0 C and that this clamped value propagates unchanged through
+    0x2544 -> 0x555A -> 0x55E0 -> 0xA391 -> 0xA307.
+
+    0x2500 bytes6..7 were 7C 01 in this normal-curve sample, whereas they
+    were F4 01 in the forced +40 K sample. They therefore track the same
+    38/50 C setpoint in both captures, but remain unnamed because no trusted
+    VDensHO1 field definition for those block bytes has been found.
+
   Heating-curve source calculation verification (2026-09-22):
     Hardware values:
       0x0800 = BF 00 -> current outdoor temperature = 19.1 C.
