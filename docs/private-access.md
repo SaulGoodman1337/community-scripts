@@ -34,7 +34,7 @@ csrun() {
 Then run any repository script by path, for example:
 
 ```bash
-csrun ct/optolink-splitter.sh
+csrun ct/mindwtr.sh
 ```
 
 The bootstrap downloads a temporary authenticated archive of the repository, sets `COMMUNITY_SCRIPTS_ROOT` to that checkout, executes the requested script, and removes the checkout afterwards. The token is not committed to the repository and is not stored permanently by the bootstrap.

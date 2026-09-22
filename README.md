@@ -41,8 +41,6 @@ The token is requested per run and is not stored by the bootstrap. Existing LXCs
 | --- | --- | --- | --- |
 | **Mindwtr** | Creates a dedicated Debian LXC and runs the Mindwtr web app plus its self-hosted sync backend with Docker Compose. | Run on the **Proxmox host** | Web: `5173`, Sync API: `8787` |
 | **Heirloom** | Creates a dedicated Debian LXC and runs the Heirloom family-tree app with PostgreSQL using the upstream Docker Compose stack. | Run on the **Proxmox host** | Web: `8081` |
-| **Optolink-Splitter** | Creates a privileged Debian LXC for local Viessmann Optolink access via serial, MQTT and TCP/IP. | Run on the **Proxmox host** | TCP: `65234` |
-| **Optolink-Web** | Creates an unprivileged Debian LXC with a lightweight browser UI for an existing Optolink-Splitter. | Run on the **Proxmox host** | Web: `8080` |
 | **SMB-Scan-Proxy** | Creates an isolated legacy scan-to-folder compatibility bridge and forwards completed files to a modern SMB3 backend. | Run on the **Proxmox host** | SMB: `445`, `139` |
 | **ONLYOFFICE DocSpace add-on** | Adds DocSpace Community to an **existing native ONLYOFFICE Docs LXC** and reuses the installed Document Server. | Run **inside the existing ONLYOFFICE LXC** | Docs: `80`, DocSpace: `8088` |
 
@@ -111,42 +109,6 @@ Defaults: 2 CPU cores, 4096 MiB RAM, 12 GiB disk, Debian 13, unprivileged LXC wi
 The installer generates random PostgreSQL and JWT secrets, stores configuration in `/opt/heirloom/.env`, and supports updates through the standard `update` command inside the container. Upstream production images are currently published for amd64, so the helper advertises amd64 only.
 
 More details: [docs/heirloom.md](docs/heirloom.md)
-
----
-
-## Optolink-Splitter
-
-[Optolink-Splitter](https://github.com/philippoo66/optolink-splitter) provides local access to Viessmann Optolink heating controls over MQTT and TCP/IP, with optional Vitoconnect / ViCare passthrough.
-
-Run on the **Proxmox VE host**:
-
-```bash
-csrun ct/optolink-splitter.sh
-```
-
-Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, with nesting enabled. The container is deliberately **privileged** so the shared community-scripts core can bind common USB serial devices such as `/dev/ttyUSB0`, `/dev/ttyUSB1` and `/dev/serial/by-id` into the LXC.
-
-There is no web interface. The upstream TCP listener defaults to port `65234`. The installer now includes the VScotHO1 / device 20CB poll profile migrated from the existing vcontrold setup. MQTT uses the `openv` namespace but remains disconnected until `mqtt_broker` is configured. Existing installations can apply the profile with `optolink-apply-vscotho1-profile`.
-
-More details: [docs/optolink-splitter.md](docs/optolink-splitter.md)
-
----
-
-## Optolink-Web
-
-Optolink-Web is a lightweight web UI for an existing Optolink-Splitter. It keeps the physical USB/Optolink adapter owned by the splitter and uses TCP for direct datapoint reads plus optional MQTT for live values and guarded `/set` writes.
-
-Run on the **Proxmox VE host**:
-
-```bash
-csrun ct/optolink-web.sh
-```
-
-Defaults: 1 CPU core, 512 MiB RAM, 4 GiB disk, Debian 13, unprivileged LXC. The web UI listens on `http://LXC-IP:8080`. Configure the existing splitter and MQTT broker in `/etc/optolink-web.env`.
-
-Writes are disabled by default. The MVP also understands splitter TCP responses both with and without a trailing LF, so it can coexist with the ViessData 2.4.1.x compatibility patch used by this deployment.
-
-More details: [docs/optolink-web.md](docs/optolink-web.md)
 
 ---
 
@@ -303,23 +265,17 @@ Full installation, tuning and account-activation notes: [docs/onlyoffice-docspac
 ct/
   mindwtr.sh                       Proxmox LXC definition and update routine
   heirloom.sh                      Heirloom LXC definition and update routine
-  optolink-splitter.sh             Optolink-Splitter LXC definition and update routine
-  optolink-web.sh                  Optolink-Web LXC definition and update routine
   smb-scan-proxy.sh                SMB scan proxy LXC definition and update routine
 
 install/
   mindwtr-install.sh               Mindwtr installation inside the new LXC
   heirloom-install.sh              Heirloom installation inside the new LXC
-  optolink-splitter-install.sh     Optolink-Splitter installation inside the new LXC
-  optolink-web-install.sh          Optolink-Web installation inside the new LXC
   smb-scan-proxy-install.sh        SMB scan proxy installation inside the new LXC
   onlyoffice-docspace-addon.sh     DocSpace add-on for an existing Docs LXC
 
 docs/
   mindwtr.md
   heirloom.md
-  optolink-splitter.md
-  optolink-web.md
   smb-scan-proxy.md
   onlyoffice-docspace-addon.md
 
@@ -332,14 +288,10 @@ tools/
 json/
   mindwtr.json                     Mindwtr script metadata
   heirloom.json                    Heirloom script metadata
-  optolink-splitter.json           Optolink-Splitter script metadata
-  optolink-web.json                Optolink-Web script metadata
   smb-scan-proxy.json              SMB scan proxy script metadata
 
-apps/optolink-web/                 FastAPI backend, datapoints and static web UI
 apps/smb-scan-proxy/               SMB scan spool/upload worker
 
-config/optolink-splitter/
   vscotho1-20cb-poll-list.py       VScotHO1/20CB poll profile
   vcontrol-mapping.md              Legacy vcontrold to MQTT mapping
 ```
