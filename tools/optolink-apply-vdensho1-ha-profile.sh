@@ -87,6 +87,54 @@ rm -f "$APP_DIR/poll_list.py"
 chown optolink:optolink   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"   "$APP_DIR/profiles/$PROFILE_NAME"
 chmod 640   "$APP_DIR/settings_ini.py"   "$APP_DIR/homeassistant_poll_list.py"   "$APP_DIR/profiles/$PROFILE_NAME"
 
+# The upstream HA discovery publisher currently expands %mqtt_listen% only
+# for domain-level command_topic values. Our VDensHO1 profile also uses the
+# supported Optolink /set topics and expresses them as {mqtt_base}/<dp>/set,
+# including item-level command_topic values. Expand both placeholders centrally
+# for every generated string field so Home Assistant never receives a literal
+# "{mqtt_base}" topic.
+publisher="$APP_DIR/homeassistant_publish.py"
+python3 - "$publisher" <<'PY'
+from pathlib import Path
+import sys
+
+path = Path(sys.argv[1])
+src = path.read_text()
+
+patched_marker = '# community-scripts: expand mqtt topic placeholders'
+if patched_marker not in src:
+    old = '''                if dpaddr_str is not None:
+                    for key, value in list(discovery_config.items()):
+                        if isinstance(value, str):
+                            if "%DpAddr%" in value or "%Length%" in value:
+                                discovery_config[key] = (
+                                    value.replace("%DpAddr%", dpaddr_str)
+                                         .replace("%Length%", str(length))
+                                )
+'''
+    new = '''                # community-scripts: expand mqtt topic placeholders
+                for key, value in list(discovery_config.items()):
+                    if isinstance(value, str):
+                        value = value.replace("{mqtt_base}", mqtt_base)
+                        if settings.mqtt_listen is not None:
+                            value = value.replace("%mqtt_listen%", settings.mqtt_listen)
+                        if dpaddr_str is not None and ("%DpAddr%" in value or "%Length%" in value):
+                            value = (
+                                value.replace("%DpAddr%", dpaddr_str)
+                                     .replace("%Length%", str(length))
+                            )
+                        discovery_config[key] = value
+'''
+    if old not in src:
+        raise SystemExit(
+            "Unsupported upstream homeassistant_publish.py layout; "
+            "refusing to publish discovery with unresolved MQTT placeholders."
+        )
+    path.write_text(src.replace(old, new, 1))
+PY
+
+python3 -m py_compile "$publisher"
+
 echo "Validating Home Assistant discovery configuration..."
 # Validate the generated HA discovery configuration before touching the service.
 if ! timeout 30s runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/homeassistant_publish.py" -c   > /root/optolink-ha-discovery-dry-run.txt 2>&1; then
@@ -97,6 +145,12 @@ if ! timeout 30s runuser -u optolink --   "$APP_DIR/venv/bin/python" "$APP_DIR/h
     echo "Home Assistant discovery dry-run failed (exit $rc)." >&2
   fi
   cat /root/optolink-ha-discovery-dry-run.txt >&2
+  rollback_profile
+  exit 1
+fi
+
+if grep -Fq '"command_topic": "{mqtt_base}' /root/optolink-ha-discovery-dry-run.txt; then
+  echo "Home Assistant discovery still contains an unresolved {mqtt_base} command topic." >&2
   rollback_profile
   exit 1
 fi
