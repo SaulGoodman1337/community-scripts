@@ -97,13 +97,6 @@ poll_list = {
                 ("NORMAL", "aussentemperatur_gedaempft",         0x5527, 2, 0.1, True),
                 ("FAST",   "kesseltemperatur",                   0x0810, 2, 0.1, True),
                 ("FAST",   "kessel_solltemperatur_effektiv",     0x555A, 2, 0.1, True),
-                # Internal control-chain setpoints, hardware-verified against a
-                # live burner run. All three showed 63.0 C while firing and
-                # 38.0 C after the demand dropped. A307/A391 are centi-degrees;
-                # 55E0 bytes 10..11 are little-endian deci-degrees.
-                ("NORMAL", "blr_kesselsolltemperatur_effektiv",  0xA307, 2, 0.01, False),
-                ("NORMAL", "cfdm_kesselsolltemperatur_effektiv", 0xA391, 2, 0.01, False),
-                ("NORMAL", "rkr_kesselsolltemperatur",            0x55E0, 17, "b:10:11", 0.1, False),
                 ("NORMAL", "abgastemperatur",                    0x0816, 2, 0.1, True),
                 ("FAST",   "warmwasser_temperatur",              0x0812, 2, 0.1, True),
                 ("FAST", "warmwasser_solltemperatur_aktuell",  0x6500, 2, 0.1, True),
@@ -124,9 +117,6 @@ poll_list = {
             "suggested_display_precision": 0,
             "poll": [
                 ("FAST", "brenner_modulationsgrad",         0xA305, 1, 0.5, False),
-                # A38F byte0: CFDM power value, hardware-verified at
-                # 31.5..33.0 % while A305 remained at 33.0 %.
-                ("NORMAL", "cfdm_leistungswert",             0xA38F, 2, "b:0:0", 0.5, False),
                 ("FAST", "interne_pumpe_drehzahl",          0x7660, 2, "b:1:1", 1, False),
                 ("FAST", "heizkreis_m1_pumpe_drehzahl",     0x7663, 2, "b:1:1", 1, False),
             ],
@@ -1023,6 +1013,39 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
+        # Internal burner/control-chain diagnostics.
+        # Hardware-verified in a live burner cycle:
+        #   A307 = A391 = 63.0 C while firing, 38.0 C after demand drop
+        #   55E0 bytes10..11 = same RKR setpoint (63.0 -> 38.0 C)
+        #   A38F byte0 = 31.5..33.0 %, byte1 = 1 while firing / 0 when off
+        # -----------------------------------------------------------------
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 1,
+            "poll": [
+                ("NORMAL", "blr_kesselsolltemperatur_effektiv",  0xA307, 2, 0.01, False),
+                ("NORMAL", "cfdm_kesselsolltemperatur_effektiv", 0xA391, 2, 0.01, False),
+                ("NORMAL", "rkr_kesselsolltemperatur",            0x55E0, 17, "b:10:11", 0.1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "%",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 1,
+            "poll": [
+                ("NORMAL", "cfdm_leistungswert", 0xA38F, 2, "b:0:0", 0.5, False),
+            ],
+        },
+
+        # -----------------------------------------------------------------
         # Internal WB2A diagnostics
         #
         # Hardware-verified on this appliance:
@@ -1364,7 +1387,7 @@ poll_list = {
             "entity_category": "diagnostic",
             "enabled_by_default": True,
             "icon": "mdi:alert-octagon-outline",
-            "value_template": "{% set v = value | string | trim | lower %}{% if v | length == 18 and v[2:18] != 'ffffffffffffffff' %}0x{{ v[0:2] | upper }} @ {{ v[2:6] }}-{{ v[6:8] }}-{{ v[8:10] }} {{ v[12:14] }}:{{ v[14:16] }}:{{ v[16:18] }}{% else %}0x{{ v[0:2] | upper }}{% endif %}",
+            "value_template": "{% set v = value | trim | lower %}{% if v | length == 18 and v[2:18] != 'ffffffffffffffff' %}0x{{ v[0:2] | upper }} @ {{ v[2:6] }}-{{ v[6:8] }}-{{ v[8:10] }} {{ v[12:14] }}:{{ v[14:16] }}:{{ v[16:18] }}{% else %}0x{{ v[0:2] | upper }}{% endif %}",
             "poll": [
                 ("RARE", "gfa_fehlerhistorie_01", 0x7590, 9, "raw", False),
                 ("RARE", "gfa_fehlerhistorie_02", 0x7599, 9, "raw", False),
