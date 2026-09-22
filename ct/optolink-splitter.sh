@@ -31,16 +31,32 @@ cs_repo_fetch() {
 
 configure_private_update() {
   local target="${1:?ct script path}"
-  install -d -m 0755 /usr/local/lib/community-scripts
-  cs_repo_fetch tools/private-update.sh /usr/local/lib/community-scripts/private-update.sh
-  chmod 755 /usr/local/lib/community-scripts/private-update.sh
+  local update_dir="/usr/local/lib/community-scripts"
+  local update_file="$update_dir/private-update.sh"
+  local tmp_update
+
+  install -d -m 0755 "$update_dir"
+
+  # Do not overwrite the currently running /usr/bin/update script in place.
+  # Bash may still be reading that inode and can resume at a shifted byte
+  # offset after the child updater returns. Fetch to a new inode and replace
+  # atomically instead.
+  tmp_update="$(mktemp "$update_dir/.private-update.sh.XXXXXX")"
+  if ! cs_repo_fetch tools/private-update.sh "$tmp_update"; then
+    rm -f "$tmp_update"
+    return 1
+  fi
+  chmod 755 "$tmp_update"
+  chown root:root "$tmp_update"
+  mv -f "$tmp_update" "$update_file"
+
   cat >/etc/community-scripts-private.conf <<EOF_PRIVATE_UPDATE
 COMMUNITY_SCRIPTS_REPO=$CS_REPO
 COMMUNITY_SCRIPTS_REF=$CS_REF
 COMMUNITY_SCRIPTS_TARGET=$target
 EOF_PRIVATE_UPDATE
   chmod 600 /etc/community-scripts-private.conf
-  ln -sf /usr/local/lib/community-scripts/private-update.sh /usr/bin/update
+  ln -sf "$update_file" /usr/bin/update
 }
 
 # Copyright (c) 2026
