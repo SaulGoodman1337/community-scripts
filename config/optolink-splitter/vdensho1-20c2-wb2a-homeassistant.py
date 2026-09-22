@@ -762,6 +762,72 @@ poll_list = {
                 ("ONCE", "codierstecker_interne_pumpe_min_drehzahl",       0x1070, 16, "b:5:5",   1, False),
             ],
         },
+        # Boiler/burner regulator parameters from coding plug 0x1060.
+        # Hardware-verified raw block:
+        # 04 08 1E 04 05 04 1E 14 00 00 00 00 00 00 00 00
+        # Keep these 0x1060 entries consecutive; all values are read-only.
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "K",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_brenner_einschaltdifferenz",             0x1060, 16, "b:0:0", 1, False),
+                ("ONCE", "codierstecker_brenner_ausschaltdifferenz",             0x1060, 16, "b:1:1", 1, False),
+                ("ONCE", "codierstecker_brenner_ausschaltdifferenz_volllast",    0x1060, 16, "b:4:4", 1, False),
+                ("ONCE", "codierstecker_brenner_pausenabbruch_differenz",        0x1060, 16, "b:6:6", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "%/K",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 1,
+            "poll": [
+                ("ONCE", "codierstecker_kt_regler_verstaerkung", 0x1060, 16, "b:2:2", 0.1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "s",
+            "device_class": "duration",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_kt_regler_nachstellzeit", 0x1060, 16, "b:3:3", 10, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "min",
+            "device_class": "duration",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_brenner_mindestpausenzeit", 0x1060, 16, "b:5:5", 1, False),
+            ],
+        },
+        {
+            "domain": "sensor",
+            "unit_of_measurement": "°C",
+            "device_class": "temperature",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_brenner_pausenabbruch_temperatur", 0x1060, 16, "b:7:7", 1, False),
+            ],
+        },
+
         # Burner characteristic curve from coding plug 0x1090.
         # GWG91..GWG9A map requested boiler output 10..100 % to the
         # controller's burner modulation value. Hardware-verified raw block:

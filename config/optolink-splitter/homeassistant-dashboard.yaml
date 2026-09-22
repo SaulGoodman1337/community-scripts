@@ -2259,6 +2259,25 @@ views:
               - entity: sensor.vitodens_200_wb2a_codierstecker_interne_pumpe_nachlauf
                 name: Nachlaufzeit
           - type: entities
+            title: Brennerregelung
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_einschaltdifferenz
+                name: Einschaltdifferenz
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_ausschaltdifferenz
+                name: Ausschaltdifferenz
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_ausschaltdifferenz_volllast
+                name: Ausschaltdifferenz bei Volllast
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_mindestpausenzeit
+                name: Brennermindestpause
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_pausenabbruch_differenz
+                name: Pausenabbruch Differenz
+              - entity: sensor.vitodens_200_wb2a_codierstecker_brenner_pausenabbruch_temperatur
+                name: Pausenabbruch Temperatur
+              - entity: sensor.vitodens_200_wb2a_codierstecker_kt_regler_verstaerkung
+                name: KT-Regler Verstärkung
+              - entity: sensor.vitodens_200_wb2a_codierstecker_kt_regler_nachstellzeit
+                name: KT-Regler Nachstellzeit
+          - type: entities
             title: Brennerkennlinie
             entities:
               - entity: sensor.vitodens_200_wb2a_codierstecker_brennerkennlinie_10

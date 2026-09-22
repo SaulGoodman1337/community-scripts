@@ -364,6 +364,18 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     capability. Use 10..60 C for the Home Assistant number entity unless the
     controller coding is intentionally changed.
 
+    Coding-plug regulator block 0x1060 len16:
+      raw = 04 08 1E 04 05 04 1E 14 00 00 00 00 00 00 00 00
+      byte 0 = 4 K switch-on differential (GWG60)
+      byte 1 = 8 K switch-off differential (GWG61)
+      byte 2 = 30 / 10 = 3.0 percent/K boiler-temperature controller gain (GWG62)
+      byte 3 = 4 * 10 s = 40 s boiler-temperature controller reset time (GWG63)
+      byte 4 = 5 K burner switch-off differential at full load (GWG64)
+      byte 5 = 4 min burner minimum pause (GWG65)
+      byte 6 = 30 K differential threshold for cancelling minimum pause (GWG66)
+      byte 7 = 20 C temperature threshold for cancelling minimum pause (GWG67)
+    These are coding-plug regulator constants and are exposed read-only.
+
     Coding-plug block 0x1070 len16:
       raw = 05 1D 14 18 41 32 3C 00 00 00 00 00 00 00 00 00
       byte 0 = 5 C minimum boiler temperature (GWG70)
@@ -441,6 +453,15 @@ poll_items = [
     ('ONCE', 'codierstecker_wwsoll_min', 0x1050, 16, 'b:11:11', 1, False),  # HW: 10 C
     ('ONCE', 'codierstecker_ww_max_leistung', 0x1050, 16, 'b:12:12', 1, False),  # HW: 65%
     ('ONCE', 'codierstecker_heizung_max_leistung', 0x1050, 16, 'b:13:13', 1, False),  # HW: 65%
+    ('ONCE', 'codierstecker_block_1060_raw', 0x1060, 16),  # HW verified: 04081e0405041e140000000000000000
+    ('ONCE', 'codierstecker_brenner_einschaltdifferenz', 0x1060, 16, 'b:0:0', 1, False),  # GWG60=4 K
+    ('ONCE', 'codierstecker_brenner_ausschaltdifferenz', 0x1060, 16, 'b:1:1', 1, False),  # GWG61=8 K
+    ('ONCE', 'codierstecker_kt_regler_verstaerkung', 0x1060, 16, 'b:2:2', 0.1, False),  # GWG62=3.0 %/K
+    ('ONCE', 'codierstecker_kt_regler_nachstellzeit', 0x1060, 16, 'b:3:3', 10, False),  # GWG63=40 s
+    ('ONCE', 'codierstecker_brenner_ausschaltdifferenz_volllast', 0x1060, 16, 'b:4:4', 1, False),  # GWG64=5 K
+    ('ONCE', 'codierstecker_brenner_mindestpausenzeit', 0x1060, 16, 'b:5:5', 1, False),  # GWG65=4 min
+    ('ONCE', 'codierstecker_brenner_pausenabbruch_differenz', 0x1060, 16, 'b:6:6', 1, False),  # GWG66=30 K
+    ('ONCE', 'codierstecker_brenner_pausenabbruch_temperatur', 0x1060, 16, 'b:7:7', 1, False),  # GWG67=20 C
     ('ONCE', 'codierstecker_block_1070_raw', 0x1070, 16),  # HW verified raw: 051d141841323c000000000000000000
     ('ONCE', 'codierstecker_kesseltemperatur_min', 0x1070, 16, 'b:0:0', 1, False),  # HW: GWG70=5 C
     ('ONCE', 'codierstecker_brenner_min_leistung', 0x1070, 16, 'b:1:1', 1, False),  # HW: GWG71=29%
