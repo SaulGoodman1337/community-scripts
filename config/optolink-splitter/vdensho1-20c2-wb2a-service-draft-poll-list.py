@@ -73,15 +73,17 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     command on this exact 20C2/SW03 controller: write 0x2330 returned P300
     retcode 3 / payload 0x01.
 
-    Practical conclusion: 0x2303 is the correct Party R/W datapoint, but the
-    controller/control-panel firmware can require one complete local Party
-    activation/confirmation after its internal state has been reset.  Home
-    Assistant should send the exact raw commands w;0x2303;1;0 / w;0x2303;1;1
-    and remain non-optimistic with 0x2303 as authoritative state.  A direct
-    snapshot immediately after a dashboard write proved that the controller
-    state changes promptly; the observed ~30 s lag was state feedback waiting
-    for the normal poll cycle.  Production therefore forces staged 0x2303
-    read-backs at 0.25/1.0/2.5/5.0 s after those exact raw Party writes.
+    Later testing refined that conclusion: local Party OFF makes subsequent
+    remote 0x2303=1 writes fail again. The write is ACKed, then 0x2303 returns
+    to 0 and 0x2500 remains in the non-Party state. Writing 0x2308 after 0x2303
+    to imitate a temperature confirmation also does not make remote Party ON
+    stick. Remote 0x2303=0 remains reliable.
+
+    Production therefore treats 0x2303 as native Party status/off-control, not
+    as a dependable remote ON actuator. Synthetic Party uses the separately
+    hardware-verified path 0x2323=4 (Dauernd Normal), stores/restores the prior
+    0x2323 mode and 0x2306 normal setpoint, mirrors 0x2308 into 0x2306 while
+    active, and applies the configured 0x27F2 time limit.
 
   Party room setpoint P300 write test on the real appliance:
     initial 0x2308 = 0x15 = 21 C
@@ -605,21 +607,18 @@ poll_items = [
 #   but 0x2331 is absent from the exact VDensHO1 Vitosoft-derived catalog.
 #   Hardware probe on this 20C2/SW03 returned P300 retcode 3 for read 0x2331,
 #   confirming that 0x2331 is not a usable ordinary datapoint here.
-#   Hardware-verified write datapoint for THIS exact generation: 0x2303 len1.
-#   Evidence:
-#     - before local Party initialization/confirmation, write 1 is ACKed but
-#       reverts to 0 and leaves the effective 0x2500 state unchanged;
-#     - this failure was reproduced in both normal and forced reduced operation;
-#     - after one complete physical Party activation/confirmation, repeated raw
-#       writes 0 -> off and 1 -> on remain stable without further local input;
-#     - 0x2500 byte 8 follows 0x01 (off) <-> 0x02 (on);
-#     - a read-only scan of 0x2300..0x233F during physical Party toggling found
-#       only 0x2303 changing.
-#   This matches historical 20C2/HO1 field reports that remote Party starts
-#   working after Party has once been activated/confirmed at the control panel.
-#   Production HA control should therefore bypass the generic /set conversion
-#   and publish the exact raw commands w;0x2303;1;0 / w;0x2303;1;1 to
-#   mqtt_listen while keeping 0x2303 as the non-optimistic state source.
+#   Native Party datapoint 0x2303 behavior on this exact generation:
+#     - remote OFF (write 0) is reliable;
+#     - remote ON (write 1) is ACKed but may immediately revert to 0;
+#     - after one complete physical Party activation, remote ON can temporarily
+#       work again;
+#     - switching Party OFF at the physical control panel makes remote ON fail
+#       again;
+#     - writing 0x2308 after 0x2303 does not reproduce the missing local
+#       confirmation/bedienpanel state;
+#     - physical Party toggling changes 0x2303 and 0x2500 byte 8 as observed.
+#   Therefore production must not depend on 0x2303=1 for Party activation.
+#   Synthetic Party uses 0x2323=4 with saved/restored 0x2323 and 0x2306 values.
 #   0x2330 is explicitly ruled out on this controller: a hardware write returned
 #   P300 retcode 3 / payload 0x01.
 #
