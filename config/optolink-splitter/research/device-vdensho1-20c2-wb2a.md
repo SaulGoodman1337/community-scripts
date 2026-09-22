@@ -363,3 +363,50 @@ Conclusion:
 The search for the source of the ~1 %/s ramp therefore moves to the CFDM
 objects (`0xA380` / `0xA38F`), which have already shown dynamic behavior in
 earlier WB2A logs.
+
+
+## 2026-09-22 high-resolution run: pre-ignition and ramp details
+
+The 20:19 run added several useful observations:
+
+- `0x55DC` starts changing **before flame is present**:
+  roughly 30 -> 34 -> 57 -> 67/68 -> 65 while `FL=0`.
+- At flame start, `0x55DC` is already about 65 %.
+- After flame start it holds about 66 % for roughly 12 s.
+- The sustained downward ramp then reaches 33 % after about 44-45 s from
+  flame start, again consistent with approximately 1 percentage point/s.
+- After flame loss, `0x55DC` remains nonzero briefly (33 -> 30 -> 0),
+  confirming that it is a controller modulation command/state value rather
+  than a direct proof of instantaneous combustion output.
+
+This makes it even more important to distinguish the controller modulation
+command from a downstream actual-power signal.
+
+## CFDM next-step hypothesis
+
+Cross-family Vitosoft metadata identifies:
+
+```text
+0xA380  nviProdCmd_CFDM_state/value   Anlagen-/ Kessel-Sollleistung
+0xA38F  nvoPWRState_CFDM_state/value Anlagen-Istleistung
+```
+
+These names are not present in the VDensHO1-specific datapoint list, so they
+remain cross-family hints rather than verified 20C2 semantics.
+
+Earlier hardware logs nevertheless show dynamic `A38F` data. One notable
+sample had:
+
+```text
+A305 raw = 0x84 -> 66.0 %
+A38F raw = 82 01
+```
+
+If `A38F` byte 0 uses the same 0.5 %/LSB scaling, `0x82 = 130 -> 65.0 %`,
+which is a strong numerical correlation. Byte 1 may be a state/status field,
+but that layout is not yet proven.
+
+The single-session logger now records raw `0xA380;2` and `0xA38F;2`
+alongside verified `0x55DC` modulation. The goal is to determine whether the
+CFDM command changes abruptly while CFDM actual power follows the 1 %/s ramp,
+or whether the CFDM command itself is already ramp-limited.
