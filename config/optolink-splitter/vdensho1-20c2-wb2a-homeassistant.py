@@ -23,12 +23,14 @@ Policy used here:
   * do not expose economy mode as a switch: 0x2302 write ACKs but is ignored.
 
 Write verification on this exact appliance:
-  0x2303 party mode: R/W 0/1; raw writes w;0x2303;1;0/1 verified stable
-    after one full local Party activation/confirmation on the control panel
+  0x2303 native party state: readable; remote OFF is reliable, but remote ON is
+    not reliable after Party is switched off at the physical control panel.
+    Production Party activation therefore does not write 0x2303=1.
   0x2306 normal room target: R/W
   0x2307 reduced room target: R/W
   0x2308 party room target: R/W
-  0x2323 operating mode: R/W verified for values 2 and 4
+  0x2323 operating mode: R/W verified for values 2 and 4; synthetic Party
+    uses value 4 (Dauernd Normal) and restores the previous value afterwards
   0x6300 DHW target: R/W, current configured range 10..60 C
   0x6773 circulation interval: R/W verified for values 0 and 7
 
@@ -67,10 +69,10 @@ poll_list = {
     "poll_interval": 2,
     "poll_groups": {
         "ONCE": 0,
-        "FAST": 1,       # ~2 s
-        "NORMAL": 15,    # ~30 s
-        "SLOW": 150,     # ~5 min
-        "RARE": 900,     # ~30 min
+        "FAST": 1,       # every completed poll cycle
+        "NORMAL": 15,    # every 15 poll cycles
+        "SLOW": 150,     # every 150 poll cycles
+        "RARE": 900,     # every 900 poll cycles
         "DISABLED": -1,
     },
 
@@ -212,35 +214,49 @@ poll_list = {
         },
 
         # -----------------------------------------------------------------
-        # Party mode: hardware-verified R/W
+        # Party mode: persistent synthetic control for VDensHO1 / 20C2 / SW03.
+        #
+        # Native 0x2303=1 is not a reliable remote activation path on this
+        # controller after Party has been switched off at the physical panel.
+        # The companion optolink-party-emulator service therefore:
+        #   * stores the current 0x2323 mode and 0x2306 normal setpoint;
+        #   * mirrors 0x2308 Party setpoint to 0x2306 while active;
+        #   * forces 0x2323=4 (Dauernd Normal);
+        #   * restores both previous values on Party OFF;
+        #   * applies the configured 0x27F2 time limit;
+        #   * still recognizes native physical Party via 0x2303.
+        #
+        # Keep the existing entity name/unique_id so the dashboard does not
+        # need to change.
         # -----------------------------------------------------------------
         {
             "domain": "switch",
             "icon": "mdi:party-popper",
-            # Send the exact raw P300 commands that are verified on this
-            # VDensHO1 / 20C2 / SW03 controller.  Bypass the generic /set
-            # conversion layer so Home Assistant uses the same path as
-            # optolink-debug:
-            #   OFF -> w;0x2303;1;0
-            #   ON  -> w;0x2303;1;1
-            #
-            # Important controller quirk observed on 2026-09-22: after a
-            # controller/control-panel reset, the first remote Party activation
-            # can be rejected even though the write is ACKed.  After Party has
-            # once been fully activated/confirmed at the physical control panel,
-            # repeated raw OFF/ON writes remain stable and 0x2500[8] follows
-            # 0x01 <-> 0x02.  Keep the switch non-optimistic and use 0x2303 as
-            # the authoritative state.  The profile apply helper patches
-            # mqtt_util.py to force staged 0x2303 read-backs after these exact
-            # raw commands, avoiding the normal full-poll-cycle state latency.
-            "command_topic": "%mqtt_listen%",
-            "payload_on": "w;0x2303;1;1",
-            "payload_off": "w;0x2303;1;0",
+            "command_topic": "{mqtt_base}/party_emulation/set",
+            "state_topic": "{mqtt_base}/party_emulation/state",
+            "payload_on": "1",
+            "payload_off": "0",
             "state_on": "1",
             "state_off": "0",
             "optimistic": False,
-            "poll": [
-                ("FAST", "heizkreis_m1_partybetrieb", 0x2303, 1, 1, False),
+            "nopoll": [
+                {
+                    "name": "heizkreis_m1_partybetrieb",
+                },
+            ],
+        },
+        {
+            "domain": "sensor",
+            "entity_category": "diagnostic",
+            "enabled_by_default": False,
+            "icon": "mdi:party-popper",
+            "nopoll": [
+                {
+                    "name": "heizkreis_m1_party_emulation_status",
+                    "state_topic": "{mqtt_base}/party_emulation/status",
+                    "value_template": "{{ value_json.mode }}",
+                    "json_attributes_topic": "{mqtt_base}/party_emulation/status",
+                },
             ],
         },
 
