@@ -65,11 +65,16 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     party mode had first been enabled at the physical control panel.
     Follow-up test on 2026-09-22 from a normal remote-off state:
       write 0x2303 len1 value 1 -> transport ACK (1;0x2303;1)
-      immediate explicit read-back -> 0x00
-    Therefore the write telegram itself is valid, but remote activation is
-    conditional or the controller immediately rejects/resets it in at least
-    some operating states. Do not treat an ACK alone as proof that party mode
-    became active. Current state must always be confirmed by read-back.
+      read-back after 0.2 s -> 0x01
+      read-back after another 1.0 s -> 0x00
+      read-back after another 3.0 s -> 0x00
+      a subsequent independent read shortly afterwards -> 0x01
+    A following write 0 -> ACK and remained 0, and the next write 1 remained
+    1 through the 0.2 s / 1 s / 3 s confirmation reads.
+    Therefore the command is valid and remote activation works, but the first
+    activation can expose a transient/delayed controller state for several
+    seconds. ACK alone is not sufficient; use repeated read-back until the
+    controller has settled.
 
   Party room setpoint P300 write test on the real appliance:
     initial 0x2308 = 0x15 = 21 C
@@ -605,10 +610,11 @@ poll_items = [
 #   Earlier hardware verification on this exact 20C2 / SW index 0x03:
 #     after manual party activation, write 0 -> ACK + read-back 0 and
 #     write 1 -> ACK + read-back 1 with matching effective setpoint changes.
-#   Follow-up 2026-09-22: a remote write 1 from party-off returned protocol ACK
-#   but immediate read-back stayed 0. Remote activation is therefore conditional
-#   on controller state and must be treated as confirmed only after read-back.
-#   The HA switch may expose the command, but must remain non-optimistic.
+#   Follow-up 2026-09-22: first remote activation showed a transient sequence
+#   1 -> 0 -> 0 over the first ~4 s, then a later independent read returned 1.
+#   A following off write stayed 0 and the next on write stayed 1 across repeated
+#   confirmation reads. The HA switch must remain non-optimistic and use staged
+#   read-back while the controller settles.
 #   Later generations also use 0x2330, but the exact VDensHO1 Vitosoft-derived
 #   catalog contains no 0x2330 datapoint, so do not substitute 0x2330 here.
 #
