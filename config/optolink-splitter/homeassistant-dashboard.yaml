@@ -2454,9 +2454,17 @@ views:
           - type: markdown
             content: >-
               Die GFA-Historie ist ein separates Archiv des Feuerungsautomaten.
-              Der Hex-Code wird bewusst nicht in einen Vitotronic-F-Code
-              übersetzt; für diesen Codebereich liegt keine belastbare
-              öffentliche Zuordnung vor.
+              Die Rohcodes bleiben maßgeblich, weil keine vollständige
+              öffentliche GFA-Codetabelle vorliegt. Für die hier beobachteten
+              Werte gibt es jedoch belastbare Hinweise aus Viessmann-
+              Serviceinformationen: 0x04 (dez. 4) passt zu F4 / keine
+              Flammenbildung, 0x98 (dez. 152) zu F9 / Gebläsedrehzahl beim
+              Brennerstart nicht erreicht und 0x21 (dez. 33) zu einer internen
+              Spannungsunterversorgung bzw. einem Regelungsfehler. Die
+              Gleichsetzung des Archivbytes mit Codieradresse 38 ist
+              quellenbasiert plausibel, aber nicht für jede Gerätegeneration
+              ausdrücklich dokumentiert; deshalb werden die Sensorwerte nicht
+              automatisch umbenannt. 0x00 bleibt ebenfalls bewusst ungemappt.
           - type: entities
             title: GFA Fehler-/Ereignishistorie
             entities:

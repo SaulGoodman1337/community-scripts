@@ -521,7 +521,46 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
       05: code 0x04 @ 2026-05-14 16:27:44
     Older slots mostly alternate 0x00/0x21 around 2026-05-14 15:23..15:28.
     The GFA code space is distinct from the Vitotronic display fault codes.
-    No verified public GFA-code map is available; do not map 0x00 to "OK".
+    No complete public GFA-code table is available; do not map 0x00 to "OK".
+
+    Research on observed codes (2026-09-22):
+      Important: the archive code -> coding-address-38 relation is strongly
+      suggested by both belonging to the internal GFA/VSKO code space, but no
+      source found explicitly states that FehlerHisFA byte0 is identical to
+      coding address 38 for every controller generation. Keep raw code as the
+      authoritative value and treat these labels as source-backed candidates.
+
+      0x04 = decimal 4:
+        Viessmann Customer Care states VSKO/internal code 4 accompanies display
+        fault F4. The WB2A service manual defines F4 as burner fault because no
+        flame signal is present. Candidate meaning: no flame formation/signal.
+
+      0x98 = decimal 152:
+        Multiple Viessmann support cases explicitly pair coding address 38:152
+        with display fault F9. The WB2A service manual defines F9 as fan speed
+        too low at burner start. Candidate meaning: fan target speed not
+        reached / fan control problem.
+
+      0x21 = decimal 33:
+        Viessmann support repeatedly describes coding address 38:33 as an
+        internal supply-voltage under-supply / controller fault; after external
+        mains supply is ruled out, replacement of the control unit is advised.
+        Candidate meaning: internal control-supply undervoltage/status 33.
+
+      0x00:
+        observed repeatedly at exactly the same timestamps as 0x21 entries.
+        This pattern is compatible with a clear/recovery transition, but no
+        source proving that interpretation was found. Keep 0x00 unmapped.
+
+    Additional post-burn 0x55D3 observation:
+      After A305/A38F had gone to zero, the 9-byte GFA block continued changing:
+        00 63 8A 00 00 01 00 00 00
+        ...
+        00 A8 97 00 00 01 00 00 00
+      byte5 remained 0x01 (flame bit 0x20 clear, lockout bit 0x40 clear) and
+      bytes6..7 stayed 0 rpm. Bytes1/2 therefore contain live internal values
+      unrelated to flame/lockout/blower RPM, but no VDensHO1 field names for
+      those bytes were found. Do not expose them with guessed semantics.
 
   Outdoor-temperature comparison:
     0x0800 = 13.6 C, 0x5525 = 13.8 C, 0x5527 = 14.4 C, with 0x083A=0 (sensor OK).
