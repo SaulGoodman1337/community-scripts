@@ -1334,7 +1334,37 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Minimale Drehzahl E7
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Untere Drehzahlgrenze der geregelten Heizkreispumpe im normalen Heizbetrieb.
+                  
+                  **Bereich:** 0–100 %
+                  
+                  **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_pumpe_min_drehzahl_e7_einstellung') }} %
+                  
+                  Die Regelung darf oberhalb von E7 selbst eine höhere Drehzahl vorgeben. E7 = 100 % erzwingt zusammen mit E6 = 100 % die maximale Pumpendrehzahl.
+                  
+                  **Bei dieser WB2A gemessen:** E7 30 % → reale Drehzahl etwa 32–35 %, E7 60 % → etwa 62 %, E7 100 % → 100 %.
+                  
+                  Datenpunkt: `0x27E7`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_pumpe_max_drehzahl_e6_einstellung
@@ -1347,14 +1377,71 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Maximale Drehzahl E6
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Obere Drehzahlgrenze der geregelten Heizkreispumpe.
+                  
+                  **Bereich:** 0–100 %
+                  
+                  **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_pumpe_max_drehzahl_e6_einstellung') }} %
+                  
+                  E6 = 100 % bedeutet, dass die Regelung bis 100 % fahren darf. Es bedeutet **nicht**, dass die Pumpe beim Brennerstart automatisch auf 100 % geht.
+                  
+                  Datenpunkt: `0x27E6`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: custom:mushroom-select-card
             entity: select.vitodens_200_wb2a_heizkreis_m1_pumpe_nebenbetrieb_e8_einstellung
-            name: Nebenbetrieb E8
+            name: Pumpendrehzahl reduziert E8
             icon: mdi:pump
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Pumpendrehzahl reduziert E8
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Legt fest, welche Pumpendrehzahl im reduzierten Heizbetrieb verwendet wird.
+                  
+                  **Aktuell:** {{ states('select.vitodens_200_wb2a_heizkreis_m1_pumpe_nebenbetrieb_e8_einstellung') }}
+                  
+                  - **Minimum nach E7:** Im reduzierten Betrieb gilt die Mindestdrehzahl aus E7.
+                  - **Reduziert nach E9:** Im reduzierten Betrieb wird die separate Drehzahl E9 verwendet.
+                  
+                  E8 ist kein Brennerstart- oder Pumpenboost-Parameter.
+                  
+                  Datenpunkt: `0x27E8`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9_einstellung
@@ -1367,11 +1454,39 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Reduzierte Drehzahl E9
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Separate Pumpendrehzahl für den reduzierten Heizbetrieb.
+                  
+                  **Bereich:** 0–100 %
+                  
+                  **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_e9_einstellung') }} %
+                  
+                  E9 wird für diese Funktion nur verwendet, wenn E8 auf **„Reduziert nach E9“** steht.
+                  
+                  Datenpunkt: `0x27E9`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9_einstellung
-            name: Pumpen-Nachlauf A9
+            name: Pumpenstillstand reduziert A9
             icon: mdi:timer-cog-outline
             show_entity_picture: false
             vertical: false
@@ -1380,7 +1495,35 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Pumpenstillstand reduziert A9
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Dauer des Pumpenstillstands beim Übergang in den reduzierten Heizbetrieb.
+                  
+                  **Bereich:** 0–15 min
+                  
+                  **Aktuell:** {{ states('number.vitodens_200_wb2a_heizkreis_m1_pumpe_reduziert_a9_einstellung') }} min
+                  
+                  A9 ist damit kein normaler Pumpennachlauf. Die bisherige Dashboard-Bezeichnung „Pumpen-Nachlauf A9“ war missverständlich und wurde korrigiert.
+                  
+                  Datenpunkt: `0x27A9`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31_einstellung
@@ -1393,7 +1536,37 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Interne Pumpe Solldrehzahl 31
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Konfigurationswert für die Drehzahl der internen Pumpe.
+                  
+                  **Bereich:** 0–100 %
+                  
+                  **Aktuell:** {{ states('number.vitodens_200_wb2a_interne_pumpe_solldrehzahl_31_einstellung') }} %
+                  
+                  **Wichtig bei dieser Anlage:** 31 = 100 % bedeutet nicht automatisch 100 % reale Pumpendrehzahl im Heizbetrieb. Wir haben 31 = 100 % bei gleichzeitig nur etwa 50 % tatsächlicher interner Pumpendrehzahl gemessen.
+                  
+                  Daher nicht als direkten Laufzeit-Sollwert interpretieren.
+                  
+                  Datenpunkt: `0x5731`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
       - type: grid
         column_span: 2
@@ -1453,7 +1626,37 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Kessel-Offset 60
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Überhöhung der Kessel- bzw. Vorlauf-Solltemperatur gegenüber der Warmwasser-Solltemperatur während der Speicherladung.
+                  
+                  **Bereich:** 5–25 K
+                  
+                  **Aktuell:** {{ states('number.vitodens_200_wb2a_warmwasser_kessel_offset_60_einstellung') }} K
+                  
+                  **Beispiel:** Warmwasser-Soll 50 °C + Offset 20 K → Kessel-Soll ungefähr 70 °C während der Warmwasserbereitung.
+                  
+                  Der Parameter betrifft die Warmwasserbereitung, nicht den normalen Heizbetrieb.
+                  
+                  Datenpunkt: `0x6760`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: tile
             entity: number.vitodens_200_wb2a_warmwasser_pumpennachlauf_62_einstellung
@@ -1466,7 +1669,35 @@ views:
                 style: slider
             features_position: bottom
             grid_options:
-              columns: 12
+              columns: 10
+              rows: 2
+          - type: button
+            icon: mdi:information-outline
+            show_name: false
+            show_icon: true
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: Pumpennachlauf 62
+                  adaptive: true
+                  content:
+                    type: markdown
+                    content: |
+                  **Funktion:** Nachlaufzeit der Speicherladepumpe nach Ende der Warmwasser-Speicherladung.
+                  
+                  **Bereich:** 0–15 min
+                  
+                  **Aktuell:** {{ states('number.vitodens_200_wb2a_warmwasser_pumpennachlauf_62_einstellung') }} min
+                  
+                  Damit kann nach dem Brennerende noch Wärme aus dem Kessel in den Warmwasserspeicher übertragen werden.
+                  
+                  Datenpunkt: `0x6762`
+            hold_action:
+              action: none
+            grid_options:
+              columns: 2
               rows: 2
           - type: heading
             heading: Zirkulation bei Warmwasser-Soll
