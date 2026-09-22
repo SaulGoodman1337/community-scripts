@@ -510,6 +510,31 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     sequential bus reads, the exact sub-second ordering inside a printed line
     is not atomic; the value correspondence itself is hardware-confirmed.
 
+  Heating-curve outdoor-temperature source verification (2026-09-22):
+    Controlled test with d3=0.8, d4=+15 K, active room setpoint 21.0 C:
+      0x0800 = A7 00 -> current outdoor temperature = 16.7 C.
+      0x5525 = AB 00 -> ATS low-pass value = 17.1 C.
+      0x5527 = A1 00 -> "Gemischte AT" = 16.1 C.
+      0x27D4 = 0F -> +15 K, direct Optolink write verified.
+      0x2544 = 9C 01 -> A1 flow setpoint = 41.2 C.
+      0x555A = 9C 01 -> effective boiler setpoint = 41.2 C.
+
+    Applying the Viessmann heating-curve polynomial:
+      current AT 16.7 C  -> about 40.64 C
+      ATS low-pass 17.1 C -> about 40.23 C
+      mixed AT 16.1 C    -> about 41.24 C
+    The measured 41.2 C matches the mixed outdoor-temperature value 0x5527
+    to the controller's 0.1 C resolution. This is strong hardware evidence
+    that VDensHO1 uses the "Gemischte AT" 0x5527 as the outdoor-temperature
+    input for the A1 weather-compensated heating curve in this operating mode.
+
+    0x2500 bytes6..7 and bytes17..18 both contained 9C 01 (=41.2 C) in this
+    sample. Across the +40 K, +5 K and +15 K captures these bytes track the
+    effective A1 flow setpoint, but remain unnamed until a trusted field
+    definition for those offsets is found.
+
+    After the capture d4 was restored directly to +5 K and read back as 05.
+
   Heating-curve normal-configuration verification (2026-09-22):
     After restoring the user's normal curve level:
       0x0800 = B5 00 -> current outdoor temperature = 18.1 C.
