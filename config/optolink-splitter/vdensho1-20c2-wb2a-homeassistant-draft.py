@@ -216,12 +216,14 @@ poll_list = {
         {
             "domain": "switch",
             "icon": "mdi:party-popper",
+            # Exact raw commands verified on VDensHO1 / 20C2 / SW03.
+            # The controller may require one complete local Party activation
+            # after a controller/control-panel reset before remote ON sticks.
             "command_topic": "%mqtt_listen%",
-            "payload_on": "1",
-            "payload_off": "0",
+            "payload_on": "w;0x2303;1;1",
+            "payload_off": "w;0x2303;1;0",
             "state_on": "1",
             "state_off": "0",
-            "command_template": "{% if value == '1' %}w;%DpAddr%;%Length%;1{% else %}w;%DpAddr%;%Length%;0{% endif %}",
             "optimistic": False,
             "poll": [
                 ("NORMAL", "heizkreis_m1_partybetrieb", 0x2303, 1, 1, False),
