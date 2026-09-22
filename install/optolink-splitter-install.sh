@@ -179,4 +179,4 @@ fi
 motd_ssh
 customize
 cleanup_lxc
-install_private_update ct/optolink-splitter.sh
+install_private_update tools/optolink-splitter-update.sh
