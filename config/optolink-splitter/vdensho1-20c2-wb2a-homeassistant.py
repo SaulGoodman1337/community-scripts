@@ -913,6 +913,33 @@ poll_list = {
             ],
         },
 
+        # Grundfos diverter-valve motion profile from coding plug 0x10C0.
+        # This appliance selects Grundfos via GWG34=3.
+        # Hardware-verified raw block:
+        # 5A 32 2D C8 5A 32 02 32 02 32 00 FF FF FF FF FF
+        # GWGC2/GWGC3 use the VDensHO1 catalog multiplier x2.
+        # Frequency values have no documented unit in the source catalog.
+        {
+            "domain": "sensor",
+            "state_class": "measurement",
+            "entity_category": "diagnostic",
+            "enabled_by_default": True,
+            "suggested_display_precision": 0,
+            "poll": [
+                ("ONCE", "codierstecker_grundfos_uv_schrittzahl_x1", 0x10C0, 16, "b:0:0",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_frequenz_x1",    0x10C0, 16, "b:1:1",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_schrittzahl_x2", 0x10C0, 16, "b:2:2",   2, False),
+                ("ONCE", "codierstecker_grundfos_uv_frequenz_x2",    0x10C0, 16, "b:3:3",   2, False),
+                ("ONCE", "codierstecker_grundfos_uv_schrittzahl_x3", 0x10C0, 16, "b:4:4",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_frequenz_x3",    0x10C0, 16, "b:5:5",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_schrittzahl_x4", 0x10C0, 16, "b:6:6",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_frequenz_x4",    0x10C0, 16, "b:7:7",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_schrittzahl_x5", 0x10C0, 16, "b:8:8",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_frequenz_x5",    0x10C0, 16, "b:9:9",   1, False),
+                ("ONCE", "codierstecker_grundfos_uv_position_heizen",0x10C0, 16, "b:10:10", 1, False),
+            ],
+        },
+
         # Burner characteristic curve from coding plug 0x1090.
         # GWG91..GWG9A map requested boiler output 10..100 % to the
         # controller's burner modulation value. Hardware-verified raw block:

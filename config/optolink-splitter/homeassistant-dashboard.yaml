@@ -2268,6 +2268,31 @@ views:
               - entity: sensor.vitodens_200_wb2a_codierstecker_umschaltventil_bauart
                 name: Umschaltventil laut Codierstecker
           - type: entities
+            title: Grundfos-Umschaltventil Kennfeld
+            entities:
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_position_heizen
+                name: Position Heizen
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_schrittzahl_x1
+                name: Verstellweg x1 Schrittzahl
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_frequenz_x1
+                name: Verstellweg x1 Frequenzwert
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_schrittzahl_x2
+                name: Verstellweg x2 Schrittzahl
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_frequenz_x2
+                name: Verstellweg x2 Frequenzwert
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_schrittzahl_x3
+                name: Verstellweg x3 Schrittzahl
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_frequenz_x3
+                name: Verstellweg x3 Frequenzwert
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_schrittzahl_x4
+                name: Verstellweg x4 Schrittzahl
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_frequenz_x4
+                name: Verstellweg x4 Frequenzwert
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_schrittzahl_x5
+                name: Verstellweg x5 Schrittzahl
+              - entity: sensor.vitodens_200_wb2a_codierstecker_grundfos_uv_frequenz_x5
+                name: Verstellweg x5 Frequenzwert
+          - type: entities
             title: Warmwasser-Regelparameter
             entities:
               - entity: sensor.vitodens_200_wb2a_codierstecker_dlh_ausschaltdifferenz_start_stop

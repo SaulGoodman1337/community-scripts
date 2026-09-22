@@ -419,6 +419,23 @@ Hardware verification on the real appliance (20C2 / software index 0x03):
     Source terminology calls GWG80..GWG87 "DLH"; depending on the installed
     DHW design some of these coding-plug constants may be inactive.
 
+    Coding-plug Grundfos diverter-valve block 0x10C0 len16:
+      raw = 5A 32 2D C8 5A 32 02 32 02 32 00 FF FF FF FF FF
+      GWGC0 byte 0  = 90 steps, travel x1
+      GWGC1 byte 1  = 50 frequency value, travel x1
+      GWGC2 byte 2  = 45 * 2 = 90 steps, travel x2
+      GWGC3 byte 3  = 200 * 2 = 400 frequency value, travel x2
+      GWGC4 byte 4  = 90 steps, travel x3
+      GWGC5 byte 5  = 50 frequency value, travel x3
+      GWGC6 byte 6  = 2 steps, travel x4
+      GWGC7 byte 7  = 50 frequency value, travel x4
+      GWGC8 byte 8  = 2 steps, travel x5
+      GWGC9 byte 9  = 50 frequency value, travel x5
+      GWGCA byte 10 = 0, heating position
+    GWG34 in block 0x1030 selects Grundfos (3), so 0x10C0 is the applicable
+    diverter-valve motion profile for this appliance. The source catalog does
+    not specify a physical unit for the frequency values; do not label them Hz.
+
     Coding-plug burner characteristic block 0x1090 len16:
       raw = 00 21 21 21 2F 37 3F 48 51 5A 64 00 00 00 00 00
       GWG91 / 10 percent requested output  -> 33 percent modulation
@@ -515,6 +532,18 @@ poll_items = [
     ('ONCE', 'codierstecker_dlh_reglernachstellzeit', 0x1080, 16, 'b:6:6', 10, False),  # GWG86=30 s
     ('ONCE', 'codierstecker_dlh_ausschaltdifferenz', 0x1080, 16, 'b:7:7', 1, False),  # GWG87=8 K
     ('ONCE', 'codierstecker_zirkulationspumpe_bei_speicherladung', 0x1080, 16, 'b:8:8', 1, False),  # GWG88=0 Regelfunktion
+    ('ONCE', 'codierstecker_block_10c0_raw', 0x10C0, 16),  # HW: 5a322dc85a320232023200ffffffffff
+    ('ONCE', 'codierstecker_grundfos_uv_schrittzahl_x1', 0x10C0, 16, 'b:0:0', 1, False),  # GWGC0=90
+    ('ONCE', 'codierstecker_grundfos_uv_frequenz_x1', 0x10C0, 16, 'b:1:1', 1, False),  # GWGC1=50
+    ('ONCE', 'codierstecker_grundfos_uv_schrittzahl_x2', 0x10C0, 16, 'b:2:2', 2, False),  # GWGC2=90 (45*2)
+    ('ONCE', 'codierstecker_grundfos_uv_frequenz_x2', 0x10C0, 16, 'b:3:3', 2, False),  # GWGC3=400 (200*2)
+    ('ONCE', 'codierstecker_grundfos_uv_schrittzahl_x3', 0x10C0, 16, 'b:4:4', 1, False),  # GWGC4=90
+    ('ONCE', 'codierstecker_grundfos_uv_frequenz_x3', 0x10C0, 16, 'b:5:5', 1, False),  # GWGC5=50
+    ('ONCE', 'codierstecker_grundfos_uv_schrittzahl_x4', 0x10C0, 16, 'b:6:6', 1, False),  # GWGC6=2
+    ('ONCE', 'codierstecker_grundfos_uv_frequenz_x4', 0x10C0, 16, 'b:7:7', 1, False),  # GWGC7=50
+    ('ONCE', 'codierstecker_grundfos_uv_schrittzahl_x5', 0x10C0, 16, 'b:8:8', 1, False),  # GWGC8=2
+    ('ONCE', 'codierstecker_grundfos_uv_frequenz_x5', 0x10C0, 16, 'b:9:9', 1, False),  # GWGC9=50
+    ('ONCE', 'codierstecker_grundfos_uv_position_heizen', 0x10C0, 16, 'b:10:10', 1, False),  # GWGCA=0
     ('ONCE', 'codierstecker_block_1090_raw', 0x1090, 16),  # HW verified: 002121212f373f48515a640000000000
     ('ONCE', 'codierstecker_brennerkennlinie_10', 0x1090, 16, 'b:1:1', 1, False),  # GWG91=33%
     ('ONCE', 'codierstecker_brennerkennlinie_20', 0x1090, 16, 'b:2:2', 1, False),  # GWG92=33%
