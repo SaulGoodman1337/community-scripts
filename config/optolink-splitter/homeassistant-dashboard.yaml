@@ -439,7 +439,7 @@ views:
     max_columns: 4
     sections:
       - type: grid
-        column_span: 2
+        column_span: 4
         cards:
           - type: heading
             heading: Heizkurve & Vorlauf
@@ -461,130 +461,6 @@ views:
                 name: Ist
                 show_state: true
                 show_icon: false
-          - type: heading
-            heading: Kennlinie
-            heading_style: subtitle
-            icon: mdi:tune
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung
-            name: Neigung D3
-            icon: mdi:chart-bell-curve
-            show_entity_picture: false
-            vertical: false
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung
-            name: Niveau D4
-            icon: mdi:chart-areaspline-variant
-            show_entity_picture: false
-            vertical: false
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung
-            name: Vorlauf Minimum C5
-            icon: mdi:thermometer-chevron-down
-            show_entity_picture: false
-            vertical: false
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung
-            name: Vorlauf Maximum C6
-            icon: mdi:thermometer-chevron-up
-            show_entity_picture: false
-            vertical: false
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3_einstellung
-            name: Frostgrenze A3
-            icon: mdi:snowflake-alert
-            show_entity_picture: false
-            vertical: false
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung
-            name: Heizkreispumpenlogik A5
-            icon: mdi:radiator-disabled
-            show_entity_picture: false
-            vertical: false
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung
-            name: Sommersparabschaltung A6
-            icon: mdi:weather-sunny-off
-            show_entity_picture: false
-            vertical: false
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-      - type: grid
-        column_span: 2
-        cards:
-          - type: heading
-            heading: Temperaturniveau
-            heading_style: title
-            icon: mdi:thermostat
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal
-            name: Normaltemperatur
-            icon: mdi:sun-thermometer
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
-          - type: tile
-            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
-            name: Reduzierte Temperatur
-            icon: mdi:weather-night
-            features:
-              - type: numeric-input
-                style: slider
-            features_position: bottom
-            grid_options:
-              columns: 12
-              rows: 2
           - type: custom:plotly-graph
             raw_plotly_config: true
             refresh_interval: 5
@@ -1285,6 +1161,149 @@ views:
                   Außen: %{x:.1f} °C<br>
                   Vorlauf: %{y:.1f} °C
                   <extra></extra>
+            grid_options:
+              columns: full
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Kennlinie
+            heading_style: title
+            icon: mdi:tune
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_neigung_d3_einstellung
+            name: Neigung D3
+            icon: mdi:chart-bell-curve
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_heizkennlinie_niveau_d4_einstellung
+            name: Niveau D4
+            icon: mdi:chart-areaspline-variant
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_min_c5_einstellung
+            name: Vorlauf Minimum C5
+            icon: mdi:thermometer-chevron-down
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_vorlauf_max_c6_einstellung
+            name: Vorlauf Maximum C6
+            icon: mdi:thermometer-chevron-up
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_frostgrenze_a3_einstellung
+            name: Frostgrenze A3
+            icon: mdi:snowflake-alert
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_sommerspar_schaltschwelle_a5_einstellung
+            name: Heizkreispumpenlogik A5
+            icon: mdi:radiator-disabled
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_sommersparabschaltung_a6_einstellung
+            name: Sommersparabschaltung A6
+            icon: mdi:weather-sunny-off
+            show_entity_picture: false
+            vertical: false
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Temperaturniveau
+            heading_style: title
+            icon: mdi:thermostat
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_normal
+            name: Normaltemperatur
+            icon: mdi:sun-thermometer
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+          - type: tile
+            entity: number.vitodens_200_wb2a_heizkreis_m1_raumsolltemperatur_reduziert
+            name: Reduzierte Temperatur
+            icon: mdi:weather-night
+            features:
+              - type: numeric-input
+                style: slider
+            features_position: bottom
+            grid_options:
+              columns: 12
+              rows: 2
+      - type: grid
+        column_span: 4
+        cards:
+          - type: heading
+            heading: Verlauf
+            heading_style: title
+            icon: mdi:chart-line
+          - type: history-graph
+            title: Vorlaufregelung – 7 Tage
+            hours_to_show: 168
+            entities:
+              - sensor.vitodens_200_wb2a_aussentemperatur_gedaempft
+              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlaufsolltemperatur
+              - sensor.vitodens_200_wb2a_heizkreis_m1_vorlauftemperatur
             grid_options:
               columns: full
     cards: []
