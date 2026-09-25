@@ -45,7 +45,7 @@ need_cmd() {
   }
 }
 
-for cmd in pct pvesh pvesm pveum curl python3 ip awk grep sed; do
+for cmd in pct pvesh pvesm pveum curl python3 ip awk grep sed openssl timeout; do
   need_cmd "$cmd"
 done
 
@@ -90,6 +90,22 @@ if [[ -z "$PVE_IP" ]]; then
   PVE_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 fi
 
+# Prefer a DNS name that the live pveproxy certificate actually covers.
+# This matters when the node's internal hostname differs from a custom
+# ACME/Let's Encrypt certificate name.
+if [[ -z "${PVE_API_HOST:-}" ]]; then
+  PVE_CERT_DNS="$(
+    timeout 5 openssl s_client -connect "127.0.0.1:8006" -servername "$PVE_FQDN" </dev/null 2>/dev/null \
+      | openssl x509 -noout -ext subjectAltName 2>/dev/null \
+      | grep -o 'DNS:[^, ]*' \
+      | head -n1 \
+      | cut -d: -f2- || true
+  )"
+  PVE_API_HOST="${PVE_CERT_DNS:-$PVE_FQDN}"
+else
+  PVE_API_HOST="$PVE_API_HOST"
+fi
+
 PVE_MCP_USER="${PVE_MCP_USER:-mcp-gateway@pve}"
 PVE_MCP_TOKEN_NAME="${PVE_MCP_TOKEN_NAME:-mcp-ro-${CTID}}"
 PVE_MCP_TOKEN_ID="${PVE_MCP_USER}!${PVE_MCP_TOKEN_NAME}"
@@ -116,7 +132,7 @@ Template storage:  $TEMPLATE_STORAGE
 Bridge:            $BRIDGE
 IPv4:              $IPV4
 IPv6 method:       $IPV6_METHOD
-PVE API endpoint:  $PVE_FQDN:8006 ($PVE_IP)
+PVE API endpoint:  $PVE_API_HOST:8006 ($PVE_IP)
 PVE API identity:  $PVE_MCP_TOKEN_ID (PVEAuditor only)
 
 EOF
@@ -206,8 +222,8 @@ if [[ -f /etc/pve/pve-root-ca.pem ]]; then
   pct exec "$CTID" -- update-ca-certificates >/dev/null
 fi
 
-if [[ -n "$PVE_IP" && -n "$PVE_FQDN" ]]; then
-  pct exec "$CTID" -- bash -lc "grep -Fq ' $PVE_FQDN' /etc/hosts || echo '$PVE_IP $PVE_FQDN $PVE_NODE' >> /etc/hosts"
+if [[ -n "$PVE_IP" && -n "$PVE_API_HOST" ]]; then
+  pct exec "$CTID" -- bash -lc "grep -Fq ' $PVE_API_HOST' /etc/hosts || echo '$PVE_IP $PVE_API_HOST $PVE_NODE' >> /etc/hosts"
 fi
 
 echo "==> Installing VyMCP"
@@ -294,7 +310,7 @@ TMP_PVE_ENV="$HOST_TMP/proxmox-pve.env"
 : > "$TMP_PVE_ENV"
 chmod 0600 "$TMP_PVE_ENV"
 cat > "$TMP_PVE_ENV" <<EOF
-PROXMOX_HOST=$PVE_FQDN
+PROXMOX_HOST=$PVE_API_HOST
 PROXMOX_PORT=8006
 PROXMOX_USER=$PVE_MCP_USER
 PROXMOX_TOKEN_NAME=$PVE_MCP_TOKEN_NAME
