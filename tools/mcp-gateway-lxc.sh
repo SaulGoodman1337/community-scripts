@@ -232,7 +232,10 @@ set -Eeuo pipefail
 rm -rf /opt/vymcp-venv
 python3 -m venv /opt/vymcp-venv
 /opt/vymcp-venv/bin/pip install --upgrade pip wheel
-/opt/vymcp-venv/bin/pip install "git+https://github.com/Community-VyProjects/VyMCP.git"
+# VyMCP 0.1.x still imports FastMCP from the MCP Python SDK v1 API.
+# Keep the SDK below 2.x until VyMCP completes its MCP v2 migration.
+/opt/vymcp-venv/bin/pip install "mcp>=1.2,<2" "git+https://github.com/Community-VyProjects/VyMCP.git"
+/opt/vymcp-venv/bin/python -c "from mcp.server.fastmcp import FastMCP; import vymcp"
 test -x /opt/vymcp-venv/bin/vymcp
 '
 
