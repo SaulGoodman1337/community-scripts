@@ -85,8 +85,7 @@ set -Eeuo pipefail
 set -a
 source /etc/mcp-gateway/proxmox-pve.env
 set +a
-curl -fsS --connect-timeout 5 \
-  --cacert /usr/local/share/ca-certificates/proxmox-cluster-ca.crt \
+curl -fsS --connect-timeout 5 \ \
   -H "Authorization: PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_VALUE}" \
   "https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json/version" \
   | jq -e ".data.version != null" >/dev/null
