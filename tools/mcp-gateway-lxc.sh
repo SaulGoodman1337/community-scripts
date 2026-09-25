@@ -26,7 +26,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-COMMUNITY_DEBIAN_URL="${COMMUNITY_DEBIAN_URL:-https://raw.githubusercontent.com/SaulGoodman1337/community-scripts/main/ct/debian.sh}"
+COMMUNITY_DEBIAN_URL="${COMMUNITY_DEBIAN_URL:-https://raw.githubusercontent.com/community-scripts/ProxmoxVE/main/ct/debian.sh}"
 HOSTNAME_CT="${HOSTNAME_CT:-mcp-gateway}"
 CPU="${CPU:-2}"
 RAM="${RAM:-2048}"
@@ -151,7 +151,15 @@ if [[ -n "$IPV4_GW" ]]; then
   COMMUNITY_ENV+=("var_gateway=$IPV4_GW")
 fi
 
-env "${COMMUNITY_ENV[@]}" bash -c "$(curl -fsSL "$COMMUNITY_DEBIAN_URL")"
+COMMUNITY_DEBIAN_SCRIPT="$HOST_TMP/community-debian.sh"
+curl -fsSL "$COMMUNITY_DEBIAN_URL" -o "$COMMUNITY_DEBIAN_SCRIPT"
+chmod 0700 "$COMMUNITY_DEBIAN_SCRIPT"
+env "${COMMUNITY_ENV[@]}" bash "$COMMUNITY_DEBIAN_SCRIPT"
+
+if ! pct config "$CTID" >/dev/null 2>&1; then
+  echo "Community Scripts finished but CT $CTID was not created. Aborting." >&2
+  exit 1
+fi
 
 pct set "$CTID" -onboot 1
 pct start "$CTID" >/dev/null 2>&1 || true
