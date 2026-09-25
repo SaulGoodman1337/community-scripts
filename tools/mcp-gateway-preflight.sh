@@ -6,7 +6,7 @@ VYMANAGER_URL="${VYMANAGER_URL:-http://192.168.150.60:8000}"
 
 ok()   { printf '  [OK]   %s\n' "$*"; }
 warn() { printf '  [WARN] %s\n' "$*"; }
-fail() { printf '  [FAIL] %s\n' "$*" >&2; FAILURES=$((FAILURES+1)); }
+fail() { printf '  [FAIL] %s\n' "$*" >&2; FAILURES=$((FAILURES + 1)); }
 
 FAILURES=0
 
@@ -18,10 +18,10 @@ fi
 echo "MCP gateway preflight - CT $CTID"
 echo "================================"
 
-if ! pct config "$CTID" >/dev/null 2>&1; then
+pct config "$CTID" >/dev/null 2>&1 || {
   echo "CT $CTID does not exist." >&2
   exit 1
-fi
+}
 
 if pct status "$CTID" | grep -q 'status: running'; then
   ok "container is running"
@@ -29,7 +29,7 @@ else
   fail "container is not running"
 fi
 
-if pct config "$CTID" | grep -Eq '^features:.*(^|,)nesting=1(,|$)|^features:.*nesting=1'; then
+if pct config "$CTID" | grep -Eq '^features:.*nesting=1'; then
   ok "nesting=1"
 else
   fail "nesting is not enabled"
@@ -50,7 +50,7 @@ else
   printf '%s\n' "$failed_units"
 fi
 
-for bin in   /opt/vymcp-venv/bin/vymcp   /usr/local/bin/run-proxmox-mcp   /usr/local/bin/tunnel-client; do
+for bin in /opt/vymcp-venv/bin/vymcp /usr/local/bin/run-proxmox-mcp /usr/local/bin/tunnel-client; do
   if pct exec "$CTID" -- test -x "$bin"; then
     ok "$bin present"
   else
@@ -59,10 +59,18 @@ for bin in   /opt/vymcp-venv/bin/vymcp   /usr/local/bin/run-proxmox-mcp   /usr/l
 done
 
 tunnel_version="$(pct exec "$CTID" -- /usr/local/bin/tunnel-client --version 2>/dev/null || true)"
-[[ -n "$tunnel_version" ]] && ok "tunnel-client: $tunnel_version" || fail "tunnel-client does not run"
+if [[ -n "$tunnel_version" ]]; then
+  ok "tunnel-client: $tunnel_version"
+else
+  fail "tunnel-client does not run"
+fi
 
 node_version="$(pct exec "$CTID" -- node --version 2>/dev/null || true)"
-[[ "$node_version" =~ ^v([2-9][0-9]|1[0-9][0-9])\. ]] && ok "Node.js: $node_version" || fail "Node.js 20+ required, found: ${node_version:-none}"
+if [[ "$node_version" =~ ^v([2-9][0-9]|1[0-9][0-9])\. ]]; then
+  ok "Node.js: $node_version"
+else
+  fail "Node.js 20+ required, found: ${node_version:-none}"
+fi
 
 if pct exec "$CTID" -- test -r /usr/local/share/ca-certificates/proxmox-cluster-ca.crt; then
   ok "Proxmox cluster CA installed"
@@ -80,48 +88,52 @@ echo
 echo "Proxmox API/TLS test"
 echo "--------------------"
 PVE_API_OK=0
+
 if pct exec "$CTID" -- bash -c '
 set -Eeuo pipefail
 set -a
 source /etc/mcp-gateway/proxmox-pve.env
 set +a
-curl -fsS --connect-timeout 5 \ \
-  -H "Authorization: PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_VALUE}" \
-  "https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json/version" \
-  | jq -e ".data.version != null" >/dev/null
+curl -fsS --connect-timeout 5 -H "Authorization: PVEAPIToken=${PROXMOX_USER}!${PROXMOX_TOKEN_NAME}=${PROXMOX_TOKEN_VALUE}" "https://${PROXMOX_HOST}:${PROXMOX_PORT}/api2/json/version" | jq -e ".data.version != null" >/dev/null
 '; then
   ok "PVE token authenticates and TLS verification succeeds"
   PVE_API_OK=1
 else
   fail "PVE API token/TLS test failed"
   echo
+  echo "  Configured API host:"
+  pct exec "$CTID" -- grep '^PROXMOX_HOST=' /etc/mcp-gateway/proxmox-pve.env | sed 's/^/    /' || true
+  echo
   echo "  Certificate presented by pveproxy:"
   pct exec "$CTID" -- bash -c '
-    set -a
-    source /etc/mcp-gateway/proxmox-pve.env
-    set +a
-    timeout 8 openssl s_client -connect "${PROXMOX_HOST}:${PROXMOX_PORT}" -servername "${PROXMOX_HOST}" </dev/null 2>/dev/null \
-      | openssl x509 -noout -subject -issuer -ext subjectAltName 2>/dev/null
-  ' | sed 's/^/    /' || true
-  echo
-  warn "The CA may be trusted while the configured PROXMOX_HOST is absent from the certificate SAN."
+set -a
+source /etc/mcp-gateway/proxmox-pve.env
+set +a
+timeout 8 openssl s_client -connect "${PROXMOX_HOST}:${PROXMOX_PORT}" -servername "${PROXMOX_HOST}" </dev/null 2>/dev/null | openssl x509 -noout -subject -issuer -ext subjectAltName 2>/dev/null
+' | sed 's/^/    /' || true
 fi
 
 echo
 echo "Proxmox MCP read-only smoke test"
 echo "--------------------------------"
+
 if (( PVE_API_OK == 1 )); then
   mcp_failed=0
+
   for tool in proxmox_get_nodes proxmox_get_vms proxmox_whoami; do
-    response="$(pct exec "$CTID" -- bash -c "
-      set -Eeuo pipefail
-      set -a
-      source /etc/mcp-gateway/proxmox-pve.env
-      set +a
-      cd /opt/mcp-proxmox
-      printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$tool\",\"arguments\":{}}}' \
-        | timeout 15 node index.js 2>/dev/null
-    " 2>/dev/null | grep -m1 '^{' || true)"
+    request="{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$tool\",\"arguments\":{}}}"
+
+    response="$(
+      pct exec "$CTID" -- bash -c "
+set -Eeuo pipefail
+set -a
+source /etc/mcp-gateway/proxmox-pve.env
+set +a
+cd /opt/mcp-proxmox
+printf '%s\\n' '$request' | timeout 15 node index.js 2>/dev/null
+" 2>/dev/null | grep -m1 '^{' || true
+    )"
+
     if [[ -n "$response" ]] && jq -e '
       .result != null
       and (.result.isError != true)
@@ -130,10 +142,13 @@ if (( PVE_API_OK == 1 )); then
       ok "$tool"
     else
       fail "$tool returned an MCP error or no valid response"
-      [[ -n "$response" ]] && jq -r '.result.content[0].text? // .error.message? // .' <<<"$response" 2>/dev/null | sed 's/^/         /' || true
+      if [[ -n "$response" ]]; then
+        jq -r '.result.content[0].text? // .error.message? // .' <<<"$response" 2>/dev/null | sed 's/^/         /' || true
+      fi
       mcp_failed=1
     fi
   done
+
   if (( mcp_failed == 0 )); then
     ok "mcp-proxmox read-only smoke test passed"
   fi
@@ -144,8 +159,10 @@ fi
 echo
 echo "VyManager reachability"
 echo "----------------------"
+
 vy_host="$(python3 -c 'from urllib.parse import urlparse; import sys; u=urlparse(sys.argv[1]); print(u.hostname or "")' "$VYMANAGER_URL")"
 vy_port="$(python3 -c 'from urllib.parse import urlparse; import sys; u=urlparse(sys.argv[1]); print(u.port or (443 if u.scheme=="https" else 80))' "$VYMANAGER_URL")"
+
 if pct exec "$CTID" -- bash -c "timeout 4 bash -c '</dev/tcp/$vy_host/$vy_port'" >/dev/null 2>&1; then
   ok "TCP $vy_host:$vy_port reachable"
   vy_code="$(pct exec "$CTID" -- curl -sS -o /dev/null --connect-timeout 5 -w '%{http_code}' "$VYMANAGER_URL/docs" 2>/dev/null || true)"
@@ -161,15 +178,18 @@ fi
 echo
 echo "npm audit (informational)"
 echo "-------------------------"
+
 audit_json="$(pct exec "$CTID" -- bash -c 'cd /opt/mcp-proxmox && npm audit --omit=dev --json 2>/dev/null' 2>/dev/null || true)"
 if [[ -n "$audit_json" && "$audit_json" != \{* ]]; then
   audit_json="$(sed -n '/^{/,$p' <<<"$audit_json")"
 fi
+
 if [[ -n "$audit_json" ]] && jq -e '.metadata.vulnerabilities' >/dev/null 2>&1 <<<"$audit_json"; then
   critical="$(jq -r '.metadata.vulnerabilities.critical // 0' <<<"$audit_json")"
   high="$(jq -r '.metadata.vulnerabilities.high // 0' <<<"$audit_json")"
   moderate="$(jq -r '.metadata.vulnerabilities.moderate // 0' <<<"$audit_json")"
   low="$(jq -r '.metadata.vulnerabilities.low // 0' <<<"$audit_json")"
+
   if (( critical == 0 && high == 0 && moderate == 0 && low == 0 )); then
     ok "npm audit: no known vulnerabilities"
   else
@@ -189,6 +209,7 @@ fi
 echo
 echo "Tunnel configuration"
 echo "--------------------"
+
 for envfile in /etc/mcp-gateway/vymcp.env /etc/mcp-gateway/proxmox-tunnel.env; do
   if pct exec "$CTID" -- test -r "$envfile"; then
     ok "$envfile configured"
