@@ -79,7 +79,8 @@ fi
 echo
 echo "Proxmox API/TLS test"
 echo "--------------------"
-if pct exec "$CTID" -- bash -lc '
+PVE_API_OK=0
+if pct exec "$CTID" -- bash -c '
 set -Eeuo pipefail
 set -a
 source /etc/mcp-gateway/proxmox-pve.env
@@ -91,40 +92,80 @@ curl -fsS --connect-timeout 5 \
   | jq -e ".data.version != null" >/dev/null
 '; then
   ok "PVE token authenticates and TLS verification succeeds"
+  PVE_API_OK=1
 else
   fail "PVE API token/TLS test failed"
+  echo
+  echo "  Certificate presented by pveproxy:"
+  pct exec "$CTID" -- bash -c '
+    set -a
+    source /etc/mcp-gateway/proxmox-pve.env
+    set +a
+    timeout 8 openssl s_client -connect "${PROXMOX_HOST}:${PROXMOX_PORT}" -servername "${PROXMOX_HOST}" </dev/null 2>/dev/null \
+      | openssl x509 -noout -subject -issuer -ext subjectAltName 2>/dev/null
+  ' | sed 's/^/    /' || true
+  echo
+  warn "The CA may be trusted while the configured PROXMOX_HOST is absent from the certificate SAN."
 fi
 
 echo
-echo "Proxmox MCP read-only integration test"
-echo "--------------------------------------"
-if pct exec "$CTID" -- bash -lc '
-set -Eeuo pipefail
-set -a
-source /etc/mcp-gateway/proxmox-pve.env
-set +a
-cd /opt/mcp-proxmox
-timeout 60 node test-basic-tools.js
-'; then
-  ok "mcp-proxmox basic read-only tools passed"
+echo "Proxmox MCP read-only smoke test"
+echo "--------------------------------"
+if (( PVE_API_OK == 1 )); then
+  mcp_failed=0
+  for tool in proxmox_get_nodes proxmox_get_vms proxmox_whoami; do
+    response="$(pct exec "$CTID" -- bash -c "
+      set -Eeuo pipefail
+      set -a
+      source /etc/mcp-gateway/proxmox-pve.env
+      set +a
+      cd /opt/mcp-proxmox
+      printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"$tool\",\"arguments\":{}}}' \
+        | timeout 15 node index.js 2>/dev/null
+    " 2>/dev/null | grep -m1 '^{' || true)"
+    if [[ -n "$response" ]] && jq -e '
+      .result != null
+      and (.result.isError != true)
+      and ((.result.structuredContent.error? // null) == null)
+    ' >/dev/null 2>&1 <<<"$response"; then
+      ok "$tool"
+    else
+      fail "$tool returned an MCP error or no valid response"
+      [[ -n "$response" ]] && jq -r '.result.content[0].text? // .error.message? // .' <<<"$response" 2>/dev/null | sed 's/^/         /' || true
+      mcp_failed=1
+    fi
+  done
+  if (( mcp_failed == 0 )); then
+    ok "mcp-proxmox read-only smoke test passed"
+  fi
 else
-  fail "mcp-proxmox basic read-only test reported a failure"
+  warn "Skipping MCP smoke test until PVE TLS/API connectivity is fixed"
 fi
 
 echo
 echo "VyManager reachability"
 echo "----------------------"
-vy_code="$(pct exec "$CTID" -- bash -lc "curl -sS -o /dev/null --connect-timeout 5 -w '%{http_code}' '$VYMANAGER_URL/'" 2>/dev/null || true)"
-if [[ "$vy_code" =~ ^[1-5][0-9][0-9]$ ]]; then
-  ok "VyManager reachable at $VYMANAGER_URL (HTTP $vy_code)"
+vy_host="$(python3 -c 'from urllib.parse import urlparse; import sys; u=urlparse(sys.argv[1]); print(u.hostname or "")' "$VYMANAGER_URL")"
+vy_port="$(python3 -c 'from urllib.parse import urlparse; import sys; u=urlparse(sys.argv[1]); print(u.port or (443 if u.scheme=="https" else 80))' "$VYMANAGER_URL")"
+if pct exec "$CTID" -- bash -c "timeout 4 bash -c '</dev/tcp/$vy_host/$vy_port'" >/dev/null 2>&1; then
+  ok "TCP $vy_host:$vy_port reachable"
+  vy_code="$(pct exec "$CTID" -- curl -sS -o /dev/null --connect-timeout 5 -w '%{http_code}' "$VYMANAGER_URL/docs" 2>/dev/null || true)"
+  if [[ "$vy_code" =~ ^[1-5][0-9][0-9]$ && "$vy_code" != "000" ]]; then
+    ok "VyManager HTTP endpoint responds at $VYMANAGER_URL/docs (HTTP $vy_code)"
+  else
+    fail "TCP is open, but no usable HTTP response from $VYMANAGER_URL/docs"
+  fi
 else
-  fail "VyManager is not reachable at $VYMANAGER_URL"
+  fail "TCP $vy_host:$vy_port is not reachable from CT $CTID"
 fi
 
 echo
 echo "npm audit (informational)"
 echo "-------------------------"
-audit_json="$(pct exec "$CTID" -- bash -lc 'cd /opt/mcp-proxmox && npm audit --omit=dev --json 2>/dev/null' || true)"
+audit_json="$(pct exec "$CTID" -- bash -c 'cd /opt/mcp-proxmox && npm audit --omit=dev --json 2>/dev/null' 2>/dev/null || true)"
+if [[ -n "$audit_json" && "$audit_json" != \{* ]]; then
+  audit_json="$(sed -n '/^{/,$p' <<<"$audit_json")"
+fi
 if [[ -n "$audit_json" ]] && jq -e '.metadata.vulnerabilities' >/dev/null 2>&1 <<<"$audit_json"; then
   critical="$(jq -r '.metadata.vulnerabilities.critical // 0' <<<"$audit_json")"
   high="$(jq -r '.metadata.vulnerabilities.high // 0' <<<"$audit_json")"
