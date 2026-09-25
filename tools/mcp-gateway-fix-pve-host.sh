@@ -16,7 +16,7 @@ done
 pct config "$CTID" >/dev/null 2>&1 || { echo "CT $CTID does not exist." >&2; exit 1; }
 pct status "$CTID" | grep -q 'status: running' || { echo "CT $CTID is not running." >&2; exit 1; }
 
-PVE_IP="${PVE_IP:-$(ip -4 -o addr show "$BRIDGE" scope global 2>/dev/null | awk 'NR==1 {split($4,a,"/"); print a[1}')}"
+PVE_IP="${PVE_IP:-$(ip -4 -o addr show "$BRIDGE" scope global 2>/dev/null | awk 'NR==1 {split($4,a,"/"); print a[1]')}"
 [[ -n "$PVE_IP" ]] || { echo "Could not determine PVE IPv4 address. Set PVE_IP=... explicitly." >&2; exit 1; }
 
 CERT_DNS="$(
